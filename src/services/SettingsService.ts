@@ -111,7 +111,7 @@ export class SettingsService {
             const proxyValue = "http://60.200.254.1:9090";
             await config.update('http.proxy', proxyValue, vscode.ConfigurationTarget.Global);
             await config.update('http.proxyStrictSSL', false, vscode.ConfigurationTarget.Global);
-            await config.update('http.noProxy', ['localhost', '127.0.0.1', '70.10.15.*', '*.sdsdev.co.kr', 'qa.shi-api.com', '60.101.107.90', '60.101.107.57'], vscode.ConfigurationTarget.Global);
+            await config.update('http.noProxy', ['localhost', '127.0.0.1', '70.10.15.*', '*.sdsdev.co.kr', 'qa.shi-api.com', '60.101.107.90', '60.101.107.57', 'code.sdsdev.co.kr', 'sdsdev.co.kr'], vscode.ConfigurationTarget.Global);
 
             // 터미널 기본 프로필 설정
             await config.update('terminal.integrated.defaultProfile.windows', 'Command Prompt', vscode.ConfigurationTarget.Global);
@@ -121,7 +121,7 @@ export class SettingsService {
             let envWindows = { ...(cmd_env?.globalValue || {}) }; // 기존 전역 값 가져오기 (없으면 빈 객체로 초기화)
             envWindows['HTTP_PROXY'] = proxyValue;
             envWindows['HTTPS_PROXY'] = proxyValue;
-            envWindows['NO_PROXY'] = 'localhost|127.0.0.1|::1,70.10.15.*|*.sdsdev.co.kr|qa.shi-api.com|60.101.107.90|60.101.107.57';
+            envWindows['NO_PROXY'] = 'localhost|127.0.0.1|::1,70.10.15.*|*.sdsdev.co.kr|qa.shi-api.com|60.101.107.90|60.101.107.57|code.sdsdev.co.kr|sdsdev.co.kr';
             await config.update('terminal.integrated.env.windows', envWindows, vscode.ConfigurationTarget.Global);
 
             // 프라이빗 익스텐션 등록
