@@ -298,7 +298,7 @@ export class DeployService {
                 if (toProcess.length === 0) {
                     return;
                 }
-                const analyzer = new AnalyzeReferenceChain();
+                const analyzer = new AnalyzeReferenceChain(this._settings.projectRoot);
                 const visited = new Set<string>(toProcess);
                 const queue: string[] = [...toProcess];
                 const added: string[] = [];

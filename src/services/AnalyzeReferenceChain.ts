@@ -1,56 +1,60 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs';
+import { ClassParser } from '../utils/ClassParser';
 
 // 배포목록관리 팝업에서 참조 파일 자동 추가를 위한 서비스
 export class AnalyzeReferenceChain {
-    // 특정 파일의 모든 메서드에서 호출하는 대상 파일 경로 Set을 얻어낸다.
+    private _projectRoot: string;
+
+    constructor(projectRoot: string) {
+        this._projectRoot = projectRoot.replace(/\\/g, '/');
+    }
+
+    // 특정 Java 소스 파일에서 참조하는 대상 Java 소스 파일 경로 Set을 얻어낸다.
     async analyzeOutboundFromFile(fileUri: vscode.Uri): Promise<Set<string>> {
-        const result = new Set<string>()
-        // 1. 현재 파일의 모든 심볼을 추출
-        const symbols = await this._getSymbols(fileUri);
-        for (const topSymbol of symbols) {
-            if (!this._isClassLike(topSymbol.kind)) { continue; } // 심볼이 클래스 유형일 경우에만 처리 시작
-            // 2. 현재 파일의 클래스에서 모든 메서드를 추출
-            const methods = topSymbol.children.filter(c => c.kind === vscode.SymbolKind.Method || c.kind === vscode.SymbolKind.Constructor || c.kind === vscode.SymbolKind.Function);
-            for (const method of methods) {
-                const pos = method.selectionRange.start;
-                // 3. 메서드 내부에서 호출하는 메서드를 추출
-                const outgoingCalls = await this._getOutgoingCalls(fileUri, pos);
-                for (const call of outgoingCalls) {
-                    // 4. 참조대상이 현재 프로젝트 내의 파일이라면 (라이브러리 아님) 결과에 추가
-                    if (call.to.uri.scheme === 'file') {
-                        result.add(call.to.uri.fsPath.replace(/\\/g, '/'));
-                    }
+        const result = new Set<string>();
+        const javaFilePath = fileUri.fsPath.replace(/\\/g, '/');
+        
+        // src/java 디렉토리 내부의 파일인지 확인
+        if (!javaFilePath.includes('/src/java/')) {
+            return result;
+        }
+
+        // package/ClassName 추출
+        const relativeJavaPath = javaFilePath.split('/src/java/')[1];
+        const baseClassPath = relativeJavaPath.replace(/\.java$/, '');
+        
+        // target/classes 내부의 해당 디렉토리 경로
+        const classDir = path.join(this._projectRoot, 'target', 'classes', path.dirname(baseClassPath));
+        const baseName = path.basename(baseClassPath);
+        
+        if (!fs.existsSync(classDir)) {
+            return result;
+        }
+
+        const files = fs.readdirSync(classDir);
+        // 메인 클래스와 이너 클래스들을 모두 찾음 (예: SomeClass.class, SomeClass$Inner.class)
+        const classFiles = files.filter(f => f === `${baseName}.class` || f.startsWith(`${baseName}$`));
+
+        for (const classFile of classFiles) {
+            const classFilePath = path.join(classDir, classFile);
+            
+            // 파서를 사용해 상수 풀에서 참조하는 클래스 목록 추출
+            const referencedClasses = ClassParser.getReferencedClasses(classFilePath);
+            
+            for (const refClass of referencedClasses) {
+                // refClass는 'com/shi/it/SomeClass' 형태
+                const targetJavaRelPath = `${refClass}.java`;
+                const targetJavaAbsPath = path.join(this._projectRoot, 'src', 'java', targetJavaRelPath).replace(/\\/g, '/');
+                
+                // 해당 Java 파일이 실제로 프로젝트 내에 존재하는지(라이브러리가 아닌지) 확인
+                if (fs.existsSync(targetJavaAbsPath) && targetJavaAbsPath !== javaFilePath) {
+                    result.add(targetJavaAbsPath);
                 }
             }
         }
+
         return result;
-    }
-
-    // 파일 uri 정보를 파라미터로 넣어서 해당 파일 내 모든 객체를 얻어낸다.
-    private async _getSymbols(fileUri: vscode.Uri): Promise<vscode.DocumentSymbol[]> {
-        try {
-            return await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', fileUri) ?? [];
-        }
-        catch {
-            return [];
-        }
-    }
-
-    private _isClassLike(kind: vscode.SymbolKind): boolean {
-        return kind === vscode.SymbolKind.Class
-            || kind === vscode.SymbolKind.Interface
-            || kind === vscode.SymbolKind.Enum;
-    }
-
-    // 특정 파일의 특정 위치가 속한 블록에서 호출하는 대상 목록을 얻어낸다.
-    private async _getOutgoingCalls(fileUri: vscode.Uri, pos: vscode.Position): Promise<vscode.CallHierarchyOutgoingCall[]> {
-        try {
-            // 호출자의 정보를 우선 파악한다. (그래야 파라미터로 입력 가능)
-            const callItems = await vscode.commands.executeCommand<vscode.CallHierarchyItem[]>('vscode.prepareCallHierarchy', fileUri, pos) ?? [];
-            // 호출자의 정보를 파라미터로 넣어서 호출 대상을 얻어낸다.
-            return await vscode.commands.executeCommand<vscode.CallHierarchyOutgoingCall[]>('vscode.provideOutgoingCalls', callItems[0]) ?? [];
-        } catch {
-            return [];
-        }
     }
 }
