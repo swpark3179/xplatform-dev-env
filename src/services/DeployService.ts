@@ -292,48 +292,84 @@ export class DeployService {
                 title: '참조 분석',
                 cancellable: false,
             },
-            async (progress) => {
+            async (progress: vscode.Progress<{ message?: string }>) => {
                 this.loadDeploySettings();
                 const normalizedInput = javaFiles.map(f => f.replace(/\\/g, '/'));
+                const skippedCount = normalizedInput.length - normalizedInput.filter(f => !this._autoDetectedJava.has(f)).length;
                 const toProcess = normalizedInput.filter(f => !this._autoDetectedJava.has(f));
+
+                // [Stage 0] 진입 로그
+                this._log.appendLine(`[참조분석] ▶ 시작 — 입력 파일 수: ${normalizedInput.length}  (자동탐지 스킵: ${skippedCount})`);
                 if (toProcess.length === 0) {
+                    this._log.appendLine(`[참조분석] 모든 입력 파일이 이미 자동 탐지 완료 상태임. 스킵.`);
                     return;
                 }
+                for (const f of toProcess) {
+                    this._log.appendLine(`[참조분석]   분석 대상: ${f}`);
+                }
+
                 const analyzer = new AnalyzeReferenceChain(this._settings.projectRoot);
                 const visited = new Set<string>(toProcess);
                 const queue: string[] = [...toProcess];
                 const added: string[] = [];
+                let totalQueueProcessed = 0;
+
                 // 1단계: Java 배포 목록에서 재귀적으로 참조 클래스를 탐색해 배포 목록에 추가
+                this._log.appendLine(`[참조분석][1단계] BFS 참조 탐색 시작`);
                 while (queue.length > 0) {
                     const filePath = queue.shift()!;
+                    totalQueueProcessed++;
                     progress.report({ message: `1단계: 참조 탐색 중 — ${path.basename(filePath)}` });
+
+                    // [Stage 1-A] 디큐 로그
+                    this._log.appendLine(`[참조분석][1단계] 분석 중 [큐: ${queue.length}개 남음]: ${filePath}`);
+
                     const fileUri = vscode.Uri.file(filePath);
                     const refs: Set<string> = await analyzer.analyzeOutboundFromFile(fileUri);
+
+                    // [Stage 1-B] 참조 반환 결과 분류 및 로그
+                    let newlyAdded = 0;
+                    let alreadyVisited = 0;
+                    let skippedAutoDetect = 0;
                     for (const refPath of refs) {
                         const normalized = refPath.replace(/\\/g, '/');
-                        if (this._autoDetectedJava.has(normalized)) continue;
+                        if (this._autoDetectedJava.has(normalized)) {
+                            skippedAutoDetect++;
+                            continue;
+                        }
                         if (!visited.has(normalized)) {
                             visited.add(normalized);
                             added.push(normalized);
                             queue.push(normalized);
+                            newlyAdded++;
+                            this._log.appendLine(`[참조분석][1단계]     + 신규: ${normalized}`);
+                        } else {
+                            alreadyVisited++;
                         }
                     }
+                    this._log.appendLine(`[참조분석][1단계]   ↳ 발견된 참조: ${refs.size}개  (신규 추가: ${newlyAdded}개, 이미 방문: ${alreadyVisited}개, 자동탐지 스킵: ${skippedAutoDetect}개)`);
                 }
+
                 // 2단계: 새로 발견된 파일을 배포 목록에 일괄 추가
+                this._log.appendLine(`[참조분석][2단계] 배포 목록에 추가: ${added.length}개 파일`);
                 if (added.length > 0) {
                     progress.report({ message: '2단계: 배포 목록에 추가 중...' });
                     const newJavaList = [...this._deployFileList.java];
                     for (const f of added) {
                         if (!newJavaList.includes(f)) newJavaList.push(f);
+                        this._log.appendLine(`[참조분석][2단계]   + ${f}`);
                     }
                     const newDeployFileList = { ...this._deployFileList, java: newJavaList };
                     this.updateDeployList(newDeployFileList, '', 'java', 'add', added);
                 }
+
                 // 3단계: Java 배포 목록 전체에서 연관 Query 파일을 자동으로 query 배포 목록에 추가
                 progress.report({ message: '3단계: Query 연관 파일 추가 중...' });
+                this._log.appendLine(`[참조분석][3단계] Java → Query 매핑 확인 시작`);
                 const currentJavaList = [...this._deployFileList.java];
                 const newQueryList = [...this._deployFileList.query];
                 let queryAdded = false;
+                let queryAddedCount = 0;
                 for (const javaPath of currentJavaList) {
                     const normalized = javaPath.replace(/\\/g, '/');
                     const javaSegment = '/src/java/';
@@ -347,20 +383,39 @@ export class DeployService {
                     const packagePath = path.dirname(packageAndFile);
 
                     const queryFileName = fileName.replace(/(Service|Controller)\.java$/, 'Query.xml');
-                    if (queryFileName === fileName) continue;
+
+                    // [Stage 3-A] Java 파일별 매핑 로그
+                    this._log.appendLine(`[참조분석][3단계] Java → Query 매핑 확인: ${normalized}`);
+                    if (queryFileName === fileName) {
+                        this._log.appendLine(`[참조분석][3단계]   ↳ 매핑 대상 아님 (Service/Controller 아님)`);
+                        continue;
+                    }
 
                     const queryPath = `${projectRoot}/src/query/${packagePath}/${queryFileName}`;
 
-                    if (!fs.existsSync(queryPath)) continue;
-                    if (newQueryList.includes(queryPath)) continue;
+                    if (!fs.existsSync(queryPath)) {
+                        this._log.appendLine(`[참조분석][3단계]   ↳ 대상 Query: ${queryPath} — 파일 없음`);
+                        continue;
+                    }
+                    if (newQueryList.includes(queryPath)) {
+                        this._log.appendLine(`[참조분석][3단계]   ↳ 대상 Query: ${queryPath} — 이미 존재`);
+                        continue;
+                    }
 
                     newQueryList.push(queryPath);
                     queryAdded = true;
+                    queryAddedCount++;
+                    this._log.appendLine(`[참조분석][3단계]   ↳ 대상 Query: ${queryPath} — 추가됨`);
                 }
+                this._log.appendLine(`[참조분석][3단계] Query 파일 추가 완료: ${queryAddedCount}개`);
+
                 if (queryAdded) {
                     const newDeployFileList = { ...this._deployFileList, query: newQueryList };
                     this.updateDeployList(newDeployFileList, '', 'query', 'add');
                 }
+
+                // [완료] 전체 요약 로그
+                this._log.appendLine(`[참조분석] ✔ 분석 완료 — 신규 Java: ${added.length}개, 신규 Query: ${queryAddedCount}개  (총 큐 처리 횟수: ${totalQueueProcessed}회)`);
             }
         );
     }
