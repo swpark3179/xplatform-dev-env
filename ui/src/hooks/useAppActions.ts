@@ -114,6 +114,22 @@ export function useAppActions(deps: UseAppActionsDeps) {
             setDeployFileList({ java: [], query: [] });
             postMessage({ type: 'clearDeployFiles' } as any);
         }, [setDeployFileList]),
+        // 즐겨찾기 관련 액션
+        loadFavorites: useCallback(() => {
+            postMessage({ type: 'loadFavorites' } as any);
+        }, []),
+        saveFavorite: useCallback((name: string, java: string[], query: string[]) => {
+            postMessage({ type: 'saveFavorite', name, java, query } as any);
+        }, []),
+        overwriteFavorite: useCallback((id: string, java: string[], query: string[]) => {
+            postMessage({ type: 'overwriteFavorite', id, java, query } as any);
+        }, []),
+        applyFavorite: useCallback((id: string) => {
+            postMessage({ type: 'applyFavorite', id } as any);
+        }, []),
+        deleteFavorite: useCallback((id: string) => {
+            postMessage({ type: 'deleteFavorite', id } as any);
+        }, []),
     };
 
     const project = {

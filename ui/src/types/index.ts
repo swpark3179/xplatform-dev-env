@@ -10,6 +10,14 @@ export interface Settings {
 export type ValidationStatus = 'pending' | 'validating' | 'valid' | 'warning' | 'invalid';
 export type TomcatDeployMode = 'default' | 'selected';
 
+// ==================== Deploy Favorite ====================
+export interface DeployFavorite {
+    id: string;
+    name: string;
+    java: string[];
+    query: string[];
+}
+
 export interface ValidationItem {
     status: ValidationStatus;
     message: string;
@@ -63,6 +71,10 @@ export interface MessageFromExtension {
     deployFileList?: { java: string[], query: string[] };
     searchResult?: string[];
     changedFiles?: { java: string[], query: string[] };
+    // 즐겨찾기 관련
+    favorites?: DeployFavorite[];
+    favoriteId?: string;
+    favoriteName?: string;
 }
 
 export interface ProjectSettingsOptions {

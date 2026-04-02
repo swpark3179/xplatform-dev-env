@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
-import { ChangedFiles, DeployFileList, Settings, TomcatState } from '../types';
+import { ChangedFiles, DeployFavorite, DeployFileList, Settings, TomcatState } from '../types';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 import type { GradleService } from './GradleService';
 import type { TomcatService } from './TomcatService';
 import { AnalyzeReferenceChain } from './AnalyzeReferenceChain';
@@ -368,5 +369,116 @@ export class DeployService {
         this._deployFileList.java.length = 0;
         this._deployFileList.query.length = 0;
         this.saveDeploySettings();
+    }
+
+    // ===========================
+    // 즐겨찾기 관련 메서드
+    // ===========================
+
+    /** 즐겨찾기 저장 폴더 경로 */
+    private _getFavoriteFolderPath(): string {
+        return path.join(this._settings.projectRoot, '.vscode', 'deploy_favorite');
+    }
+
+    /** src/ 기준 상대경로로 변환하는 헬퍼 */
+    private _stripSrcPrefix(list: string[]): string[] {
+        const srcPrefix = `${this._settings.projectRoot.replace(/\\/g, '/')}/src/`;
+        return list.map(p => p.replace(srcPrefix, ''));
+    }
+
+    /** src/ 상대경로에 절대경로 prefix를 붙이는 헬퍼 */
+    private _addSrcPrefix(list: string[]): string[] {
+        const srcPrefix = `${this._settings.projectRoot.replace(/\\/g, '/')}/src/`;
+        return list.map(p => `${srcPrefix}${p}`);
+    }
+
+    /** 즐겨찾기 목록 로드 (이름순 정렬). 최초 플러그인 로드 및 리프레시 버튼 클릭 시 호출 */
+    public loadFavorites(): DeployFavorite[] {
+        try {
+            const folderPath = this._getFavoriteFolderPath();
+            if (!fs.existsSync(folderPath)) return [];
+            const files = fs.readdirSync(folderPath).filter(f => f.endsWith('.json'));
+            const favorites: DeployFavorite[] = [];
+            for (const file of files) {
+                try {
+                    const raw = fs.readFileSync(path.join(folderPath, file), 'utf8');
+                    const data = JSON.parse(raw) as DeployFavorite;
+                    favorites.push(data);
+                } catch {
+                    // 개별 파일 파싱 실패 시 스킵
+                }
+            }
+            return favorites.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+        } catch {
+            return [];
+        }
+    }
+
+    /** 새 즐겨찾기 저장. 저장 후 활성 즐겨찾기(id, name)를 반환 */
+    public saveFavorite(name: string, java: string[], query: string[]): DeployFavorite {
+        const id = crypto.randomUUID();
+        const folderPath = this._getFavoriteFolderPath();
+        if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
+        const favorite: DeployFavorite = {
+            id,
+            name,
+            java: this._stripSrcPrefix(java),
+            query: this._stripSrcPrefix(query),
+        };
+        fs.writeFileSync(path.join(folderPath, `${id}.json`), JSON.stringify(favorite, null, 4), 'utf8');
+        return favorite;
+    }
+
+    /** 기존 즐겨찾기 덮어쓰기 (id는 유지, java/query 목록만 교체) */
+    public overwriteFavorite(id: string, java: string[], query: string[]): DeployFavorite | null {
+        const folderPath = this._getFavoriteFolderPath();
+        const filePath = path.join(folderPath, `${id}.json`);
+        if (!fs.existsSync(filePath)) return null;
+        try {
+            const raw = fs.readFileSync(filePath, 'utf8');
+            const existing = JSON.parse(raw) as DeployFavorite;
+            const updated: DeployFavorite = {
+                ...existing,
+                java: this._stripSrcPrefix(java),
+                query: this._stripSrcPrefix(query),
+            };
+            fs.writeFileSync(filePath, JSON.stringify(updated, null, 4), 'utf8');
+            return updated;
+        } catch {
+            return null;
+        }
+    }
+
+    /** 즐겨찾기를 현재 배포목록으로 적용. 적용한 즐겨찾기를 반환 */
+    public applyFavorite(id: string): DeployFavorite | null {
+        const folderPath = this._getFavoriteFolderPath();
+        const filePath = path.join(folderPath, `${id}.json`);
+        if (!fs.existsSync(filePath)) return null;
+        try {
+            const raw = fs.readFileSync(filePath, 'utf8');
+            const data = JSON.parse(raw) as DeployFavorite;
+            const java = this._addSrcPrefix(data.java);
+            const query = this._addSrcPrefix(data.query);
+            // 배포목록 교체 및 shi-deploy.json 저장
+            this._deployFileList.java = java;
+            this._deployFileList.query = query;
+            this.saveDeploySettings();
+            return data;
+        } catch {
+            return null;
+        }
+    }
+
+    /** 즐겨찾기 삭제. 성공 여부 반환 */
+    public deleteFavorite(id: string): boolean {
+        const folderPath = this._getFavoriteFolderPath();
+        const filePath = path.join(folderPath, `${id}.json`);
+        if (!fs.existsSync(filePath)) return false;
+        try {
+            fs.unlinkSync(filePath);
+            return true;
+        } catch {
+            return false;
+        }
     }
 }

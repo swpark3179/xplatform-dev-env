@@ -3,11 +3,13 @@ import { Panel, Button } from '../common';
 import { TomcatInitModal } from './TomcatInitModal';
 import { AppActions, AppState } from '@/hooks/useAppState';
 import { DeployListModal } from './DeployListModal';
+import { DeployFavoriteModal } from './DeployFavoriteModal';
 
 export const TomcatSetupPanel: React.FC<{ state: AppState,  actions: AppActions }> = ({ state, actions }) => {
     const [isInitModalOpen, setIsInitModalOpen] = useState(false);
     const [initModalRect, setInitModalRect] = useState<DOMRect | null>(null);
     const [isDeployListOpen, setIsDeployListOpen] = useState(false);
+    const [isDeployFavoriteOpen, setIsDeployFavoriteOpen] = useState(false);
     return (
         <>
             <Panel title="Tomcat 환경 설정">
@@ -46,6 +48,14 @@ export const TomcatSetupPanel: React.FC<{ state: AppState,  actions: AppActions 
                         >
                             배포목록관리 ({state.deploy.deployFileList.java.length + state.deploy.deployFileList.query.length}건)
                         </Button>
+                        <Button
+                            variant="secondary"
+                            className="header-btn"
+                            onClick={() => setIsDeployFavoriteOpen(true)}
+                            style={{ width: '100%', marginTop: '4px' }}
+                        >
+                            ★ 배포목록 즐겨찾기{state.deploy.activeFavoriteName ? ` [${state.deploy.activeFavoriteName}]` : ''}
+                        </Button>
                     </>
                 )}
             </Panel>
@@ -63,6 +73,14 @@ export const TomcatSetupPanel: React.FC<{ state: AppState,  actions: AppActions 
             <DeployListModal
                 isOpen={isDeployListOpen}
                 onClose={() => setIsDeployListOpen(false)}
+                state={state}
+                actions={actions}
+            />
+
+            {/* 배포목록 즐겨찾기 팝업 */}
+            <DeployFavoriteModal
+                isOpen={isDeployFavoriteOpen}
+                onClose={() => setIsDeployFavoriteOpen(false)}
                 state={state}
                 actions={actions}
             />

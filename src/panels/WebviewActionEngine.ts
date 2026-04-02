@@ -26,6 +26,11 @@ export interface IWebviewActionEngine {
     applyChangedFiles(): void;
     analyzeReferenceChain(javaFiles: string[]): Promise<void>;
     clearDeployFiles(): void;
+    loadFavorites(): void;
+    saveFavorite(name: string, java: string[], query: string[]): void;
+    overwriteFavorite(id: string, java: string[], query: string[]): void;
+    applyFavorite(id: string): void;
+    deleteFavorite(id: string): void;
     log?(message: string): void;
 }
 
@@ -99,6 +104,21 @@ export async function handleWebviewMessage(
             break;
         case 'clearDeployFiles':
             engine.clearDeployFiles();
+            break;
+        case 'loadFavorites':
+            engine.loadFavorites();
+            break;
+        case 'saveFavorite':
+            engine.saveFavorite(data.name, data.java, data.query);
+            break;
+        case 'overwriteFavorite':
+            engine.overwriteFavorite(data.id, data.java, data.query);
+            break;
+        case 'applyFavorite':
+            engine.applyFavorite(data.id);
+            break;
+        case 'deleteFavorite':
+            engine.deleteFavorite(data.id);
             break;
     }
 }

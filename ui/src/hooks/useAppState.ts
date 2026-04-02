@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { onMessage } from '../vscode';
-import type { Settings, ValidationState, TomcatCoreState, TomcatState, MessageFromExtension, TomcatRunningState } from '../types';
+import type { DeployFavorite, Settings, ValidationState, TomcatCoreState, TomcatState, MessageFromExtension, TomcatRunningState } from '../types';
 import { useAppActions } from './useAppActions';
 
 const initialSettings: Settings = {
@@ -61,6 +61,11 @@ export function useAppState() {
     const [searchResult, setSearchResult] = useState<string[]>([]);
     const [changedFiles, setChangedFiles] = useState<{ java: string[], query: string[] }>({ java: [], query: [] });
 
+    // 즐겨찾기
+    const [favorites, setFavorites] = useState<DeployFavorite[]>([]);
+    const [activeFavoriteId, setActiveFavoriteId] = useState<string | null>(null);
+    const [activeFavoriteName, setActiveFavoriteName] = useState<string | null>(null);
+
     // Tomcat 상태 업데이트는 별도로 만들어둠.
     const tomcatStateUpdate = (tomcatStateMsg: TomcatState) => {
         setTomcatCore({
@@ -115,6 +120,18 @@ export function useAppState() {
                 case 'referenceChainResult':
                     if (msg.deployFileList) setDeployFileList(msg.deployFileList);
                     break;
+                case 'favoritesListResult':
+                    if (msg.favorites) setFavorites(msg.favorites);
+                    break;
+                case 'favoriteApplied':
+                    if (msg.deployFileList) setDeployFileList(msg.deployFileList);
+                    if (msg.favoriteId !== undefined) setActiveFavoriteId(msg.favoriteId);
+                    if (msg.favoriteName !== undefined) setActiveFavoriteName(msg.favoriteName);
+                    break;
+                case 'favoriteCleared':
+                    setActiveFavoriteId(null);
+                    setActiveFavoriteName(null);
+                    break;
             }
         });
         return unsubscribe;
@@ -147,6 +164,9 @@ export function useAppState() {
             searchResult: searchResult,
             deployFileList: deployFileList,
             changedFiles: changedFiles,
+            favorites: favorites,
+            activeFavoriteId: activeFavoriteId,
+            activeFavoriteName: activeFavoriteName,
         },
     }), [
         currentPage,
@@ -161,6 +181,9 @@ export function useAppState() {
         deployFileList,
         searchResult,
         changedFiles,
+        favorites,
+        activeFavoriteId,
+        activeFavoriteName,
     ]);
 
     return { state, actions };

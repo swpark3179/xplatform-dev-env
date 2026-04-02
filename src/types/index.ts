@@ -12,6 +12,14 @@ export type TomcatDeployMode = 'default' | 'selected';
 export type DeployFileList = { java: string[], query: string[] };
 export type ChangedFiles = { java: string[], query: string[] };
 
+// ==================== Deploy Favorite ====================
+export interface DeployFavorite {
+    id: string;
+    name: string;
+    java: string[];
+    query: string[];
+}
+
 export interface ValidationItem {
     status: ValidationStatus;
     message: string;
@@ -80,4 +88,9 @@ export type MessageFromWebview =
     | { type: 'clearChangedFiles' }
     | { type: 'applyChangedFiles' }
     | { type: 'analyzeReferenceChain'; javaFiles: string[] }
-    | { type: 'clearDeployFiles' };
+    | { type: 'clearDeployFiles' }
+    | { type: 'loadFavorites' }
+    | { type: 'saveFavorite'; name: string; java: string[]; query: string[] }
+    | { type: 'overwriteFavorite'; id: string; java: string[]; query: string[] }
+    | { type: 'applyFavorite'; id: string }
+    | { type: 'deleteFavorite'; id: string };
