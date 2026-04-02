@@ -282,11 +282,11 @@ export class TomcatInitService {
 
     // hotswap-agent.properties 파일 생성
     private createHotSwapAgentProperties(_deployPath: string): void {
-        const fileContent = `extraClasspath=${_deployPath.replace(/\\/g, '/')}/WEB-INF/classes}
+        const fileContent = `extraClasspath=${_deployPath.replace(/\\/g, '/')}/WEB-INF/classes
 autoHotswap=true
 plugin.spring=true
 spring.bean_refresh=true`;
-        fs.writeFileSync(path.join(_deployPath, 'WEB-INF', 'hotswap-agent.properties'), fileContent, 'utf8');
+        fs.writeFileSync(path.join(_deployPath, 'WEB-INF', 'classes', 'hotswap-agent.properties'), fileContent, 'utf8');
     }
 
     // tomcat 배포 폴더의 web.xml 파일에 프로파일 반영
