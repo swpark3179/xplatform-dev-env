@@ -1,3 +1,20 @@
+// ==================== UX Studio ====================
+export interface UxServiceEntry {
+    prefixid: string;
+    type: string;
+    url: string;
+    version: string;
+    communicationversion: string;
+    cachelevel: string;
+}
+
+export interface UxStudioEnvConfig {
+    includeBase: boolean;       // 기본파일 포함
+    includeSample: boolean;     // 샘플파일 포함
+    customPrefixIds: string[];  // 커스텀 체크박스 선택된 prefixid 목록
+    urlAutoCorrect: boolean;    // url 자동보정
+}
+
 // ==================== Settings ====================
 export interface Settings {
     projectRoot: string;
@@ -93,4 +110,11 @@ export type MessageFromWebview =
     | { type: 'saveFavorite'; name: string; java: string[]; query: string[] }
     | { type: 'overwriteFavorite'; id: string; java: string[]; query: string[] }
     | { type: 'applyFavorite'; id: string }
-    | { type: 'deleteFavorite'; id: string };
+    | { type: 'deleteFavorite'; id: string }
+    // UX Studio
+    | { type: 'uxStudioInit' }
+    | { type: 'uxStudioApplySettings'; config: UxStudioEnvConfig }
+    | { type: 'uxStudioSearchXfdl' }
+    | { type: 'uxStudioConfirmFiles'; selectedFiles: string[] }
+    | { type: 'uxStudioLaunchXprj'; filePath: string }
+    | { type: 'uxStudioResetSetup' };

@@ -2,6 +2,7 @@ import { useAppState } from './hooks/useAppState';
 import SettingsPage from './pages/SettingsPage';
 import MainPage from './pages/MainPage';
 import ProjectSettingsPage from './pages/ProjectSettingsPage';
+import UxStudioPage from './pages/UxStudioPage';
 import { useEffect } from 'react';
 
 function App() {
@@ -26,6 +27,8 @@ function App() {
                 return <MainPage state={state} actions={actions} />;
             case 'project-settings':
                 return <ProjectSettingsPage actions={actions} />;
+            case 'ux-studio':
+                return <UxStudioPage state={state} actions={actions} />;
             case 'settings':
             default:
                 return <SettingsPage state={state} actions={actions} />;

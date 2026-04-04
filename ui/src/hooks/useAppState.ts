@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { onMessage } from '../vscode';
-import type { DeployFavorite, Settings, ValidationState, TomcatCoreState, TomcatState, MessageFromExtension, TomcatRunningState } from '../types';
+import type { DeployFavorite, Settings, ValidationState, TomcatCoreState, TomcatState, MessageFromExtension, TomcatRunningState, UxServiceEntry, UxStudioEnvConfig } from '../types';
 import { useAppActions } from './useAppActions';
 
 const initialSettings: Settings = {
@@ -65,6 +65,14 @@ export function useAppState() {
     const [favorites, setFavorites] = useState<DeployFavorite[]>([]);
     const [activeFavoriteId, setActiveFavoriteId] = useState<string | null>(null);
     const [activeFavoriteName, setActiveFavoriteName] = useState<string | null>(null);
+
+    // UX Studio
+    const [uxIsDevMode, setUxIsDevMode] = useState<boolean | null>(null); // null = 미확인
+    const [uxStudioStatus, setUxStudioStatus] = useState<'new' | 'configured' | null>(null);
+    const [uxServices, setUxServices] = useState<UxServiceEntry[]>([]);
+    const [uxEnvConfig, setUxEnvConfig] = useState<UxStudioEnvConfig | null>(null);
+    const [uxXfdlFiles, setUxXfdlFiles] = useState<string[]>([]);
+    const [uxXprjFiles, setUxXprjFiles] = useState<string[]>([]);
 
     // Tomcat 상태 업데이트는 별도로 만들어둠.
     const tomcatStateUpdate = (tomcatStateMsg: TomcatState) => {
@@ -132,6 +140,20 @@ export function useAppState() {
                     setActiveFavoriteId(null);
                     setActiveFavoriteName(null);
                     break;
+                case 'uxStudioResult':
+                    if (msg.uxIsDevMode !== undefined) setUxIsDevMode(msg.uxIsDevMode);
+                    if (msg.uxStudioStatus !== undefined) setUxStudioStatus(msg.uxStudioStatus);
+                    if (msg.uxServices !== undefined) setUxServices(msg.uxServices);
+                    if (msg.uxEnvConfig !== undefined) setUxEnvConfig(msg.uxEnvConfig);
+                    if (msg.uxXfdlFiles !== undefined) setUxXfdlFiles(msg.uxXfdlFiles);
+                    if (msg.uxXprjFiles !== undefined) setUxXprjFiles(msg.uxXprjFiles);
+                    break;
+                case 'uxStudioXfdlResult':
+                    if (msg.uxXfdlFiles !== undefined) setUxXfdlFiles(msg.uxXfdlFiles);
+                    break;
+                case 'uxStudioXprjResult':
+                    if (msg.uxXprjFiles !== undefined) setUxXprjFiles(msg.uxXprjFiles);
+                    break;
             }
         });
         return unsubscribe;
@@ -144,6 +166,7 @@ export function useAppState() {
         setDeployFileList,
         setTomcatIsHotReloading,
         setChangedFiles,
+        setUxStudioStatus,
     });
 
     // 계층적 state: 소스 이해·코드 간결화.
@@ -168,6 +191,14 @@ export function useAppState() {
             activeFavoriteId: activeFavoriteId,
             activeFavoriteName: activeFavoriteName,
         },
+        uxStudio: {
+            isDevMode: uxIsDevMode,
+            status: uxStudioStatus,
+            services: uxServices,
+            envConfig: uxEnvConfig,
+            xfdlFiles: uxXfdlFiles,
+            xprjFiles: uxXprjFiles,
+        },
     }), [
         currentPage,
         settings,
@@ -184,6 +215,12 @@ export function useAppState() {
         favorites,
         activeFavoriteId,
         activeFavoriteName,
+        uxIsDevMode,
+        uxStudioStatus,
+        uxServices,
+        uxEnvConfig,
+        uxXfdlFiles,
+        uxXprjFiles,
     ]);
 
     return { state, actions };

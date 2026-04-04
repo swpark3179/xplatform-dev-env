@@ -32,6 +32,13 @@ export interface IWebviewActionEngine {
     applyFavorite(id: string): void;
     deleteFavorite(id: string): void;
     log?(message: string): void;
+    // UX Studio
+    uxStudioInit(): Promise<void>;
+    uxStudioApplySettings(config: import('../types').UxStudioEnvConfig): Promise<void>;
+    uxStudioSearchXfdl(): Promise<void>;
+    uxStudioConfirmFiles(selectedFiles: string[]): Promise<void>;
+    uxStudioLaunchXprj(filePath: string): void;
+    uxStudioResetSetup(): void;
 }
 
 /**
@@ -119,6 +126,25 @@ export async function handleWebviewMessage(
             break;
         case 'deleteFavorite':
             engine.deleteFavorite(data.id);
+            break;
+        // UX Studio
+        case 'uxStudioInit':
+            await engine.uxStudioInit();
+            break;
+        case 'uxStudioApplySettings':
+            await engine.uxStudioApplySettings(data.config);
+            break;
+        case 'uxStudioSearchXfdl':
+            await engine.uxStudioSearchXfdl();
+            break;
+        case 'uxStudioConfirmFiles':
+            await engine.uxStudioConfirmFiles(data.selectedFiles);
+            break;
+        case 'uxStudioLaunchXprj':
+            engine.uxStudioLaunchXprj(data.filePath);
+            break;
+        case 'uxStudioResetSetup':
+            engine.uxStudioResetSetup();
             break;
     }
 }

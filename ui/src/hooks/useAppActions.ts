@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { postMessage } from '../vscode';
 import type { ProjectSettingsOptions, TomcatDeployMode } from '../types';
 
-export type PageKind = 'settings' | 'main' | 'project-settings';
+export type PageKind = 'settings' | 'main' | 'project-settings' | 'ux-studio';
 
 export interface UseAppActionsDeps {
     setCurrentPage: (page: PageKind) => void;
@@ -11,6 +11,7 @@ export interface UseAppActionsDeps {
     setDeployFileList: (value: { java: string[], query: string[] }) => void;
     setTomcatIsHotReloading: (value: boolean) => void;
     setChangedFiles: (value: { java: string[], query: string[] }) => void;
+    setUxStudioStatus: (value: 'new' | 'configured' | null) => void;
 }
 
 /**
@@ -25,6 +26,7 @@ export function useAppActions(deps: UseAppActionsDeps) {
         setDeployFileList,
         setTomcatIsHotReloading,
         setChangedFiles,
+        setUxStudioStatus,
     } = deps;
 
     const navigation = {
@@ -36,6 +38,9 @@ export function useAppActions(deps: UseAppActionsDeps) {
         }, [setCurrentPage]),
         goToProjectSettings: useCallback(() => {
             setCurrentPage('project-settings');
+        }, [setCurrentPage]),
+        goToUxStudio: useCallback(() => {
+            setCurrentPage('ux-studio');
         }, [setCurrentPage]),
     };
 
@@ -141,6 +146,28 @@ export function useAppActions(deps: UseAppActionsDeps) {
         }, []),
     };
 
+    const uxStudio = {
+        init: useCallback(() => {
+            postMessage({ type: 'uxStudioInit' });
+        }, []),
+        applySettings: useCallback((config: import('../types').UxStudioEnvConfig) => {
+            postMessage({ type: 'uxStudioApplySettings', config } as any);
+        }, []),
+        searchXfdl: useCallback(() => {
+            postMessage({ type: 'uxStudioSearchXfdl' });
+        }, []),
+        confirmFiles: useCallback((selectedFiles: string[]) => {
+            postMessage({ type: 'uxStudioConfirmFiles', selectedFiles } as any);
+        }, []),
+        launchXprj: useCallback((filePath: string) => {
+            postMessage({ type: 'uxStudioLaunchXprj', filePath } as any);
+        }, []),
+        resetSetup: useCallback(() => {
+            setUxStudioStatus(null); // 로칼 상태 먼저 전환
+            postMessage({ type: 'uxStudioResetSetup' });
+        }, [setUxStudioStatus]),
+    };
+
     return {
         navigation,
         settings,
@@ -148,5 +175,6 @@ export function useAppActions(deps: UseAppActionsDeps) {
         tomcat,
         deploy,
         project,
+        uxStudio,
     };
 }

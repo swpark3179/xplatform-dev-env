@@ -9,6 +9,7 @@ import { TomcatStatusBar } from '../utils/TomcatStatusBar';
 import { TomcatInitService } from '../services/TomcatInitService';
 import { DeployService } from '../services/DeployService';
 import { ReferenceAnalysisProvider } from './ReferenceAnalysisProvider';
+import { UxStudioService } from '../services/UxStudioService';
 
 // 콘솔 출력 채널
 const OUTPUT_CHANNEL_NAME = 'XPlatform 통합 개발환경';
@@ -23,6 +24,7 @@ export class UnifiedPanelProvider extends WebviewProvider {
     private _tomcatInitService: TomcatInitService; // Tomcat 초기화 서비스 (메인 화면)
     private _deployService: DeployService; // 배포 서비스
     private _tomcatStatusBar: TomcatStatusBar; // Tomcat 실행 시 하단 상태바 서비스 (메인 화면)
+    private _uxStudioService: UxStudioService; // UX Studio 관리 서비스
     private _settings: Settings; // Tool Path 등 설정 상태값 관리
     private _validation: ValidationState; // Tool 검증 상태값 관리
     private _tomcatState: TomcatState;  // tomcat 관련 상태값 관리
@@ -85,6 +87,7 @@ export class UnifiedPanelProvider extends WebviewProvider {
         this._deployService = new DeployService(this._log, this._settings, this._deployFileList, this._changedFiles, this._fileWatchers, this._tomcatState, this._gradleService, this._tomcatService);
         this._tomcatInitService.setDeployService(this._deployService);
         this._tomcatStatusBar = new TomcatStatusBar();
+        this._uxStudioService = new UxStudioService(this._log, this._settings.projectRoot);
         if (context) {
             context.subscriptions.push(this._tomcatStatusBar);
             context.subscriptions.push(new vscode.Disposable(() => this.dispose()));
@@ -94,6 +97,7 @@ export class UnifiedPanelProvider extends WebviewProvider {
     /** 확장 비활성화(VS Code 종료 등) 시 호출. FileWatcher 등 리소스 해제로 메모리 누수 방지 */
     public dispose(): void {
         this._deployService.stopFileWatcher();
+        this._uxStudioService.stopMyChangesWatcher();
     }
 
     // UI 로딩이 완료되었을 때 최초 1회 수행
@@ -286,6 +290,71 @@ export class UnifiedPanelProvider extends WebviewProvider {
                 this._postMessage({ type: 'favoritesListResult', favorites });
             },
             log: (message) => this._log.appendLine(message), // 로그 출력 핸들러
+            // UX Studio
+            uxStudioInit: async () => {
+                this._uxStudioService.updateProjectRoot(this._settings.projectRoot);
+                const isDevMode = this._uxStudioService.checkDevMode();
+                if (!isDevMode) {
+                    this._postMessage({ type: 'uxStudioResult', uxIsDevMode: false });
+                    return;
+                }
+                const status = this._uxStudioService.checkSetupStatus();
+                const allServices = this._uxStudioService.parseDefaultTypedef();
+                const customServices = this._uxStudioService.getCustomServices(allServices);
+                const envConfig = status === 'configured' ? this._uxStudioService.loadEnvConfig() : null;
+                const xprjFiles = this._uxStudioService.getXprjFiles();
+                const xfdlFiles = status === 'configured' ? this._uxStudioService.searchXfdlFiles() : [];
+                if (status === 'configured') {
+                    this._uxStudioService.startMyChangesWatcher();
+                }
+                this._postMessage({
+                    type: 'uxStudioResult',
+                    uxIsDevMode: true,
+                    uxStudioStatus: status,
+                    uxServices: allServices,
+                    uxEnvConfig: envConfig ?? undefined,
+                    uxXfdlFiles: xfdlFiles,
+                    uxXprjFiles: xprjFiles,
+                });
+            },
+            uxStudioApplySettings: async (config) => {
+                const allServices = this._uxStudioService.parseDefaultTypedef();
+                await this._uxStudioService.applySettings(config, allServices);
+                const xprjFiles = this._uxStudioService.getXprjFiles();
+                const xfdlFiles = this._uxStudioService.searchXfdlFiles();
+                this._uxStudioService.startMyChangesWatcher();
+                this._postMessage({
+                    type: 'uxStudioResult',
+                    uxIsDevMode: true,
+                    uxStudioStatus: 'configured' as const,
+                    uxEnvConfig: config,
+                    uxXfdlFiles: xfdlFiles,
+                    uxXprjFiles: xprjFiles,
+                });
+            },
+            uxStudioSearchXfdl: async () => {
+                const xfdlFiles = this._uxStudioService.searchXfdlFiles();
+                this._postMessage({ type: 'uxStudioXfdlResult', uxXfdlFiles: xfdlFiles });
+            },
+            uxStudioConfirmFiles: async (selectedFiles) => {
+                this._uxStudioService.confirmFiles(selectedFiles);
+                const xprjFiles = this._uxStudioService.getXprjFiles();
+                this._postMessage({ type: 'uxStudioXprjResult', uxXprjFiles: xprjFiles });
+            },
+            uxStudioLaunchXprj: (filePath) => {
+                this._uxStudioService.launchXprj(filePath);
+            },
+            uxStudioResetSetup: () => {
+                this._uxStudioService.stopMyChangesWatcher();
+                this._uxStudioService.resetSetup();
+                const allServices = this._uxStudioService.parseDefaultTypedef();
+                this._postMessage({
+                    type: 'uxStudioResult',
+                    uxIsDevMode: true,
+                    uxStudioStatus: 'new' as const,
+                    uxServices: allServices,
+                });
+            },
         };
     }
 

@@ -1,3 +1,20 @@
+// ==================== UX Studio ====================
+export interface UxServiceEntry {
+    prefixid: string;
+    type: string;
+    url: string;
+    version: string;
+    communicationversion: string;
+    cachelevel: string;
+}
+
+export interface UxStudioEnvConfig {
+    includeBase: boolean;
+    includeSample: boolean;
+    customPrefixIds: string[];
+    urlAutoCorrect: boolean;
+}
+
 // ==================== Settings ====================
 export interface Settings {
     projectRoot: string;
@@ -75,6 +92,13 @@ export interface MessageFromExtension {
     favorites?: DeployFavorite[];
     favoriteId?: string;
     favoriteName?: string;
+    // UX Studio
+    uxIsDevMode?: boolean;
+    uxStudioStatus?: 'new' | 'configured';
+    uxServices?: UxServiceEntry[];
+    uxEnvConfig?: UxStudioEnvConfig;
+    uxXfdlFiles?: string[];
+    uxXprjFiles?: string[];
 }
 
 export interface ProjectSettingsOptions {
