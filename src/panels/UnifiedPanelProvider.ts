@@ -260,20 +260,20 @@ export class UnifiedPanelProvider extends WebviewProvider {
                 this._deployService.clearDeployFiles();
                 this._postMessage({ type: 'favoriteCleared' }); // 즐겨찾기 활성 상태 리셋
             },
-            loadFavorites: () => { // 즐겨찾기 목록 조회 (리프레시 버튼 클릭)
-                const favorites = this._deployService.loadFavorites();
+            loadFavorites: async () => { // 즐겨찾기 목록 조회 (리프레시 버튼 클릭)
+                const favorites = await this._deployService.loadFavorites();
                 this._postMessage({ type: 'favoritesListResult', favorites });
             },
-            saveFavorite: (name, java, query) => { // 새 즐겨찾기 저장
+            saveFavorite: async (name, java, query) => { // 새 즐겨찾기 저장
                 const saved = this._deployService.saveFavorite(name, java, query);
-                const favorites = this._deployService.loadFavorites();
+                const favorites = await this._deployService.loadFavorites();
                 this._postMessage({ type: 'favoriteApplied', deployFileList: this._deployFileList, favoriteId: saved.id, favoriteName: saved.name });
                 this._postMessage({ type: 'favoritesListResult', favorites });
             },
-            overwriteFavorite: (id, java, query) => { // 즐겨찾기 덮어쓰기
+            overwriteFavorite: async (id, java, query) => { // 즐겨찾기 덮어쓰기
                 const updated = this._deployService.overwriteFavorite(id, java, query);
                 if (updated) {
-                    const favorites = this._deployService.loadFavorites();
+                    const favorites = await this._deployService.loadFavorites();
                     this._postMessage({ type: 'favoriteApplied', deployFileList: this._deployFileList, favoriteId: updated.id, favoriteName: updated.name });
                     this._postMessage({ type: 'favoritesListResult', favorites });
                 }
@@ -284,9 +284,9 @@ export class UnifiedPanelProvider extends WebviewProvider {
                     this._postMessage({ type: 'favoriteApplied', deployFileList: this._deployFileList, favoriteId: applied.id, favoriteName: applied.name });
                 }
             },
-            deleteFavorite: (id) => { // 즐겨찾기 삭제
+            deleteFavorite: async (id) => { // 즐겨찾기 삭제
                 this._deployService.deleteFavorite(id);
-                const favorites = this._deployService.loadFavorites();
+                const favorites = await this._deployService.loadFavorites();
                 this._postMessage({ type: 'favoritesListResult', favorites });
             },
             log: (message) => this._log.appendLine(message), // 로그 출력 핸들러
@@ -379,7 +379,7 @@ export class UnifiedPanelProvider extends WebviewProvider {
         if (!this._tomcatState.running && this._tomcatService.areTomcatPortsInUse()) this._tomcatState.portsBlocked = true; // 타 프로세스가 7001, 12001 포트를 사용 중이면 포트 블록 상태로 설정
         this._updateTomcatStatusBar();
         // 즐겨찾기 목록 최초 로드
-        const favorites = this._deployService.loadFavorites();
+        const favorites = await this._deployService.loadFavorites();
         this._postMessage({ type: 'favoritesListResult', favorites });
         if (this._validation.allValid) this._postMessage({ type: 'navigateTo', page: 'main', validationState: this._validation });
     }

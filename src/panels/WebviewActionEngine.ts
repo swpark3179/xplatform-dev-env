@@ -26,11 +26,11 @@ export interface IWebviewActionEngine {
     applyChangedFiles(): Promise<void>;
     analyzeReferenceChain(javaFiles: string[]): Promise<void>;
     clearDeployFiles(): void;
-    loadFavorites(): void;
-    saveFavorite(name: string, java: string[], query: string[]): void;
-    overwriteFavorite(id: string, java: string[], query: string[]): void;
+    loadFavorites(): Promise<void> | void;
+    saveFavorite(name: string, java: string[], query: string[]): Promise<void> | void;
+    overwriteFavorite(id: string, java: string[], query: string[]): Promise<void> | void;
     applyFavorite(id: string): void;
-    deleteFavorite(id: string): void;
+    deleteFavorite(id: string): Promise<void> | void;
     log?(message: string): void;
     // UX Studio
     uxStudioInit(): Promise<void>;
@@ -113,19 +113,19 @@ export async function handleWebviewMessage(
             engine.clearDeployFiles();
             break;
         case 'loadFavorites':
-            engine.loadFavorites();
+            await engine.loadFavorites();
             break;
         case 'saveFavorite':
-            engine.saveFavorite(data.name, data.java, data.query);
+            await engine.saveFavorite(data.name, data.java, data.query);
             break;
         case 'overwriteFavorite':
-            engine.overwriteFavorite(data.id, data.java, data.query);
+            await engine.overwriteFavorite(data.id, data.java, data.query);
             break;
         case 'applyFavorite':
             engine.applyFavorite(data.id);
             break;
         case 'deleteFavorite':
-            engine.deleteFavorite(data.id);
+            await engine.deleteFavorite(data.id);
             break;
         // UX Studio
         case 'uxStudioInit':
