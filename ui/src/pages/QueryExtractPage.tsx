@@ -40,7 +40,7 @@ function highlightSql(sql: string): string {
     const kws = 'SELECT|FROM|WHERE|AND|OR|NOT|IN|EXISTS|BETWEEN|LIKE|ORDER BY|GROUP BY|HAVING|INSERT INTO|VALUES|UPDATE|SET|DELETE|JOIN|LEFT|RIGHT|INNER|OUTER|ON|AS|IS|NULL|CASE|WHEN|THEN|ELSE|END|DISTINCT|UNION|ALL|LIMIT|OFFSET|COUNT|SUM|AVG|MAX|MIN|CREATE|TABLE|DROP|ALTER|INDEX';
     e = e.replace(
         new RegExp(`(<span[^>]*>[\\s\\S]*?<\\/span>)|\\b(${kws})\\b`, 'gi'),
-        (m, tag, kw) => (tag ? tag : `<span class="qe-kw">${kw.toUpperCase()}</span>`)
+        (_m, tag, kw) => (tag ? tag : `<span class="qe-kw">${kw.toUpperCase()}</span>`)
     );
     return e;
 }
