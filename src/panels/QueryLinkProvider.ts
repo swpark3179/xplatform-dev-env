@@ -31,16 +31,16 @@ export class QueryLinkProvider implements vscode.DocumentLinkProvider {
             const endPos = document.positionAt(endOffset);
             const range = new vscode.Range(startPos, endPos);
 
-            // 커스텀 명령어 URI: dev-helper.openQueryViewer 호출
+            // 커스텀 명령어 URI: dev-helper.openQueryExtract 호출
             const commandUri = vscode.Uri.parse(
-                `command:dev-helper.openQueryViewer?${encodeURIComponent(JSON.stringify({
+                `command:dev-helper.openQueryExtract?${encodeURIComponent(JSON.stringify({
                     filePath: document.uri.fsPath,
                     queryId: idValue,
                 }))}`
             );
 
             const link = new vscode.DocumentLink(range, commandUri);
-            link.tooltip = `Query Viewer: ${idValue}`;
+            link.tooltip = `Query Extract: ${idValue}`;
             links.push(link);
         }
 

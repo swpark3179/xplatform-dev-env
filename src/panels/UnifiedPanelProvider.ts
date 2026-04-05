@@ -254,7 +254,7 @@ export class UnifiedPanelProvider extends WebviewProvider {
             },
             analyzeReferenceChain: async (javaFiles: string[]) => {
                 await this._deployService.analyzeReferenceChain(javaFiles);
-                this._postMessage({type: 'mainStateUpdate', deployFileList: this._deployFileList});
+                this._postMessage({ type: 'mainStateUpdate', deployFileList: this._deployFileList });
             },
             clearDeployFiles: () => { // 배포목록관리 데이터 초기화
                 this._deployService.clearDeployFiles();

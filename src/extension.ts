@@ -3,6 +3,7 @@ import { UnifiedPanelProvider } from './panels';
 import { DeployDecorationProvider } from './panels/DeployDecorationProvider';
 import { QueryLinkProvider } from './panels/QueryLinkProvider';
 import { QueryViewerPanel } from './panels/QueryViewerPanel';
+import { QueryExtractPanel } from './panels/QueryExtractPanel';
 import { ReferenceAnalysisProvider } from './panels/ReferenceAnalysisProvider';
 import { ReferenceGraphPanel } from './panels/ReferenceGraphPanel';
 
@@ -57,11 +58,26 @@ export function activate(context: vscode.ExtensionContext) {
         new QueryLinkProvider()
     );
 
-    // Query Viewer 명령어 등록
+    // Query Viewer 명령어 등록 (기존 유지)
     const openQueryViewerCommand = vscode.commands.registerCommand(
         'dev-helper.openQueryViewer',
         (args: { filePath: string; queryId: string }) => {
             QueryViewerPanel.show(context.extensionUri, args.filePath, args.queryId);
+        }
+    );
+
+    // Query Extract 명령어 등록 (Ctrl+클릭 → React 기반 패널)
+    const openQueryExtractCommand = vscode.commands.registerCommand(
+        'dev-helper.openQueryExtract',
+        (args: { filePath: string; queryId: string }) => {
+            // jdkPath는 panelProvider가 관리하는 settings에서 동적으로 읽음
+            const jdkPath: string = (panelProvider as any)._settings?.jdkPath ?? '';
+            QueryExtractPanel.show(
+                context.extensionUri,
+                args.filePath,
+                args.queryId,
+                jdkPath,
+            );
         }
     );
 
@@ -96,6 +112,7 @@ export function activate(context: vscode.ExtensionContext) {
         includeInDeployTargetCommand,
         queryLinkProvider,
         openQueryViewerCommand,
+        openQueryExtractCommand,
         analyzeReferenceCommand
     );
 }
