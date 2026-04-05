@@ -468,21 +468,24 @@ export class DeployService {
     }
 
     /** 즐겨찾기 목록 로드 (이름순 정렬). 최초 플러그인 로드 및 리프레시 버튼 클릭 시 호출 */
-    public loadFavorites(): DeployFavorite[] {
+    public async loadFavorites(): Promise<DeployFavorite[]> {
         try {
             const folderPath = this._getFavoriteFolderPath();
             if (!fs.existsSync(folderPath)) return [];
-            const files = fs.readdirSync(folderPath).filter(f => f.endsWith('.json'));
-            const favorites: DeployFavorite[] = [];
-            for (const file of files) {
+            const files = await fs.promises.readdir(folderPath);
+            const jsonFiles = files.filter(f => f.endsWith('.json'));
+
+            const favoritesPromises = jsonFiles.map(async (file) => {
                 try {
-                    const raw = fs.readFileSync(path.join(folderPath, file), 'utf8');
-                    const data = JSON.parse(raw) as DeployFavorite;
-                    favorites.push(data);
+                    const raw = await fs.promises.readFile(path.join(folderPath, file), 'utf8');
+                    return JSON.parse(raw) as DeployFavorite;
                 } catch {
                     // 개별 파일 파싱 실패 시 스킵
+                    return null;
                 }
-            }
+            });
+
+            const favorites = (await Promise.all(favoritesPromises)).filter((f): f is DeployFavorite => f !== null);
             return favorites.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
         } catch {
             return [];
