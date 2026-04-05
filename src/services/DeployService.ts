@@ -219,29 +219,33 @@ export class DeployService {
     }
 
     // tomcat 기동 중 변경된 파일을 로컬 서버에 적용
-    public applyChangedFiles(): void {
+    public async applyChangedFiles(): Promise<void> {
         const hasJavaChanges = this._changedFiles.java.length > 0;
         this._log.show(true);
         this._log.appendLine('[배포 적용] 변경 파일 Tomcat 반영 시작...');
 
         if (hasJavaChanges) {
             this._log.appendLine('[배포 적용] Java 파일 변경 있음. gradle classes 실행 후 복사합니다.');
-            this._gradleService.buildClassesWithCallback((success) => {
-                if (success) {
-                    this._log.appendLine('[배포 적용] gradle classes 성공. 복사 단계 진행.');
-                } else {
-                    this._log.appendLine('[배포 적용] gradle classes 실패. 복사 단계는 그대로 진행합니다.');
-                }
-                this._doCopyAndClear();
+            return new Promise<void>((resolve) => {
+                this._gradleService.buildClassesWithCallback(async (success) => {
+                    if (success) {
+                        this._log.appendLine('[배포 적용] gradle classes 성공. 복사 단계 진행.');
+                    } else {
+                        this._log.appendLine('[배포 적용] gradle classes 실패. 복사 단계는 그대로 진행합니다.');
+                    }
+                    await this._doCopyAndClear();
+                    resolve();
+                });
             });
         } else {
-            this._doCopyAndClear();
+            await this._doCopyAndClear();
         }
     }
 
     // 복사 수행 후 변경 목록 초기화 (성공/실패와 관계없이 호출)
-    private _doCopyAndClear(): void {
+    private async _doCopyAndClear(): Promise<void> {
         const classesPath = path.join(this._tomcatState.deployPath, 'WEB-INF', 'classes');
+        const copyPromises: Promise<void>[] = [];
 
         // 1. Java .class 파일 복사 (inner class 포함)
         for (const javaFile of this._changedFiles.java) {
@@ -250,20 +254,29 @@ export class DeployService {
             const baseClassName = relativePath.replace(/\.java$/, '');
             const classDir = path.join(this._settings.projectRoot, 'target', 'classes', path.dirname(baseClassName));
             const baseName = path.basename(baseClassName);
-            if (fs.existsSync(classDir)) {
-                const files = fs.readdirSync(classDir);
-                const matchingFiles = files.filter(f => f === `${baseName}.class` || f.startsWith(`${baseName}$`));
-                for (const classFile of matchingFiles) {
-                    const srcClassPath = path.join(classDir, classFile);
-                    const destClassPath = path.join(classesPath, path.dirname(baseClassName), classFile);
-                    const destDir = path.dirname(destClassPath);
-                    if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
-                    fs.copyFileSync(srcClassPath, destClassPath);
-                    this._log.appendLine(`  [Java] ${path.dirname(baseClassName)}/${classFile} 복사됨`);
+
+            copyPromises.push((async () => {
+                try {
+                    const files = await fs.promises.readdir(classDir);
+                    const matchingFiles = files.filter(f => f === `${baseName}.class` || f.startsWith(`${baseName}$`));
+
+                    const classCopyPromises = matchingFiles.map(async classFile => {
+                        const srcClassPath = path.join(classDir, classFile);
+                        const destClassPath = path.join(classesPath, path.dirname(baseClassName), classFile);
+                        const destDir = path.dirname(destClassPath);
+                        await fs.promises.mkdir(destDir, { recursive: true });
+                        await fs.promises.copyFile(srcClassPath, destClassPath);
+                        this._log.appendLine(`  [Java] ${path.dirname(baseClassName)}/${classFile} 복사됨`);
+                    });
+                    await Promise.all(classCopyPromises);
+                } catch (err: any) {
+                    if (err.code === 'ENOENT') {
+                        this._log.appendLine(`  [경고] class 디렉터리 없음: ${classDir} 복사 건너뜀`);
+                    } else {
+                        throw err;
+                    }
                 }
-            } else {
-                this._log.appendLine(`  [경고] class 디렉터리 없음: ${classDir} 복사 건너뜀`);
-            }
+            })());
         }
 
         // 2. Query 파일 복사
@@ -272,12 +285,19 @@ export class DeployService {
             const relativePath = normalizedQueryFile.replace(`${this._settings.projectRoot.replace(/\\/g, '/')}/src/query/`, '');
             const destPath = path.join(classesPath, relativePath);
             const destDir = path.dirname(destPath);
-            if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
-            if (fs.existsSync(queryFile)) {
-                fs.copyFileSync(queryFile, destPath);
-                this._log.appendLine(`  [Query] ${relativePath} 복사됨`);
-            }
+
+            copyPromises.push((async () => {
+                try {
+                    await fs.promises.mkdir(destDir, { recursive: true });
+                    await fs.promises.copyFile(queryFile, destPath);
+                    this._log.appendLine(`  [Query] ${relativePath} 복사됨`);
+                } catch (err: any) {
+                    if (err.code !== 'ENOENT') throw err;
+                }
+            })());
         }
+
+        await Promise.all(copyPromises);
 
         this._log.appendLine('[배포 적용] 변경 파일 Tomcat 반영 완료.');
         this._changedFiles.java.length = 0;

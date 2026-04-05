@@ -23,7 +23,7 @@ export interface IWebviewActionEngine {
     handleSetupHomeSettings(): Promise<void>;
     updateDeployFiles(deployFileList: { java: string[], query: string[] }, targetFile: string, fileType: string, changeType: string): void;
     searchDeployFiles(keyword: string): Promise<void>;
-    applyChangedFiles(): void;
+    applyChangedFiles(): Promise<void>;
     analyzeReferenceChain(javaFiles: string[]): Promise<void>;
     clearDeployFiles(): void;
     loadFavorites(): void;
@@ -104,7 +104,7 @@ export async function handleWebviewMessage(
             await engine.searchDeployFiles(data.keyword);
             break;
         case 'applyChangedFiles':
-            engine.applyChangedFiles();
+            await engine.applyChangedFiles();
             break;
         case 'analyzeReferenceChain':
             await engine.analyzeReferenceChain(data.javaFiles);

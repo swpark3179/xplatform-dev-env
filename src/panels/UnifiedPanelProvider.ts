@@ -248,8 +248,8 @@ export class UnifiedPanelProvider extends WebviewProvider {
                 this._deployService.updateDeployList(deployFileList, targetFile, fileType, changeType);
                 if (this._tomcatState.running && changeType === 'add') this._postMessage({ type: 'changedFilesUpdate', changedFiles: this._changedFiles });
             },
-            applyChangedFiles: () => { // tomcat 기동 중 변경된 파일을 로컬 서버에 적용
-                this._deployService.applyChangedFiles();
+            applyChangedFiles: async () => { // tomcat 기동 중 변경된 파일을 로컬 서버에 적용
+                await this._deployService.applyChangedFiles();
                 this._postMessage({ type: 'changedFilesUpdate', changedFiles: this._changedFiles });
             },
             analyzeReferenceChain: async (javaFiles: string[]) => {
