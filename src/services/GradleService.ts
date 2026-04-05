@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { spawn, execSync, ChildProcess } from 'child_process';
+import { spawn, execFileSync, ChildProcess } from 'child_process';
 import { Settings } from '../types';
 
 // Gradle 빌드 명령 실행 서비스
@@ -100,7 +100,7 @@ export class GradleService {
         if (proc?.pid) {
             try {
                 if (process.platform === 'win32') {
-                    execSync(`taskkill /PID ${proc.pid} /T /F`, { stdio: 'pipe', encoding: 'utf8' });
+                    execFileSync('taskkill', ['/PID', proc.pid.toString(), '/T', '/F'], { stdio: 'pipe', encoding: 'utf8' });
                 } else {
                     proc.kill('SIGKILL');
                 }
