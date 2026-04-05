@@ -5,7 +5,7 @@ import UxStudioFilePanel from '../components/ux-studio/UxStudioFilePanel';
 import UxStudioLaunchPanel from '../components/ux-studio/UxStudioLaunchPanel';
 
 const UxStudioPage: React.FC<{ state: AppState; actions: AppActions }> = ({ state, actions }) => {
-    const { status, services, envConfig, xfdlFiles, xprjFiles } = state.uxStudio;
+    const { status, services, xfdlFiles, xprjFiles } = state.uxStudio;
 
     // 패널 진입 시 초기화 요청
     useEffect(() => {

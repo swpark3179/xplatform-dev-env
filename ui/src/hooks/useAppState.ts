@@ -39,7 +39,7 @@ const initialTomcatRunning: TomcatRunningState = {
 // 앱 전역 상태 관리 훅
 export function useAppState() {
     // 네비게이션
-    const [currentPage, setCurrentPage] = useState<'settings' | 'main' | 'project-settings'>('settings');
+    const [currentPage, setCurrentPage] = useState<'settings' | 'main' | 'project-settings' | 'ux-studio'>('settings');
 
     // 설정·검증
     const [settings, setSettings] = useState<Settings>(initialSettings);
@@ -114,7 +114,7 @@ export function useAppState() {
                     break;
                 case 'navigateTo':
                     if (msg.validation) setValidation(msg.validation);
-                    if (msg.page) setCurrentPage(msg.page as 'settings' | 'main' | 'project-settings');
+                    if (msg.page) setCurrentPage(msg.page as 'settings' | 'main' | 'project-settings' | 'ux-studio');
                     break;
                 case 'tomcatStateUpdate':
                     if (msg.tomcat) tomcatStateUpdate(msg.tomcat);
