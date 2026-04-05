@@ -41,9 +41,9 @@ export class DeployService {
         const pattern = new vscode.RelativePattern(this._settings.projectRoot, `src/{java,query}/**/*${keyword}*.*`);
         const uris = await vscode.workspace.findFiles(pattern, '**/*Config.java', 50); // 두번째 인자는 제외파일, 세번째 인자는 최대 검색 건수
         const result = uris.map(u => u.fsPath.replace(/\\/g, '/'));
-        const currentJavaFiles = this._deployFileList.java;
-        const currentQueryFiles = this._deployFileList.query;
-        const filtered = result.filter(r => !currentJavaFiles.includes(r) && !currentQueryFiles.includes(r));
+        const currentJavaSet = new Set(this._deployFileList.java);
+        const currentQuerySet = new Set(this._deployFileList.query);
+        const filtered = result.filter(r => !currentJavaSet.has(r) && !currentQuerySet.has(r));
         return filtered;
     }
 
@@ -375,8 +375,12 @@ export class DeployService {
                 if (added.length > 0) {
                     progress.report({ message: '2단계: 배포 목록에 추가 중...' });
                     const newJavaList = [...this._deployFileList.java];
+                    const newJavaSet = new Set(newJavaList);
                     for (const f of added) {
-                        if (!newJavaList.includes(f)) newJavaList.push(f);
+                        if (!newJavaSet.has(f)) {
+                            newJavaSet.add(f);
+                            newJavaList.push(f);
+                        }
                         this._log.appendLine(`[참조분석][2단계]   + ${f}`);
                     }
                     const newDeployFileList = { ...this._deployFileList, java: newJavaList };
@@ -388,6 +392,7 @@ export class DeployService {
                 this._log.appendLine(`[참조분석][3단계] Java → Query 매핑 확인 시작`);
                 const currentJavaList = [...this._deployFileList.java];
                 const newQueryList = [...this._deployFileList.query];
+                const newQuerySet = new Set(newQueryList);
                 let queryAdded = false;
                 let queryAddedCount = 0;
                 for (const javaPath of currentJavaList) {
@@ -417,11 +422,12 @@ export class DeployService {
                         this._log.appendLine(`[참조분석][3단계]   ↳ 대상 Query: ${queryPath} — 파일 없음`);
                         continue;
                     }
-                    if (newQueryList.includes(queryPath)) {
+                    if (newQuerySet.has(queryPath)) {
                         this._log.appendLine(`[참조분석][3단계]   ↳ 대상 Query: ${queryPath} — 이미 존재`);
                         continue;
                     }
 
+                    newQuerySet.add(queryPath);
                     newQueryList.push(queryPath);
                     queryAdded = true;
                     queryAddedCount++;
