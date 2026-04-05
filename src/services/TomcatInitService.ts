@@ -3,7 +3,7 @@ import path from 'path';
 import * as fs from 'fs-extra';
 import cpy from 'cpy';
 import { TomcatDeployMode, Settings, TomcatState, DeployFileList } from '../types';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import type { DeployService } from './DeployService';
 
 // Tomcat 초기화 서비스
@@ -255,7 +255,13 @@ export class TomcatInitService {
         const serverOutputPath = path.join(this._tomcatPath, 'webapps', contextRoot, 'WEB-INF', 'lib');
         if (!fs.pathExistsSync(serverOutputPath)) fs.mkdirSync(serverOutputPath, { recursive: true });
         try {
-            execSync(`"${javaExe}" -Dfile.encoding=UTF-8 -jar "${licenseCreatorPath}" server "${path.join(serverOutputPath, 'XPLATFORM_Server_License.xml')}"`, {
+            execFileSync(javaExe, [
+                '-Dfile.encoding=UTF-8',
+                '-jar',
+                licenseCreatorPath,
+                'server',
+                path.join(serverOutputPath, 'XPLATFORM_Server_License.xml')
+            ], {
                 encoding: 'utf8',
                 stdio: 'pipe',
             });
@@ -268,7 +274,13 @@ export class TomcatInitService {
         const clientOutputPath = path.join(this._tomcatPath, 'webapps', contextRoot, 'ui');
         if (!fs.pathExistsSync(clientOutputPath)) fs.mkdirSync(clientOutputPath, { recursive: true });
         try {
-            execSync(`"${javaExe}" -Dfile.encoding=UTF-8 -jar "${licenseCreatorPath}" client "${path.join(clientOutputPath, 'XPLATFORM_Client_License.xml')}"`, {
+            execFileSync(javaExe, [
+                '-Dfile.encoding=UTF-8',
+                '-jar',
+                licenseCreatorPath,
+                'client',
+                path.join(clientOutputPath, 'XPLATFORM_Client_License.xml')
+            ], {
                 encoding: 'utf8',
                 stdio: 'pipe',
             });

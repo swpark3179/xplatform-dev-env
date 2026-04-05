@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';
+import { execFileSync, spawnSync } from 'child_process';
 import * as vscode from 'vscode';
 import type { ValidationItem, ValidationState, Settings } from '../types';
 
@@ -75,7 +75,7 @@ export class ValidationService {
             }
 
             try {
-                const output = execSync(`"${gradleExe}" --version`, {
+                const output = execFileSync(gradleExe, ['--version'], {
                     encoding: 'utf-8',
                     timeout: 30000
                 });
@@ -120,10 +120,12 @@ export class ValidationService {
             this._validation.jdk_has_dcevm = hasDcevm;
 
             try {
-                const output = execSync(`"${javaExe}" -version 2>&1`, {
+                // java -version은 보통 stderr로 출력되므로 spawnSync로 둘 다 캡처
+                const result = spawnSync(javaExe, ['-version'], {
                     encoding: 'utf-8',
                     timeout: 10000
                 });
+                const output = result.stdout + result.stderr;
 
                 const versionMatch = output.match(/version\s+"?([\d][\w._-]+)"?/);
                 if (versionMatch) {

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import type { Settings, TomcatState } from '../types';
 import path from 'path';
 import * as fs from 'fs-extra';
-import { spawn, execSync, type ChildProcess } from 'child_process';
+import { spawn, execSync, execFileSync, type ChildProcess } from 'child_process';
 
 // Tomcat 제어 서비스
 export class TomcatService {
@@ -290,7 +290,7 @@ export class TomcatService {
         if (proc?.pid) {
             try {
                 if (process.platform === 'win32') {
-                    execSync(`taskkill /PID ${proc.pid} /T /F`, { stdio: 'pipe', encoding: 'utf8' });
+                    execFileSync('taskkill', ['/PID', proc.pid.toString(), '/T', '/F'], { stdio: 'pipe', encoding: 'utf8' });
                 } else {
                     proc.kill('SIGKILL');
                 }
@@ -309,15 +309,19 @@ export class TomcatService {
         const ports = [7001, 12001];
         try {
             if (process.platform === 'win32') {
-                const output = execSync('netstat -ano', { encoding: 'utf8' });
+                const output = execFileSync('netstat', ['-ano'], { encoding: 'utf8' });
                 for (const port of ports) {
                     const lines = output.split(/\r?\n/).filter((l) => l.includes(`:${port}`) && l.includes('LISTENING'));
                     if (lines.length > 0) return true;
                 }
             } else {
                 for (const port of ports) {
-                    const output = execSync(`lsof -i :${port} -t 2>/dev/null || true`, { encoding: 'utf8' });
-                    if (output.trim()) return true;
+                    try {
+                        const output = execFileSync('lsof', ['-i', `:${port}`, '-t'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+                        if (output.trim()) return true;
+                    } catch {
+                        // ignore error (e.g. no process found)
+                    }
                 }
             }
         } catch {
@@ -332,7 +336,7 @@ export class TomcatService {
         const pids = new Set<number>();
         try {
             if (process.platform === 'win32') {
-                const output = execSync('netstat -ano', { encoding: 'utf8' });
+                const output = execFileSync('netstat', ['-ano'], { encoding: 'utf8' });
                 for (const port of ports) {
                     const lines = output.split(/\r?\n/).filter((l) => l.includes(`:${port}`));
                     for (const line of lines) {
@@ -342,20 +346,24 @@ export class TomcatService {
                     }
                 }
                 for (const pid of pids) {
-                    execSync(`taskkill /PID ${pid} /F`, { stdio: 'pipe' });
+                    execFileSync('taskkill', ['/PID', pid.toString(), '/F'], { stdio: 'pipe' });
                     this._log.show(true);
                     this._log.appendLine(`[Tomcat] 포트 프로세스 종료 (PID: ${pid})`);
                 }
             } else {
                 for (const port of ports) {
-                    const output = execSync(`lsof -i :${port} -t 2>/dev/null || true`, { encoding: 'utf8' });
-                    output.trim().split(/\s+/).forEach((s) => {
-                        const pid = parseInt(s, 10);
-                        if (!isNaN(pid) && pid > 0) pids.add(pid);
-                    });
+                    try {
+                        const output = execFileSync('lsof', ['-i', `:${port}`, '-t'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+                        output.trim().split(/\s+/).forEach((s) => {
+                            const pid = parseInt(s, 10);
+                            if (!isNaN(pid) && pid > 0) pids.add(pid);
+                        });
+                    } catch {
+                        // ignore error
+                    }
                 }
                 for (const pid of pids) {
-                    execSync(`kill -9 ${pid}`, { stdio: 'pipe' });
+                    execFileSync('kill', ['-9', pid.toString()], { stdio: 'pipe' });
                     this._log.show(true);
                     this._log.appendLine(`[Tomcat] 포트 프로세스 종료 (PID: ${pid})`);
                 }
@@ -381,8 +389,9 @@ export class TomcatService {
     private _checkDeveloperMode(): boolean {
         if (process.platform !== 'win32') return false;
         try {
-            const output = execSync(
-                'reg query "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock" /v AllowDevelopmentWithoutDevLicense',
+            const output = execFileSync(
+                'reg',
+                ['query', 'HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock', '/v', 'AllowDevelopmentWithoutDevLicense'],
                 { encoding: 'utf8', stdio: 'pipe' }
             );
             return /REG_DWORD\s+0x1/i.test(output);
