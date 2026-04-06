@@ -99,13 +99,20 @@ export class GradleService {
         const proc = this._runningProcess;
         if (proc?.pid) {
             try {
-                if (process.platform === 'win32') {
-                    execFileSync('taskkill', ['/PID', proc.pid.toString(), '/T', '/F'], { stdio: 'pipe', encoding: 'utf8' });
-                } else {
-                    proc.kill('SIGKILL');
+                const pid = Number(proc.pid);
+                if (Number.isInteger(pid) && pid > 0) {
+                    if (process.platform === 'win32') {
+                        execFileSync('taskkill', ['/PID', pid.toString(), '/T', '/F'], { stdio: 'pipe', encoding: 'utf8' });
+                    } else {
+                        process.kill(pid, 'SIGKILL');
+                    }
                 }
             } catch {
-                proc.kill('SIGKILL');
+                try {
+                    proc.kill('SIGKILL');
+                } catch {
+                    // 무시
+                }
             }
             this._runningProcess = undefined;
             this._log.appendLine('[Gradle] 빌드 프로세스 강제 종료');
