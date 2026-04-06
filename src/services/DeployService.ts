@@ -371,21 +371,7 @@ export class DeployService {
                 }
 
                 // 2단계: 새로 발견된 파일을 배포 목록에 일괄 추가
-                this._log.appendLine(`[참조분석][2단계] 배포 목록에 추가: ${added.length}개 파일`);
-                if (added.length > 0) {
-                    progress.report({ message: '2단계: 배포 목록에 추가 중...' });
-                    const newJavaList = [...this._deployFileList.java];
-                    const newJavaSet = new Set(newJavaList);
-                    for (const f of added) {
-                        if (!newJavaSet.has(f)) {
-                            newJavaSet.add(f);
-                            newJavaList.push(f);
-                        }
-                        this._log.appendLine(`[참조분석][2단계]   + ${f}`);
-                    }
-                    const newDeployFileList = { ...this._deployFileList, java: newJavaList };
-                    this.updateDeployList(newDeployFileList, '', 'java', 'add', added);
-                }
+                this._addDiscoveredJavaFiles(added, progress);
 
                 // 3단계: Java 배포 목록 전체에서 연관 Query 파일을 자동으로 query 배포 목록에 추가
                 progress.report({ message: '3단계: Query 연관 파일 추가 중...' });
@@ -444,6 +430,26 @@ export class DeployService {
                 this._log.appendLine(`[참조분석] ✔ 분석 완료 — 신규 Java: ${added.length}개, 신규 Query: ${queryAddedCount}개  (총 큐 처리 횟수: ${totalQueueProcessed}회)`);
             }
         );
+    }
+
+    private _addDiscoveredJavaFiles(added: string[], progress: vscode.Progress<{ message?: string }>): void {
+        this._log.appendLine(`[참조분석][2단계] 배포 목록에 추가: ${added.length}개 파일`);
+        if (added.length === 0) {
+            return;
+        }
+
+        progress.report({ message: '2단계: 배포 목록에 추가 중...' });
+        const newJavaList = [...this._deployFileList.java];
+        const newJavaSet = new Set(newJavaList);
+        for (const f of added) {
+            if (!newJavaSet.has(f)) {
+                newJavaSet.add(f);
+                newJavaList.push(f);
+            }
+            this._log.appendLine(`[참조분석][2단계]   + ${f}`);
+        }
+        const newDeployFileList = { ...this._deployFileList, java: newJavaList };
+        this.updateDeployList(newDeployFileList, '', 'java', 'add', added);
     }
 
     public clearDeployFiles(): void {
