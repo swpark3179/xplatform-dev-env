@@ -129,7 +129,8 @@
     "build:all": "npm run compile && npm run compile:webview",
     "watch": "tsc -watch -p ./",
     "watch:webview": "cd ui && npm run dev",
-    "lint": "eslint src --ext ts"
+    "lint": "eslint src --ext ts",
+    "test": "jest"
   },
   "dependencies": {
     "@vscode/vsce": "^3.7.1",
@@ -141,11 +142,14 @@
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.10.0",
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^8.56.1",
     "@typescript-eslint/parser": "^8.56.1",
     "eslint": "^9.39.3",
+    "jest": "^30.3.0",
+    "ts-jest": "^29.4.9",
     "typescript": "^5.3.0"
   }
 }
