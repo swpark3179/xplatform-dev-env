@@ -29,13 +29,18 @@ export class AnalyzeReferenceChain {
         const classDir = path.join(this._projectRoot, 'target', 'classes', path.dirname(baseClassPath));
         const baseName = path.basename(baseClassPath);
         
-        if (!fs.existsSync(classDir)) {
+        let files: string[];
+        try {
+            files = await fs.promises.readdir(classDir);
+        } catch (err) {
             return result;
         }
 
-        const files = fs.readdirSync(classDir);
         // 메인 클래스와 이너 클래스들을 모두 찾음 (예: SomeClass.class, SomeClass$Inner.class)
         const classFiles = files.filter(f => f === `${baseName}.class` || f.startsWith(`${baseName}$`));
+
+        // 모든 이너 클래스와 메인 클래스의 참조를 중복 없이 모음
+        const uniqueReferencedClasses = new Set<string>();
 
         for (const classFile of classFiles) {
             const classFilePath = path.join(classDir, classFile);
@@ -44,16 +49,30 @@ export class AnalyzeReferenceChain {
             const referencedClasses = ClassParser.getReferencedClasses(classFilePath);
             
             for (const refClass of referencedClasses) {
-                // refClass는 'com/shi/it/SomeClass' 형태
-                const targetJavaRelPath = `${refClass}.java`;
-                const targetJavaAbsPath = path.join(this._projectRoot, 'src', 'java', targetJavaRelPath).replace(/\\/g, '/');
-                
-                // 해당 Java 파일이 실제로 프로젝트 내에 존재하는지(라이브러리가 아닌지) 확인
-                if (fs.existsSync(targetJavaAbsPath) && targetJavaAbsPath !== javaFilePath) {
-                    result.add(targetJavaAbsPath);
-                }
+                uniqueReferencedClasses.add(refClass);
             }
         }
+
+        // 비동기 병렬로 파일 존재 여부 확인
+        const checkPromises = Array.from(uniqueReferencedClasses).map(async (refClass) => {
+            // refClass는 'com/shi/it/SomeClass' 형태
+            const targetJavaRelPath = `${refClass}.java`;
+            const targetJavaAbsPath = path.join(this._projectRoot, 'src', 'java', targetJavaRelPath).replace(/\\/g, '/');
+
+            if (targetJavaAbsPath === javaFilePath) {
+                return;
+            }
+
+            try {
+                // 해당 Java 파일이 실제로 프로젝트 내에 존재하는지(라이브러리가 아닌지) 확인
+                await fs.promises.access(targetJavaAbsPath, fs.constants.F_OK);
+                result.add(targetJavaAbsPath);
+            } catch {
+                // 파일이 존재하지 않으면 무시
+            }
+        });
+
+        await Promise.all(checkPromises);
 
         return result;
     }
