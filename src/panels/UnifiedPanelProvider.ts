@@ -71,7 +71,7 @@ export class UnifiedPanelProvider extends WebviewProvider {
             initializing: false,
             starting: false,
             stopping: false,
-            isHotReloadMode: false,
+            isHotReloadMode: true,
         };
 
         this._settingsService = new SettingsService(this._log, this._settings);

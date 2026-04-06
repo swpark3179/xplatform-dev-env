@@ -51,7 +51,7 @@ export function useAppState() {
     const [tomcatDeployMode, setTomcatDeployMode] = useState<'default' | 'selected'>('default');
     const [tomcatProfile, setTomcatProfile] = useState('local');
     const [tomcatIsBatch, setTomcatIsBatch] = useState(false);
-    const [tomcatIsHotReloading, setTomcatIsHotReloading] = useState(false);
+    const [tomcatIsHotReloading, setTomcatIsHotReloading] = useState(true);
 
     // 빌드
     const [isGradleRunning, setIsGradleRunning] = useState(false);

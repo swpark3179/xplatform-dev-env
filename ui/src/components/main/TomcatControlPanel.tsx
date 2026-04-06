@@ -61,7 +61,7 @@ export const TomcatControlPanel: React.FC<{ state: AppState, actions: AppActions
                 <label className="checkbox-label">
                     <input
                         type="checkbox"
-                        checked={state.tomcat.isHotReloadMode}
+                        checked={state.tomcat.isHotReloadMode && state.validation.jdk_has_dcevm}
                         disabled={state.tomcat.running || !state.validation.jdk_has_dcevm}
                         onChange={(e) => actions.tomcat.setStateIsHotReloading(e.target.checked)}
                     />
@@ -71,14 +71,14 @@ export const TomcatControlPanel: React.FC<{ state: AppState, actions: AppActions
 
             <ButtonGroup>
                 <Button
-                    onClick={() => actions.tomcat.startTomcat(state.tomcat.isHotReloadMode)}
+                    onClick={() => actions.tomcat.startTomcat(state.tomcat.isHotReloadMode && state.validation.jdk_has_dcevm)}
                     disabled={state.tomcat.running || state.tomcat.initializing || state.build.isGradleRunning || isTransitioning}
                     style={{ width: 'calc(33% - 5px)' }}
                 >
                     시작
                 </Button>
                 <Button
-                    onClick={() => actions.tomcat.debugTomcat(state.tomcat.isHotReloadMode)}
+                    onClick={() => actions.tomcat.debugTomcat(state.tomcat.isHotReloadMode && state.validation.jdk_has_dcevm)}
                     disabled={state.tomcat.running || state.tomcat.initializing || state.build.isGradleRunning || isTransitioning}
                     style={{ width: 'calc(33% - 5px)' }}
                 >
