@@ -108,17 +108,17 @@ export class ReferenceAnalysisProvider {
         const daoNodes = this._detectDaoQueryCalls(parentDocument, methodSymbol.range);
         const children: RefNode[] = [...daoNodes];
 
-        for (const call of outgoingCalls) {
+        const childPromises = outgoingCalls.map(async (call) => {
             const target = call.to;
             if (!this._isTargetPackageByUri(target.uri)) {
-                continue;
+                return null;
             }
 
             const targetLabel = this._buildLabel(target);
             const nodeId = `${target.uri.fsPath}::${targetLabel}`;
 
             if (visited.has(nodeId)) {
-                children.push({
+                return {
                     id: nodeId,
                     label: targetLabel,
                     nodeType: 'method',
@@ -128,8 +128,7 @@ export class ReferenceAnalysisProvider {
                     outbound: [],
                     inbound: [],
                     isCyclic: true,
-                });
-                continue;
+                } as RefNode;
             }
 
             visited.add(nodeId);
@@ -169,7 +168,14 @@ export class ReferenceAnalysisProvider {
                 // 탐색 실패 시 빈 children 유지
             }
 
-            children.push(node);
+            return node;
+        });
+
+        const resolvedChildren = await Promise.all(childPromises);
+        for (const child of resolvedChildren) {
+            if (child) {
+                children.push(child);
+            }
         }
 
         return children;
@@ -205,13 +211,13 @@ export class ReferenceAnalysisProvider {
         const seen = new Set<string>();
         const parents: RefNode[] = [];
 
-        for (const loc of locations) {
+        const parentPromises = locations.map(async (loc) => {
             // 자신의 선언부 제외
             if (loc.uri.fsPath === uri.fsPath && loc.range.start.line === pos.line) {
-                continue;
+                return null;
             }
             if (!this._isTargetPackageByUri(loc.uri)) {
-                continue;
+                return null;
             }
 
             let refSymbols: vscode.DocumentSymbol[] = [];
@@ -221,15 +227,15 @@ export class ReferenceAnalysisProvider {
                     loc.uri
                 ) ?? [];
             } catch {
-                continue;
+                return null;
             }
 
             const enclosing = this._findEnclosingSymbol(refSymbols, loc.range.start);
-            if (!enclosing) { continue; }
+            if (!enclosing) { return null; }
 
             const nodeId = `${loc.uri.fsPath}::${enclosing.label}`;
             if (visited.has(nodeId)) {
-                parents.push({
+                return {
                     id: nodeId,
                     label: enclosing.label,
                     nodeType: 'method',
@@ -239,10 +245,9 @@ export class ReferenceAnalysisProvider {
                     outbound: [],
                     inbound: [],
                     isCyclic: true,
-                });
-                continue;
+                } as RefNode;
             }
-            if (seen.has(nodeId)) { continue; }
+            if (seen.has(nodeId)) { return null; }
             seen.add(nodeId);
             visited.add(nodeId);
 
@@ -274,7 +279,14 @@ export class ReferenceAnalysisProvider {
                 // 실패 시 빈 inbound 유지
             }
 
-            parents.push(node);
+            return node;
+        });
+
+        const resolvedParents = await Promise.all(parentPromises);
+        for (const parent of resolvedParents) {
+            if (parent) {
+                parents.push(parent);
+            }
         }
 
         return parents;
