@@ -85,7 +85,7 @@ export const TomcatControlPanel: React.FC<{ state: AppState, actions: AppActions
                     디버그
                 </Button>
                 <Button
-                    variant="secondary"
+                    variant={state.tomcat.running ? 'danger' : 'secondary'}
                     onClick={actions.tomcat.stopTomcat}
                     disabled={(!state.tomcat.running && !state.tomcat.stopping) || state.tomcat.initializing || state.build.isGradleRunning || state.tomcat.stopping}
                     style={{ width: 'calc(33% - 5px)' }}
