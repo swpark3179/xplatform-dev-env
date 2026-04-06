@@ -374,62 +374,68 @@ export class DeployService {
                 this._addDiscoveredJavaFiles(added, progress);
 
                 // 3단계: Java 배포 목록 전체에서 연관 Query 파일을 자동으로 query 배포 목록에 추가
-                progress.report({ message: '3단계: Query 연관 파일 추가 중...' });
-                this._log.appendLine(`[참조분석][3단계] Java → Query 매핑 확인 시작`);
-                const currentJavaList = [...this._deployFileList.java];
-                const newQueryList = [...this._deployFileList.query];
-                const newQuerySet = new Set(newQueryList);
-                let queryAdded = false;
-                let queryAddedCount = 0;
-                for (const javaPath of currentJavaList) {
-                    const normalized = javaPath.replace(/\\/g, '/');
-                    const javaSegment = '/src/java/';
-                    const javaIdx = normalized.indexOf(javaSegment);
-                    if (javaIdx === -1) continue;
-
-                    const projectRoot = normalized.substring(0, javaIdx);
-                    const packageAndFile = normalized.substring(javaIdx + javaSegment.length);
-
-                    const fileName = path.basename(packageAndFile);
-                    const packagePath = path.dirname(packageAndFile);
-
-                    const queryFileName = fileName.replace(/(Service|Controller)\.java$/, 'Query.xml');
-
-                    // [Stage 3-A] Java 파일별 매핑 로그
-                    this._log.appendLine(`[참조분석][3단계] Java → Query 매핑 확인: ${normalized}`);
-                    if (queryFileName === fileName) {
-                        this._log.appendLine(`[참조분석][3단계]   ↳ 매핑 대상 아님 (Service/Controller 아님)`);
-                        continue;
-                    }
-
-                    const queryPath = `${projectRoot}/src/query/${packagePath}/${queryFileName}`;
-
-                    if (!fs.existsSync(queryPath)) {
-                        this._log.appendLine(`[참조분석][3단계]   ↳ 대상 Query: ${queryPath} — 파일 없음`);
-                        continue;
-                    }
-                    if (newQuerySet.has(queryPath)) {
-                        this._log.appendLine(`[참조분석][3단계]   ↳ 대상 Query: ${queryPath} — 이미 존재`);
-                        continue;
-                    }
-
-                    newQuerySet.add(queryPath);
-                    newQueryList.push(queryPath);
-                    queryAdded = true;
-                    queryAddedCount++;
-                    this._log.appendLine(`[참조분석][3단계]   ↳ 대상 Query: ${queryPath} — 추가됨`);
-                }
-                this._log.appendLine(`[참조분석][3단계] Query 파일 추가 완료: ${queryAddedCount}개`);
-
-                if (queryAdded) {
-                    const newDeployFileList = { ...this._deployFileList, query: newQueryList };
-                    this.updateDeployList(newDeployFileList, '', 'query', 'add');
-                }
+                const queryAddedCount = this._addAssociatedQueryFiles(progress);
 
                 // [완료] 전체 요약 로그
                 this._log.appendLine(`[참조분석] ✔ 분석 완료 — 신규 Java: ${added.length}개, 신규 Query: ${queryAddedCount}개  (총 큐 처리 횟수: ${totalQueueProcessed}회)`);
             }
         );
+    }
+
+    private _addAssociatedQueryFiles(progress: vscode.Progress<{ message?: string }>): number {
+        progress.report({ message: '3단계: Query 연관 파일 추가 중...' });
+        this._log.appendLine(`[참조분석][3단계] Java → Query 매핑 확인 시작`);
+        const currentJavaList = [...this._deployFileList.java];
+        const newQueryList = [...this._deployFileList.query];
+        const newQuerySet = new Set(newQueryList);
+        let queryAdded = false;
+        let queryAddedCount = 0;
+        for (const javaPath of currentJavaList) {
+            const normalized = javaPath.replace(/\\/g, '/');
+            const javaSegment = '/src/java/';
+            const javaIdx = normalized.indexOf(javaSegment);
+            if (javaIdx === -1) continue;
+
+            const projectRoot = normalized.substring(0, javaIdx);
+            const packageAndFile = normalized.substring(javaIdx + javaSegment.length);
+
+            const fileName = path.basename(packageAndFile);
+            const packagePath = path.dirname(packageAndFile);
+
+            const queryFileName = fileName.replace(/(Service|Controller)\.java$/, 'Query.xml');
+
+            // [Stage 3-A] Java 파일별 매핑 로그
+            this._log.appendLine(`[참조분석][3단계] Java → Query 매핑 확인: ${normalized}`);
+            if (queryFileName === fileName) {
+                this._log.appendLine(`[참조분석][3단계]   ↳ 매핑 대상 아님 (Service/Controller 아님)`);
+                continue;
+            }
+
+            const queryPath = `${projectRoot}/src/query/${packagePath}/${queryFileName}`;
+
+            if (!fs.existsSync(queryPath)) {
+                this._log.appendLine(`[참조분석][3단계]   ↳ 대상 Query: ${queryPath} — 파일 없음`);
+                continue;
+            }
+            if (newQuerySet.has(queryPath)) {
+                this._log.appendLine(`[참조분석][3단계]   ↳ 대상 Query: ${queryPath} — 이미 존재`);
+                continue;
+            }
+
+            newQuerySet.add(queryPath);
+            newQueryList.push(queryPath);
+            queryAdded = true;
+            queryAddedCount++;
+            this._log.appendLine(`[참조분석][3단계]   ↳ 대상 Query: ${queryPath} — 추가됨`);
+        }
+        this._log.appendLine(`[참조분석][3단계] Query 파일 추가 완료: ${queryAddedCount}개`);
+
+        if (queryAdded) {
+            const newDeployFileList = { ...this._deployFileList, query: newQueryList };
+            this.updateDeployList(newDeployFileList, '', 'query', 'add');
+        }
+
+        return queryAddedCount;
     }
 
     private _addDiscoveredJavaFiles(added: string[], progress: vscode.Progress<{ message?: string }>): void {
