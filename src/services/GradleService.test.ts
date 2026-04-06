@@ -159,9 +159,12 @@ describe('GradleService', () => {
             expect(mockOnProcessComplete).toHaveBeenCalled();
         });
 
-        it('should kill process directly on non-win32 platforms', () => {
+        it('should kill process using process.kill on non-win32 platforms', () => {
             const originalPlatform = process.platform;
             Object.defineProperty(process, 'platform', { value: 'linux' });
+
+            const originalKill = process.kill;
+            process.kill = jest.fn();
 
             const mockProcess = {
                 pid: 12345,
@@ -179,17 +182,21 @@ describe('GradleService', () => {
             // Stop it
             gradleService.stopGradle();
 
-            expect(mockProcess.kill).toHaveBeenCalledWith('SIGKILL');
+            expect(process.kill).toHaveBeenCalledWith(12345, 'SIGKILL');
             expect(mockLog.appendLine).toHaveBeenCalledWith('[Gradle] 빌드 프로세스 강제 종료');
             expect(mockOnProcessComplete).toHaveBeenCalled();
 
             // Restore platform
             Object.defineProperty(process, 'platform', { value: originalPlatform });
+            process.kill = originalKill;
         });
 
-        it('should use taskkill on win32 platform', () => {
+        it('should kill process using taskkill on win32 platform with PID validation', () => {
             const originalPlatform = process.platform;
             Object.defineProperty(process, 'platform', { value: 'win32' });
+
+            const originalKill = process.kill;
+            process.kill = jest.fn();
 
             const mockProcess = {
                 pid: 12345,
@@ -215,6 +222,7 @@ describe('GradleService', () => {
 
             // Restore platform
             Object.defineProperty(process, 'platform', { value: originalPlatform });
+            process.kill = originalKill;
         });
     });
 

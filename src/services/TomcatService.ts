@@ -289,13 +289,20 @@ export class TomcatService {
         const proc = this._tomcatProcess;
         if (proc?.pid) {
             try {
-                if (process.platform === 'win32') {
-                    execFileSync('taskkill', ['/PID', proc.pid.toString(), '/T', '/F'], { stdio: 'pipe', encoding: 'utf8' });
-                } else {
-                    proc.kill('SIGKILL');
+                const pid = Number(proc.pid);
+                if (Number.isInteger(pid) && pid > 0) {
+                    if (process.platform === 'win32') {
+                        execFileSync('taskkill', ['/PID', pid.toString(), '/T', '/F'], { stdio: 'pipe', encoding: 'utf8' });
+                    } else {
+                        process.kill(pid, 'SIGKILL');
+                    }
                 }
             } catch {
-                proc.kill('SIGKILL');
+                try {
+                    proc.kill('SIGKILL');
+                } catch {
+                    // 무시
+                }
             }
             this._tomcatProcess = undefined;
             this._tomcatState.running = false;
@@ -346,9 +353,15 @@ export class TomcatService {
                     }
                 }
                 for (const pid of pids) {
-                    execFileSync('taskkill', ['/PID', pid.toString(), '/F'], { stdio: 'pipe' });
-                    this._log.show(true);
-                    this._log.appendLine(`[Tomcat] 포트 프로세스 종료 (PID: ${pid})`);
+                    try {
+                        if (Number.isInteger(pid) && pid > 0) {
+                            execFileSync('taskkill', ['/PID', pid.toString(), '/F'], { stdio: 'pipe' });
+                            this._log.show(true);
+                            this._log.appendLine(`[Tomcat] 포트 프로세스 종료 (PID: ${pid})`);
+                        }
+                    } catch {
+                        // ignore error
+                    }
                 }
             } else {
                 for (const port of ports) {
