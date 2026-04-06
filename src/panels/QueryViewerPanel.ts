@@ -118,7 +118,7 @@ export class QueryViewerPanel {
     /**
      * 프로젝트 루트 하위 jdbc.properties에서 jdbc.username, jdbc.password 읽기
      */
-    private _loadJdbcCredentials(projectRoot: string): { user: string; password: string } | { error: string } {
+    private _loadJdbcCredentials(projectRoot: string): { user: string; password: string; url: string } | { error: string } {
         const jdbcPath = path.join(projectRoot, 'src', 'config', 'properties', 'jdbc.properties');
         if (!fs.existsSync(jdbcPath)) {
             return { error: 'Oracle 연결 실패: jdbc.properties를 찾을 수 없습니다.' };
@@ -141,13 +141,17 @@ export class QueryViewerPanel {
         }
         const user = props['jdbc.username'];
         const password = props['jdbc.password'];
+        const url = props['jdbc.url'];
         if (user === undefined || user === '') {
             return { error: 'Oracle 연결 실패: jdbc.username이 없습니다.' };
         }
         if (password === undefined) {
             return { error: 'Oracle 연결 실패: jdbc.password가 없습니다.' };
         }
-        return { user, password: password || '' };
+        if (url === undefined || url === '') {
+            return { error: 'Oracle 연결 실패: jdbc.url이 없습니다.' };
+        }
+        return { user, password: password || '', url: url };
     }
 
     /**
@@ -184,7 +188,7 @@ export class QueryViewerPanel {
                 const config: OracleConfig = {
                     user: cred.user,
                     password: cred.password,
-                    connectString: '60.100.89.191:7971/SEVMQ',
+                    connectString: cred.url,
                     instantClientPath: '',
                 };
                 result = await this._executionService.executeOnOracle(sql, bindParams || {}, config);
