@@ -357,15 +357,17 @@ export class DeployService {
                             skippedAutoDetect++;
                             continue;
                         }
-                        if (!visited.has(normalized)) {
-                            visited.add(normalized);
-                            added.push(normalized);
-                            queue.push(normalized);
-                            newlyAdded++;
-                            this._log.appendLine(`[참조분석][1단계]     + 신규: ${normalized}`);
-                        } else {
+
+                        if (visited.has(normalized)) {
                             alreadyVisited++;
+                            continue;
                         }
+
+                        visited.add(normalized);
+                        added.push(normalized);
+                        queue.push(normalized);
+                        newlyAdded++;
+                        this._log.appendLine(`[참조분석][1단계]     + 신규: ${normalized}`);
                     }
                     this._log.appendLine(`[참조분석][1단계]   ↳ 발견된 참조: ${refs.size}개  (신규 추가: ${newlyAdded}개, 이미 방문: ${alreadyVisited}개, 자동탐지 스킵: ${skippedAutoDetect}개)`);
                 }
