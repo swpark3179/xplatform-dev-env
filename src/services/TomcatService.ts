@@ -363,9 +363,13 @@ export class TomcatService {
                     }
                 }
                 for (const pid of pids) {
-                    execFileSync('kill', ['-9', pid.toString()], { stdio: 'pipe' });
-                    this._log.show(true);
-                    this._log.appendLine(`[Tomcat] 포트 프로세스 종료 (PID: ${pid})`);
+                    try {
+                        process.kill(pid, 'SIGKILL');
+                        this._log.show(true);
+                        this._log.appendLine(`[Tomcat] 포트 프로세스 종료 (PID: ${pid})`);
+                    } catch {
+                        // ignore error
+                    }
                 }
             }
             this._tomcatState.portsBlocked = false;
