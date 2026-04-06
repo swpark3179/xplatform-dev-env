@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { exec } from 'child_process';
 import type { UxServiceEntry, UxStudioEnvConfig } from '../types';
 
 // 기본파일 prefixid 목록
@@ -358,13 +357,10 @@ export class UxStudioService {
 
     /** xprj 파일을 OS 기본 연결 프로그램으로 실행 */
     public launchXprj(filePath: string): void {
-        const cmd = process.platform === 'win32'
-            ? `start "" "${filePath}"`
-            : process.platform === 'darwin'
-                ? `open "${filePath}"`
-                : `xdg-open "${filePath}"`;
-        exec(cmd, (err) => {
-            if (err) this._log.appendLine(`[UxStudio] xprj 실행 실패: ${err.message}`);
+        vscode.env.openExternal(vscode.Uri.file(filePath)).then((success) => {
+            if (!success) {
+                this._log.appendLine(`[UxStudio] xprj 실행 실패: ${filePath}`);
+            }
         });
     }
 
