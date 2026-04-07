@@ -33,7 +33,7 @@ export class TomcatService {
     }
 
     // 변경된 파일을 실행 중인 Tomcat에 적용
-    applyChangedFilesToTomcat(changedFiles: { java: string[], query: string[], static: string[] }): void {
+    async applyChangedFilesToTomcat(changedFiles: { java: string[], query: string[], static: string[] }): Promise<void> {
         const projectRoot = this._settings.projectRoot.replace(/\\/g, '/');
         const webappsPath = path.join(this._tomcatPath, 'webapps', this._tomcatState.contextRoot);
         const classesPath = path.join(webappsPath, 'WEB-INF', 'classes');
@@ -41,6 +41,8 @@ export class TomcatService {
 
         this._log.show(true);
         this._log.appendLine('[배포 적용] 변경 파일 Tomcat 반영 시작...');
+
+        const copyPromises: Promise<void>[] = [];
 
         // 1. Java .class 파일 복사 (inner class 포함)
         for (const javaFile of changedFiles.java) {
@@ -50,22 +52,29 @@ export class TomcatService {
             const classDir = path.join(this._settings.projectRoot, 'target', 'classes', path.dirname(baseClassName));
             const baseName = path.basename(baseClassName);
 
-            if (fs.existsSync(classDir)) {
-                const files = fs.readdirSync(classDir);
-                // Foo.class, Foo$Inner.class, Foo$1.class 등 모두 복사
-                const matchingFiles = files.filter(f => f === `${baseName}.class` || f.startsWith(`${baseName}$`));
-                for (const classFile of matchingFiles) {
-                    const srcClassPath = path.join(classDir, classFile);
-                    const destClassPath = path.join(classesPath, path.dirname(baseClassName), classFile);
-                    const destDir = path.dirname(destClassPath);
-                    if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
-                    fs.copyFileSync(srcClassPath, destClassPath);
-                    copiedCount++;
-                    this._log.appendLine(`  [Java] ${path.dirname(baseClassName)}/${classFile}`);
+            copyPromises.push((async () => {
+                try {
+                    const files = await fs.promises.readdir(classDir);
+                    const matchingFiles = files.filter(f => f === `${baseName}.class` || f.startsWith(`${baseName}$`));
+
+                    const classCopyPromises = matchingFiles.map(async classFile => {
+                        const srcClassPath = path.join(classDir, classFile);
+                        const destClassPath = path.join(classesPath, path.dirname(baseClassName), classFile);
+                        const destDir = path.dirname(destClassPath);
+                        await fs.promises.mkdir(destDir, { recursive: true });
+                        await fs.promises.copyFile(srcClassPath, destClassPath);
+                        copiedCount++;
+                        this._log.appendLine(`  [Java] ${path.dirname(baseClassName)}/${classFile}`);
+                    });
+                    await Promise.all(classCopyPromises);
+                } catch (err: any) {
+                    if (err.code === 'ENOENT') {
+                        this._log.appendLine(`  [경고] class 디렉터리 없음: ${classDir}`);
+                    } else {
+                        throw err;
+                    }
                 }
-            } else {
-                this._log.appendLine(`  [경고] class 디렉터리 없음: ${classDir}`);
-            }
+            })());
         }
 
         // 2. Query 파일 복사
@@ -74,12 +83,18 @@ export class TomcatService {
             const relativePath = normalizedQueryFile.replace(`${projectRoot}/src/query/`, '');
             const destPath = path.join(classesPath, relativePath);
             const destDir = path.dirname(destPath);
-            if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
-            if (fs.existsSync(queryFile)) {
-                fs.copyFileSync(queryFile, destPath);
-                copiedCount++;
-                this._log.appendLine(`  [Query] ${relativePath}`);
-            }
+
+            copyPromises.push((async () => {
+                try {
+                    await fs.promises.access(queryFile);
+                    await fs.promises.mkdir(destDir, { recursive: true });
+                    await fs.promises.copyFile(queryFile, destPath);
+                    copiedCount++;
+                    this._log.appendLine(`  [Query] ${relativePath}`);
+                } catch (err: any) {
+                    if (err.code !== 'ENOENT') throw err;
+                }
+            })());
         }
 
         // 3. Static(webapp) 파일 복사
@@ -88,13 +103,21 @@ export class TomcatService {
             const relativePath = normalizedStaticFile.replace(`${projectRoot}/src/webapp/`, '');
             const destPath = path.join(webappsPath, relativePath);
             const destDir = path.dirname(destPath);
-            if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
-            if (fs.existsSync(staticFile)) {
-                fs.copyFileSync(staticFile, destPath);
-                copiedCount++;
-                this._log.appendLine(`  [Static] ${relativePath}`);
-            }
+
+            copyPromises.push((async () => {
+                try {
+                    await fs.promises.access(staticFile);
+                    await fs.promises.mkdir(destDir, { recursive: true });
+                    await fs.promises.copyFile(staticFile, destPath);
+                    copiedCount++;
+                    this._log.appendLine(`  [Static] ${relativePath}`);
+                } catch (err: any) {
+                    if (err.code !== 'ENOENT') throw err;
+                }
+            })());
         }
+
+        await Promise.all(copyPromises);
 
         this._log.appendLine(`[배포 적용] 완료 (${copiedCount}건 복사됨)`);
     }
