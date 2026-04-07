@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { execFileSync, spawnSync } from 'child_process';
+import { spawnSync } from 'child_process';
 import * as vscode from 'vscode';
 import type { ValidationItem, ValidationState, Settings } from '../types';
 
@@ -65,10 +65,12 @@ export class ValidationService {
             }
 
             try {
-                const output = execFileSync(gradleBat, ['--version'], {
+                const result = spawnSync(gradleBat, ['--version'], {
                     encoding: 'utf-8',
-                    timeout: 30000
+                    timeout: 30000,
+                    shell: true
                 });
+                const output = (result.stdout || '') + (result.stderr || '');
 
                 const versionMatch = output.match(/Gradle\s+([0-9.]+)/);
 
