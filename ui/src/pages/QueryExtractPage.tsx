@@ -232,6 +232,7 @@ export default function QueryExtractPage() {
             <button
               className="qe-copy-btn"
               title="복사"
+              aria-label="복사"
               onClick={() => handleCopy(replacedSql)}
             >
               {copied ? "✓" : "📋"}
