@@ -16,13 +16,7 @@ const UxStudioPage: React.FC<{ state: AppState; actions: AppActions }> = ({
   }, []);
 
   const handleResetSetup = () => {
-    if (
-      confirm(
-        "설정을 초기화하면 현재 설정 정보가 삭제됩니다. 계속하시겠습니까?",
-      )
-    ) {
-      actions.uxStudio.resetSetup();
-    }
+    actions.uxStudio.resetSetup();
   };
 
   return (
