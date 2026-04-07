@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import type { Settings, TomcatState } from '../types';
 import path from 'path';
 import * as fs from 'fs-extra';
-import { spawn, execSync, execFileSync, type ChildProcess } from 'child_process';
+import { spawn, execFileSync, type ChildProcess } from 'child_process';
 
 // Tomcat 제어 서비스
 export class TomcatService {
@@ -314,11 +314,7 @@ export class TomcatService {
             try {
                 const pid = Number(proc.pid);
                 if (Number.isInteger(pid) && pid > 0) {
-                    if (process.platform === 'win32') {
-                        execFileSync('taskkill', ['/PID', pid.toString(), '/T', '/F'], { stdio: 'pipe', encoding: 'utf8' });
-                    } else {
-                        process.kill(pid, 'SIGKILL');
-                    }
+                    execFileSync('taskkill', ['/PID', pid.toString(), '/T', '/F'], { stdio: 'pipe', encoding: 'utf8' });
                 }
             } catch {
                 try {
@@ -338,21 +334,10 @@ export class TomcatService {
     areTomcatPortsInUse(): boolean {
         const ports = [7001, 12001];
         try {
-            if (process.platform === 'win32') {
-                const output = execFileSync('netstat', ['-ano'], { encoding: 'utf8' });
-                for (const port of ports) {
-                    const lines = output.split(/\r?\n/).filter((l) => l.includes(`:${port}`) && l.includes('LISTENING'));
-                    if (lines.length > 0) return true;
-                }
-            } else {
-                for (const port of ports) {
-                    try {
-                        const output = execFileSync('lsof', ['-i', `:${port}`, '-t'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-                        if (output.trim()) return true;
-                    } catch {
-                        // ignore error (e.g. no process found)
-                    }
-                }
+            const output = execFileSync('netstat', ['-ano'], { encoding: 'utf8' });
+            for (const port of ports) {
+                const lines = output.split(/\r?\n/).filter((l) => l.includes(`:${port}`) && l.includes('LISTENING'));
+                if (lines.length > 0) return true;
             }
         } catch {
             // ignore
@@ -365,47 +350,24 @@ export class TomcatService {
         const ports = [7001, 12001];
         const pids = new Set<number>();
         try {
-            if (process.platform === 'win32') {
-                const output = execFileSync('netstat', ['-ano'], { encoding: 'utf8' });
-                for (const port of ports) {
-                    const lines = output.split(/\r?\n/).filter((l) => l.includes(`:${port}`));
-                    for (const line of lines) {
-                        const parts = line.trim().split(/\s+/);
-                        const pid = parseInt(parts[parts.length - 1], 10);
-                        if (!isNaN(pid) && pid > 0) pids.add(pid);
-                    }
+            const output = execFileSync('netstat', ['-ano'], { encoding: 'utf8' });
+            for (const port of ports) {
+                const lines = output.split(/\r?\n/).filter((l) => l.includes(`:${port}`));
+                for (const line of lines) {
+                    const parts = line.trim().split(/\s+/);
+                    const pid = parseInt(parts[parts.length - 1], 10);
+                    if (!isNaN(pid) && pid > 0) pids.add(pid);
                 }
-                for (const pid of pids) {
-                    try {
-                        if (Number.isInteger(pid) && pid > 0) {
-                            execFileSync('taskkill', ['/PID', pid.toString(), '/F'], { stdio: 'pipe' });
-                            this._log.show(true);
-                            this._log.appendLine(`[Tomcat] 포트 프로세스 종료 (PID: ${pid})`);
-                        }
-                    } catch {
-                        // ignore error
-                    }
-                }
-            } else {
-                for (const port of ports) {
-                    try {
-                        const output = execFileSync('lsof', ['-i', `:${port}`, '-t'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-                        output.trim().split(/\s+/).forEach((s) => {
-                            const pid = parseInt(s, 10);
-                            if (!isNaN(pid) && pid > 0) pids.add(pid);
-                        });
-                    } catch {
-                        // ignore error
-                    }
-                }
-                for (const pid of pids) {
-                    try {
-                        process.kill(pid, 'SIGKILL');
+            }
+            for (const pid of pids) {
+                try {
+                    if (Number.isInteger(pid) && pid > 0) {
+                        execFileSync('taskkill', ['/PID', pid.toString(), '/F'], { stdio: 'pipe' });
                         this._log.show(true);
                         this._log.appendLine(`[Tomcat] 포트 프로세스 종료 (PID: ${pid})`);
-                    } catch {
-                        // ignore error
                     }
+                } catch {
+                    // ignore error
                 }
             }
             this._tomcatState.portsBlocked = false;
@@ -417,7 +379,6 @@ export class TomcatService {
     /** Windows CP949 등으로 깨져 보이는 오류 메시지를 UTF-8로 안전하게 변환 */
     private _normalizeErrorMessage(error: unknown): string {
         const raw = error instanceof Error ? error.message : String(error);
-        if (process.platform !== 'win32') return raw;
         try {
             return Buffer.from(raw, 'latin1').toString('cp949' as BufferEncoding);
         } catch {
@@ -427,7 +388,6 @@ export class TomcatService {
 
     /** Windows 개발자 모드 활성 여부를 레지스트리에서 확인 */
     private _checkDeveloperMode(): boolean {
-        if (process.platform !== 'win32') return false;
         try {
             const output = execFileSync(
                 'reg',
