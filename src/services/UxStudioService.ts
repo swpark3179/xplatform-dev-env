@@ -140,8 +140,8 @@ export class UxStudioService {
         // 1. ui-env/ 내 XPLATFORM_Client_License.xml 제외 모든 파일·폴더 삭제
         this._cleanUiEnvDir(uiEnvDir);
 
-        // 2. src/webapp/ui/ 내 xtheme, xprj, xadl, globalvars*.xml 심볼릭 링크 생성
-        await this._createSymlinks(uiSrcDir, uiEnvDir);
+        // 2. src/webapp/ui/ 내 xprj, xadl은 실제 파일 복사, xtheme, globalvars*.xml은 심볼릭 링크 생성
+        await this._createFilesAndSymlinks(uiSrcDir, uiEnvDir);
 
         // 3. default_typedef.xml 복사
         const srcXml = path.join(uiSrcDir, 'default_typedef.xml');
@@ -179,21 +179,39 @@ export class UxStudioService {
         }
     }
 
-    private async _createSymlinks(srcDir: string, destDir: string): Promise<void> {
+    private async _createFilesAndSymlinks(srcDir: string, destDir: string): Promise<void> {
         if (!fs.existsSync(srcDir)) return;
-        const patterns = [/\.xtheme$/, /\.xprj$/, /\.xadl$/, /^globalvars.*\.xml$/];
+
+        const copyPatterns = [/\.xprj$/, /\.xadl$/];
+        const symlinkPatterns = [/\.xtheme$/, /^globalvars.*\.xml$/];
         const files = fs.readdirSync(srcDir);
-        for (const file of files) {
-            if (!patterns.some(p => p.test(file))) continue;
+
+        const operations = files.map(async (file) => {
+            const isCopy = copyPatterns.some(p => p.test(file));
+            const isSymlink = symlinkPatterns.some(p => p.test(file));
+
+            if (!isCopy && !isSymlink) return;
+
             const srcFile = path.join(srcDir, file);
             const destFile = path.join(destDir, file);
+
             try {
-                if (fs.existsSync(destFile)) fs.unlinkSync(destFile);
-                fs.symlinkSync(srcFile, destFile, 'file');
+                if (fs.existsSync(destFile)) {
+                    await fs.promises.unlink(destFile);
+                }
+
+                if (isCopy) {
+                    await fs.promises.copyFile(srcFile, destFile);
+                } else if (isSymlink) {
+                    await fs.promises.symlink(srcFile, destFile, 'file');
+                }
             } catch (e) {
-                this._log.appendLine(`[UxStudio] 심볼릭 링크 실패: ${file} — ${e}`);
+                const action = isCopy ? '파일 복사' : '심볼릭 링크';
+                this._log.appendLine(`[UxStudio] ${action} 실패: ${file} — ${e}`);
             }
-        }
+        });
+
+        await Promise.all(operations);
     }
 
     private _modifyTypedefXml(xmlPath: string, config: UxStudioEnvConfig, allServices: UxServiceEntry[]): void {
