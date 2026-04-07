@@ -38,7 +38,7 @@ export interface IWebviewActionEngine {
     uxStudioSearchXfdl(): Promise<void>;
     uxStudioConfirmFiles(selectedFiles: string[]): Promise<void>;
     uxStudioLaunchXprj(filePath: string): void;
-    uxStudioResetSetup(): void;
+    uxStudioResetSetup(): Promise<void>;
 }
 
 /**
@@ -144,7 +144,7 @@ export async function handleWebviewMessage(
             engine.uxStudioLaunchXprj(data.filePath);
             break;
         case 'uxStudioResetSetup':
-            engine.uxStudioResetSetup();
+            await engine.uxStudioResetSetup();
             break;
     }
 }
