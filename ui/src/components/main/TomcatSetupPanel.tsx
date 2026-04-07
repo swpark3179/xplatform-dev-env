@@ -26,7 +26,7 @@ export const TomcatSetupPanel: React.FC<{ state: AppState,  actions: AppActions 
                         const rect = e.currentTarget.getBoundingClientRect();
                         setInitModalRect(rect);
                         setIsInitModalOpen(true);
-                    }} title="초기화">
+                    }} title="초기화" aria-label="초기화">
                         <span className="icon">⚙</span>
                     </Button>
                 </div>

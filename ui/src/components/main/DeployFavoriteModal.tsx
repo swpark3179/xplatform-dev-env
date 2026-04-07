@@ -143,6 +143,7 @@ export const DeployFavoriteModal: React.FC<{
                             <button
                                 onClick={handleRefresh}
                                 title="즐겨찾기 목록 새로고침"
+                                aria-label="즐겨찾기 목록 새로고침"
                                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--vscode-foreground)', fontSize: '12px', padding: '2px 4px' }}
                             >
                                 🔄
@@ -186,6 +187,7 @@ export const DeployFavoriteModal: React.FC<{
                                         <button
                                             onClick={(e) => handleDeleteClick(e, fav)}
                                             title="즐겨찾기 삭제"
+                                            aria-label="즐겨찾기 삭제"
                                             className="icon-btn tree-item-action"
                                             style={{ width: '20px', height: '20px', border: 'none', background: 'transparent', color: 'inherit', padding: 0, flexShrink: 0 }}
                                         >
