@@ -59,23 +59,13 @@ export class ValidationService {
 
         try {
             const gradleBat = path.join(gradlePath, 'bin', 'gradle.bat');
-            const gradleSh = path.join(gradlePath, 'bin', 'gradle');
 
-            let gradleExe: string;
-            if (process.platform === 'win32') {
-                if (!fs.existsSync(gradleBat)) {
-                    return { status: 'invalid', message: 'gradle.bat을 찾을 수 없음' };
-                }
-                gradleExe = gradleBat;
-            } else {
-                if (!fs.existsSync(gradleSh)) {
-                    return { status: 'invalid', message: 'gradle 실행 파일을 찾을 수 없음' };
-                }
-                gradleExe = gradleSh;
+            if (!fs.existsSync(gradleBat)) {
+                return { status: 'invalid', message: 'gradle.bat을 찾을 수 없음' };
             }
 
             try {
-                const output = execFileSync(gradleExe, ['--version'], {
+                const output = execFileSync(gradleBat, ['--version'], {
                     encoding: 'utf-8',
                     timeout: 30000
                 });
