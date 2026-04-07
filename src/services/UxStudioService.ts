@@ -243,11 +243,11 @@ export class UxStudioService {
     // 설정 초기화
     // ============================================================
 
-    /** default_typedef.xml 삭제하여 설정을 초기화 상태로 되돌림 */
+    /** 설정 폴더를 비워서 초기화 상태로 되돌림 */
     public resetSetup(): void {
-        const xmlPath = path.join(this._getUiEnvDir(), 'default_typedef.xml');
+        const uiEnvDir = this._getUiEnvDir();
         try {
-            if (fs.existsSync(xmlPath)) fs.unlinkSync(xmlPath);
+            this._cleanUiEnvDir(uiEnvDir);
             this._log.appendLine('[UxStudio] 설정 초기화 완료');
         } catch (e) {
             this._log.appendLine(`[UxStudio] 설정 초기화 실패: ${e}`);

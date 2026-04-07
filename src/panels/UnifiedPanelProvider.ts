@@ -353,6 +353,9 @@ export class UnifiedPanelProvider extends WebviewProvider {
                     uxIsDevMode: true,
                     uxStudioStatus: 'new' as const,
                     uxServices: allServices,
+                    uxEnvConfig: null,
+                    uxXfdlFiles: [],
+                    uxXprjFiles: [],
                 });
             },
         };

@@ -96,7 +96,7 @@ export interface MessageFromExtension {
     uxIsDevMode?: boolean;
     uxStudioStatus?: 'new' | 'configured';
     uxServices?: UxServiceEntry[];
-    uxEnvConfig?: UxStudioEnvConfig;
+    uxEnvConfig?: UxStudioEnvConfig | null;
     uxXfdlFiles?: string[];
     uxXprjFiles?: string[];
 }
