@@ -9,7 +9,6 @@ export interface UxServiceEntry {
 }
 
 export interface UxStudioEnvConfig {
-    includeBase: boolean;
     includeSample: boolean;
     customPrefixIds: string[];
     urlAutoCorrect: boolean;

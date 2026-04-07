@@ -9,7 +9,6 @@ export interface UxServiceEntry {
 }
 
 export interface UxStudioEnvConfig {
-    includeBase: boolean;       // 기본파일 포함
     includeSample: boolean;     // 샘플파일 포함
     customPrefixIds: string[];  // 커스텀 체크박스 선택된 prefixid 목록
     urlAutoCorrect: boolean;    // url 자동보정

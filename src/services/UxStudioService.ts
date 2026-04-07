@@ -3,12 +3,10 @@ import * as path from 'path';
 import * as fs from 'fs';
 import type { UxServiceEntry, UxStudioEnvConfig } from '../types';
 
-// 기본파일 prefixid 목록
-const BASE_PREFIX_IDS = ['lib', 'Images', 'CSS', 'WORK', 'comm', 'composite', 'frame', 'frame_sgips', 'cmc'];
 // 샘플파일 prefixid 목록
 const SAMPLE_PREFIX_IDS = ['guide', 'Sample', 'xchart', 'DESIGN', 'UX_DESIGN', 'UX_CRM', 'UX_MES', 'UX_GUIDE_Component', 'UX_GUIDE_Templates', 'UX_GUIDE_Objects'];
 // 커스텀 작업파일 정비 제외 폴더 목록
-const EXCLUDE_FOLDERS = [...BASE_PREFIX_IDS, ...SAMPLE_PREFIX_IDS];
+const EXCLUDE_FOLDERS = ['lib', 'Images', 'CSS', 'WORK', 'comm', 'composite', 'frame', 'frame_sgips', 'cmc', ...SAMPLE_PREFIX_IDS];
 
 // url 자동보정 치환 대상
 const URL_CORRECT_FROM = 'localhost:7001/ep/';
@@ -217,15 +215,36 @@ export class UxStudioService {
     private _modifyTypedefXml(xmlPath: string, config: UxStudioEnvConfig, allServices: UxServiceEntry[]): void {
         let content = fs.readFileSync(xmlPath, 'utf8');
 
-        // url이 ./로 시작하는 Service 태그 제거 (자기닫힘 태그 형태)
-        content = content.replace(/<Service\s(?:[^>]*?)url\s*=\s*["']\.[/][^"']*["'][^>]*?\/?>/gi, '');
+        // url이 ./로 시작하는 Service 태그들을 찾음 (#서비스#)
+        const uiDirPath = path.join(this._projectRoot, 'src', 'webapp', 'ui').replace(/\\/g, '/');
 
-        // 포함할 Service 태그 수집
-        const includedServices = this._collectIncludedServices(config, allServices);
-        const serviceTagsStr = includedServices.map(s => this._buildServiceTag(s)).join('\n        ');
+        // 정규식을 사용해 <Service ... url="./..." ... /> 형식의 태그를 찾고 치환함
+        const serviceTagRegex = /<Service\s+([^>]*?)url\s*=\s*["'](\.\/[^"']*)["']([^>]*?)\/?>/gi;
 
-        // Services 닫힘 태그 바로 앞에 삽입
-        content = content.replace(/<\/Services>/i, `        ${serviceTagsStr}\n    </Services>`);
+        content = content.replace(serviceTagRegex, (fullMatch, beforeUrl, urlValue, afterUrl) => {
+            // #서비스# 목록 관리 (삭제 대상을 판단하기 위해)
+            const prefixMatch = fullMatch.match(/prefixid\s*=\s*["']([^"']+)["']/i);
+            const prefixid = prefixMatch ? prefixMatch[1] : '';
+
+            // url이 ./ 로 시작하는 경우 절대경로로 치환
+            // ./ 제외한 나머지 경로
+            const relativePath = urlValue.substring(2);
+            const absoluteUrl = `${uiDirPath}/${relativePath}`;
+
+            const newTag = `<Service ${beforeUrl}url="${absoluteUrl}"${afterUrl}/>`;
+
+            // 삭제 대상 조건 1: includeSample이 false이고, prefixid가 SAMPLE_PREFIX_IDS에 속하는 경우
+            if (!config.includeSample && SAMPLE_PREFIX_IDS.includes(prefixid)) {
+                return ''; // content에서 제거
+            }
+
+            // 삭제 대상 조건 2: 커스텀 서비스(기본, 샘플이 아님)인데 선택되지 않은 경우
+            if (!EXCLUDE_FOLDERS.includes(prefixid) && !config.customPrefixIds.includes(prefixid)) {
+                return ''; // content에서 제거
+            }
+
+            return newTag;
+        });
 
         // url 자동보정
         if (config.urlAutoCorrect) {
@@ -233,28 +252,6 @@ export class UxStudioService {
         }
 
         fs.writeFileSync(xmlPath, content, 'utf8');
-    }
-
-    private _collectIncludedServices(config: UxStudioEnvConfig, allServices: UxServiceEntry[]): UxServiceEntry[] {
-        const result: UxServiceEntry[] = [];
-        for (const svc of allServices) {
-            if (config.includeBase && BASE_PREFIX_IDS.includes(svc.prefixid)) {
-                result.push(svc);
-                continue;
-            }
-            if (config.includeSample && SAMPLE_PREFIX_IDS.includes(svc.prefixid)) {
-                result.push(svc);
-                continue;
-            }
-            if (config.customPrefixIds.includes(svc.prefixid)) {
-                result.push(svc);
-            }
-        }
-        return result;
-    }
-
-    private _buildServiceTag(s: UxServiceEntry): string {
-        return `<Service prefixid="${s.prefixid}" type="${s.type}" url="${s.url}" version="${s.version}" communicationversion="${s.communicationversion}" cachelevel="${s.cachelevel}"/>`;
     }
 
     // ============================================================
@@ -451,7 +448,7 @@ export class UxStudioService {
 
     /** 커스텀 체크박스 대상 Service 목록 반환 (기본/샘플 제외, url이 ./로 시작하는 것) */
     public getCustomServices(allServices: UxServiceEntry[]): UxServiceEntry[] {
-        const excludeIds = new Set([...BASE_PREFIX_IDS, ...SAMPLE_PREFIX_IDS]);
+        const excludeIds = new Set(['lib', 'Images', 'CSS', 'WORK', 'comm', 'composite', 'frame', 'frame_sgips', 'cmc', ...SAMPLE_PREFIX_IDS]);
         return allServices.filter(s => !excludeIds.has(s.prefixid) && s.url.startsWith('./'));
     }
 }
