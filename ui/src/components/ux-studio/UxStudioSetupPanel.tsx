@@ -10,7 +10,7 @@ interface Props {
 }
 
 const UxStudioSetupPanel: React.FC<Props> = ({ services, onApply }) => {
-    const [includeSample, setIncludeSample] = useState(false);
+    const [mode, setMode] = useState<'default' | 'selected'>('default');
     const [urlAutoCorrect, setUrlAutoCorrect] = useState(true);
 
     // 커스텀 체크박스 대상: 기본/샘플 제외, url이 ./로 시작하는 것
@@ -31,7 +31,7 @@ const UxStudioSetupPanel: React.FC<Props> = ({ services, onApply }) => {
 
     const handleApply = () => {
         const config: UxStudioEnvConfig = {
-            includeSample,
+            mode,
             customPrefixIds: Array.from(checkedPrefixIds),
             urlAutoCorrect,
         };
@@ -42,25 +42,35 @@ const UxStudioSetupPanel: React.FC<Props> = ({ services, onApply }) => {
         <div className="ux-setup-panel">
             <div className="ux-setup-panel__title">초기 환경 설정</div>
             <p className="ux-setup-panel__desc">
-                포함할 Service 항목을 선택하고 '설정 적용'을 클릭하세요.
+                모드를 선택하고 '설정 적용'을 클릭하세요.
             </p>
 
-            {/* 샘플파일 포함 */}
-            <label className="ux-setup-panel__check-row">
-                <input
-                    type="checkbox"
-                    checked={includeSample}
-                    onChange={e => setIncludeSample(e.target.checked)}
-                    id="ux-include-sample"
-                />
-                <span>샘플파일 포함</span>
-                <span className="ux-setup-panel__check-hint">
-                    ({SAMPLE_PREFIX_IDS.filter(id => services.some(s => s.prefixid === id)).join(', ')})
-                </span>
-            </label>
+            {/* 모드 선택 */}
+            <div className="ux-setup-panel__mode-group" style={{ marginBottom: '16px' }}>
+                <label style={{ marginRight: '16px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <input
+                        type="radio"
+                        name="ux-mode"
+                        value="default"
+                        checked={mode === 'default'}
+                        onChange={() => setMode('default')}
+                    />
+                    기본모드
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <input
+                        type="radio"
+                        name="ux-mode"
+                        value="selected"
+                        checked={mode === 'selected'}
+                        onChange={() => setMode('selected')}
+                    />
+                    선택모드
+                </label>
+            </div>
 
             {/* 커스텀 Service 체크박스 목록 */}
-            {customServices.length > 0 && (
+            {mode === 'selected' && customServices.length > 0 && (
                 <div className="ux-setup-panel__custom-list-wrapper">
                     <div className="ux-setup-panel__custom-list-label">커스텀 Service 항목</div>
                     <div className="ux-setup-panel__custom-list">
