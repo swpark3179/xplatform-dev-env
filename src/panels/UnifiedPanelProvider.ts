@@ -337,9 +337,14 @@ export class UnifiedPanelProvider extends WebviewProvider {
                 this._postMessage({ type: 'uxStudioXfdlResult', uxXfdlFiles: xfdlFiles });
             },
             uxStudioConfirmFiles: async (selectedFiles) => {
-                await this._uxStudioService.confirmFiles(selectedFiles);
+                const result = await this._uxStudioService.confirmFiles(selectedFiles);
+                if (!result.success) {
+                    this._postMessage({ type: 'uxStudioConfirmError', failedFiles: result.failedFiles });
+                    return result;
+                }
                 const xprjFiles = this._uxStudioService.getXprjFiles();
                 this._postMessage({ type: 'uxStudioXprjResult', uxXprjFiles: xprjFiles });
+                return result;
             },
             uxStudioLaunchXprj: (filePath) => {
                 this._uxStudioService.launchXprj(filePath);

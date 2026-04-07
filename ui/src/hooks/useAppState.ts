@@ -73,6 +73,7 @@ export function useAppState() {
     const [uxEnvConfig, setUxEnvConfig] = useState<UxStudioEnvConfig | null>(null);
     const [uxXfdlFiles, setUxXfdlFiles] = useState<string[]>([]);
     const [uxXprjFiles, setUxXprjFiles] = useState<string[]>([]);
+    const [uxConfirmErrorFiles, setUxConfirmErrorFiles] = useState<string[]>([]);
 
     // Tomcat 상태 업데이트는 별도로 만들어둠.
     const tomcatStateUpdate = (tomcatStateMsg: TomcatState) => {
@@ -153,6 +154,10 @@ export function useAppState() {
                     break;
                 case 'uxStudioXprjResult':
                     if (msg.uxXprjFiles !== undefined) setUxXprjFiles(msg.uxXprjFiles);
+                    setUxConfirmErrorFiles([]); // 성공 시 에러 목록 초기화
+                    break;
+                case 'uxStudioConfirmError':
+                    if (msg.type === 'uxStudioConfirmError') setUxConfirmErrorFiles((msg as any).failedFiles);
                     break;
             }
         });
@@ -167,6 +172,7 @@ export function useAppState() {
         setTomcatIsHotReloading,
         setChangedFiles,
         setUxStudioStatus,
+        setUxConfirmErrorFiles,
     });
 
     // 계층적 state: 소스 이해·코드 간결화.
@@ -198,6 +204,7 @@ export function useAppState() {
             envConfig: uxEnvConfig,
             xfdlFiles: uxXfdlFiles,
             xprjFiles: uxXprjFiles,
+            confirmErrorFiles: uxConfirmErrorFiles,
         },
     }), [
         currentPage,
@@ -221,6 +228,7 @@ export function useAppState() {
         uxEnvConfig,
         uxXfdlFiles,
         uxXprjFiles,
+        uxConfirmErrorFiles,
     ]);
 
     return { state, actions };

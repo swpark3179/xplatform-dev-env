@@ -58,8 +58,10 @@ const UxStudioPage: React.FC<{ state: AppState; actions: AppActions }> = ({
             {state.uxStudio.envConfig?.mode === 'selected' && (
               <UxStudioFilePanel
                 xfdlFiles={xfdlFiles}
+                confirmErrorFiles={state.uxStudio.confirmErrorFiles || []}
                 onRefresh={() => actions.uxStudio.searchXfdl()}
                 onConfirm={(selected) => actions.uxStudio.confirmFiles(selected)}
+                onClearConfirmError={() => actions.uxStudio.clearConfirmError()}
               />
             )}
             <UxStudioLaunchPanel

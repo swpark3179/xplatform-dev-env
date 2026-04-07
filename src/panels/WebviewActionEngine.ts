@@ -36,7 +36,7 @@ export interface IWebviewActionEngine {
     uxStudioInit(): Promise<void>;
     uxStudioApplySettings(config: import('../types').UxStudioEnvConfig): Promise<void>;
     uxStudioSearchXfdl(): Promise<void>;
-    uxStudioConfirmFiles(selectedFiles: string[]): Promise<void>;
+    uxStudioConfirmFiles(selectedFiles: string[]): Promise<{ success: boolean; failedFiles: string[] }>;
     uxStudioLaunchXprj(filePath: string): void;
     uxStudioResetSetup(): Promise<void>;
 }

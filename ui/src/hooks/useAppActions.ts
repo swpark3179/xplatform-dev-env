@@ -12,6 +12,7 @@ export interface UseAppActionsDeps {
     setTomcatIsHotReloading: (value: boolean) => void;
     setChangedFiles: (value: { java: string[], query: string[] }) => void;
     setUxStudioStatus: (value: 'new' | 'configured' | null) => void;
+    setUxConfirmErrorFiles: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 /**
@@ -27,6 +28,7 @@ export function useAppActions(deps: UseAppActionsDeps) {
         setTomcatIsHotReloading,
         setChangedFiles,
         setUxStudioStatus,
+        setUxConfirmErrorFiles,
     } = deps;
 
     const navigation = {
@@ -159,6 +161,9 @@ export function useAppActions(deps: UseAppActionsDeps) {
         confirmFiles: useCallback((selectedFiles: string[]) => {
             postMessage({ type: 'uxStudioConfirmFiles', selectedFiles } as any);
         }, []),
+        clearConfirmError: useCallback(() => {
+            setUxConfirmErrorFiles([]);
+        }, [setUxConfirmErrorFiles]),
         launchXprj: useCallback((filePath: string) => {
             postMessage({ type: 'uxStudioLaunchXprj', filePath } as any);
         }, []),

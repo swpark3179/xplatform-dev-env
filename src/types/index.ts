@@ -117,3 +117,20 @@ export type MessageFromWebview =
     | { type: 'uxStudioConfirmFiles'; selectedFiles: string[] }
     | { type: 'uxStudioLaunchXprj'; filePath: string }
     | { type: 'uxStudioResetSetup' };
+
+export type MessageFromExtension =
+    | { type: 'stateUpdate'; settings: Settings }
+    | { type: 'mainStateUpdate'; settings?: Settings; isGradleRunning?: boolean; tomcat?: TomcatState; validation?: ValidationState; deployFileList?: { java: string[], query: string[] }; changedFiles?: { java: string[], query: string[] } }
+    | { type: 'navigateTo'; page: string; validation?: ValidationState, validationState?: ValidationState }
+    | { type: 'tomcatStateUpdate'; tomcat: TomcatState }
+    | { type: 'deployFilesSearchResult'; searchResult: string[] }
+    | { type: 'changedFilesUpdate'; changedFiles: { java: string[], query: string[] } }
+    | { type: 'referenceChainResult'; deployFileList: { java: string[], query: string[] } }
+    | { type: 'favoritesListResult'; favorites: DeployFavorite[] }
+    | { type: 'favoriteApplied'; deployFileList: { java: string[], query: string[] }, favoriteId?: string, favoriteName?: string }
+    | { type: 'favoriteCleared' }
+    // UX Studio
+    | { type: 'uxStudioResult'; uxIsDevMode?: boolean; uxStudioStatus?: 'new' | 'configured' | null; uxServices?: UxServiceEntry[]; uxEnvConfig?: UxStudioEnvConfig; uxXfdlFiles?: string[]; uxXprjFiles?: string[] }
+    | { type: 'uxStudioXfdlResult'; uxXfdlFiles: string[] }
+    | { type: 'uxStudioXprjResult'; uxXprjFiles: string[] }
+    | { type: 'uxStudioConfirmError'; failedFiles: string[] };
