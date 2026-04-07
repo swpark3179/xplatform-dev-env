@@ -55,11 +55,13 @@ const UxStudioPage: React.FC<{ state: AppState; actions: AppActions }> = ({
           />
         ) : (
           <>
-            <UxStudioFilePanel
-              xfdlFiles={xfdlFiles}
-              onRefresh={() => actions.uxStudio.searchXfdl()}
-              onConfirm={(selected) => actions.uxStudio.confirmFiles(selected)}
-            />
+            {state.uxStudio.envConfig?.mode === 'selected' && (
+              <UxStudioFilePanel
+                xfdlFiles={xfdlFiles}
+                onRefresh={() => actions.uxStudio.searchXfdl()}
+                onConfirm={(selected) => actions.uxStudio.confirmFiles(selected)}
+              />
+            )}
             <UxStudioLaunchPanel
               xprjFiles={xprjFiles}
               onLaunch={(filePath) => actions.uxStudio.launchXprj(filePath)}

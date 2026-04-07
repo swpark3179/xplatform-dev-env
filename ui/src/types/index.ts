@@ -9,7 +9,7 @@ export interface UxServiceEntry {
 }
 
 export interface UxStudioEnvConfig {
-    includeSample: boolean;
+    mode: 'default' | 'selected';
     customPrefixIds: string[];
     urlAutoCorrect: boolean;
 }

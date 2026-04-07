@@ -3,10 +3,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import type { UxServiceEntry, UxStudioEnvConfig } from '../types';
 
-// 샘플파일 prefixid 목록
-const SAMPLE_PREFIX_IDS = ['guide', 'Sample', 'xchart', 'DESIGN', 'UX_DESIGN', 'UX_CRM', 'UX_MES', 'UX_GUIDE_Component', 'UX_GUIDE_Templates', 'UX_GUIDE_Objects'];
-// 커스텀 작업파일 정비 제외 폴더 목록
-const EXCLUDE_FOLDERS = ['lib', 'Images', 'CSS', 'WORK', 'comm', 'composite', 'frame', 'frame_sgips', 'cmc', ...SAMPLE_PREFIX_IDS];
+// 기본 제외 폴더 목록
+const BASE_PREFIX_IDS = ['lib', 'Images', 'CSS', 'WORK', 'comm', 'composite', 'frame', 'frame_sgips', 'cmc'];
 
 // url 자동보정 치환 대상
 const URL_CORRECT_FROM = 'localhost:7001/ep/';
@@ -60,10 +58,10 @@ export class UxStudioService {
     // 설정 상태 확인
     // ============================================================
 
-    /** .vscode/ui-env/default_typedef.xml 존재 여부로 설정 상태 판단 */
+    /** .vscode/ui-env/env.json 존재 여부로 설정 상태 판단 */
     public checkSetupStatus(): 'configured' | 'new' {
-        const xmlPath = path.join(this._getUiEnvDir(), 'default_typedef.xml');
-        return fs.existsSync(xmlPath) ? 'configured' : 'new';
+        const envPath = path.join(this._getUiEnvDir(), 'env.json');
+        return fs.existsSync(envPath) ? 'configured' : 'new';
     }
 
     /** .vscode/ui-env/env.json 로드 */
@@ -141,13 +139,27 @@ export class UxStudioService {
         // 2. src/webapp/ui/ 내 xprj, xadl은 실제 파일 복사, xtheme, globalvars*.xml은 심볼릭 링크 생성
         await this._createFilesAndSymlinks(uiSrcDir, uiEnvDir);
 
-        // 3. default_typedef.xml 복사
-        const srcXml = path.join(uiSrcDir, 'default_typedef.xml');
-        const destXml = path.join(uiEnvDir, 'default_typedef.xml');
-        fs.copyFileSync(srcXml, destXml);
+        if (config.mode === 'default') {
+            // 기본모드인 경우, xprj 및 xadl 파일마다 내용을 수정하여 default_typedef.xml 문자열을 절대 경로로 치환
+            const destXmlAbsPath = path.join(uiSrcDir, 'default_typedef.xml').replace(/\\/g, '/');
+            const files = fs.readdirSync(uiEnvDir);
+            for (const file of files) {
+                if (file.endsWith('.xprj') || file.endsWith('.xadl')) {
+                    const filePath = path.join(uiEnvDir, file);
+                    let content = fs.readFileSync(filePath, 'utf8');
+                    content = content.replace(/default_typedef\.xml/g, destXmlAbsPath);
+                    fs.writeFileSync(filePath, content, 'utf8');
+                }
+            }
+        } else {
+            // 3. 선택모드인 경우 default_typedef.xml 복사
+            const srcXml = path.join(uiSrcDir, 'default_typedef.xml');
+            const destXml = path.join(uiEnvDir, 'default_typedef.xml');
+            fs.copyFileSync(srcXml, destXml);
 
-        // 4. 복사된 xml 수정
-        this._modifyTypedefXml(destXml, config, allServices);
+            // 4. 복사된 xml 수정
+            this._modifyTypedefXml(destXml, config, allServices);
+        }
 
         // 5. env.json 저장
         fs.writeFileSync(path.join(uiEnvDir, 'env.json'), JSON.stringify(config, null, 2), 'utf8');
@@ -233,13 +245,8 @@ export class UxStudioService {
 
             const newTag = `<Service ${beforeUrl}url="${absoluteUrl}"${afterUrl}/>`;
 
-            // 삭제 대상 조건 1: includeSample이 false이고, prefixid가 SAMPLE_PREFIX_IDS에 속하는 경우
-            if (!config.includeSample && SAMPLE_PREFIX_IDS.includes(prefixid)) {
-                return ''; // content에서 제거
-            }
-
-            // 삭제 대상 조건 2: 커스텀 서비스(기본, 샘플이 아님)인데 선택되지 않은 경우
-            if (!EXCLUDE_FOLDERS.includes(prefixid) && !config.customPrefixIds.includes(prefixid)) {
+            // 삭제 대상 조건: 커스텀 서비스(기본 폴더가 아님)인데 선택되지 않은 경우
+            if (!BASE_PREFIX_IDS.includes(prefixid) && !config.customPrefixIds.includes(prefixid)) {
                 return ''; // content에서 제거
             }
 
@@ -291,7 +298,7 @@ export class UxStudioService {
             const fullPath = path.join(currentDir, entry.name);
             if (entry.isDirectory()) {
                 // 최상위 레벨에서만 제외 폴더 처리
-                if (currentDir === baseDir && EXCLUDE_FOLDERS.includes(entry.name)) continue;
+                if (currentDir === baseDir && BASE_PREFIX_IDS.includes(entry.name)) continue;
                 this._collectXfdl(baseDir, fullPath, results);
             } else if (entry.isFile() && entry.name.endsWith('.xfdl')) {
                 results.push(path.relative(baseDir, fullPath).replace(/\\/g, '/'));
@@ -446,9 +453,9 @@ export class UxStudioService {
         return path.join(this._projectRoot, '.vscode', 'ui-env');
     }
 
-    /** 커스텀 체크박스 대상 Service 목록 반환 (기본/샘플 제외, url이 ./로 시작하는 것) */
+    /** 커스텀 체크박스 대상 Service 목록 반환 (기본 제외, url이 ./로 시작하는 것) */
     public getCustomServices(allServices: UxServiceEntry[]): UxServiceEntry[] {
-        const excludeIds = new Set(['lib', 'Images', 'CSS', 'WORK', 'comm', 'composite', 'frame', 'frame_sgips', 'cmc', ...SAMPLE_PREFIX_IDS]);
+        const excludeIds = new Set(BASE_PREFIX_IDS);
         return allServices.filter(s => !excludeIds.has(s.prefixid) && s.url.startsWith('./'));
     }
 }
