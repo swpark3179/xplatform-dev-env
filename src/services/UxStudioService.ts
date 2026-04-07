@@ -15,9 +15,6 @@ export class UxStudioService {
     private _projectRoot: string;
     private _myChangesWatcher?: vscode.FileSystemWatcher;
 
-    // my-changes 파일 경로 매핑: { destAbsPath: srcAbsPath }
-    private _fileMap: Record<string, string> = {};
-
     constructor(log: vscode.OutputChannel, projectRoot: string) {
         this._log = log;
         this._projectRoot = projectRoot;
@@ -311,65 +308,40 @@ export class UxStudioService {
     // ============================================================
 
     /**
-     * 선택된 xfdl 파일을 my-changes/ 로 복사하고 매핑 파일 저장.
+     * 선택된 xfdl 파일을 ui-env/ 내 동일 패키지 구조로 복사
      * selectedFiles: src/webapp/ui/ 기준 상대경로 배열
      */
-    public async confirmFiles(selectedFiles: string[]): Promise<void> {
+    public async confirmFiles(selectedFiles: string[]): Promise<{ success: boolean; failedFiles: string[] }> {
         const uiDir = path.join(this._projectRoot, 'src', 'webapp', 'ui');
-        const myChangesDir = path.join(this._getUiEnvDir(), 'my-changes');
-        const newFileMap: Record<string, string> = {};
+        const uiEnvDir = this._getUiEnvDir();
+        const failedFiles: string[] = [];
 
-        const copyPromises: Promise<void>[] = [];
-
+        // EBUSY 방지를 위해 순차적으로 복사 (또는 Promise.all 사용하되 catch로 처리)
         for (const relPath of selectedFiles) {
             const srcAbs = path.join(uiDir, relPath);
             try { await fs.promises.access(srcAbs); } catch { continue; }
 
-            // 마지막 상위 경로 하나 제거한 대상 경로
-            const parts = relPath.split('/');
-            // 예: cm/cme/cmes/CMES0006.xfdl → cm/cme/CMES0006.xfdl
-            const destRel = parts.length >= 2
-                ? [...parts.slice(0, -2), parts[parts.length - 1]].join('/')
-                : parts[parts.length - 1];
+            const destAbs = path.join(uiEnvDir, relPath);
 
-            const destAbs = path.join(myChangesDir, destRel);
-
-            newFileMap[destAbs.replace(/\\/g, '/')] = srcAbs.replace(/\\/g, '/');
-
-            copyPromises.push((async () => {
+            try {
                 await fs.promises.mkdir(path.dirname(destAbs), { recursive: true });
                 await fs.promises.copyFile(srcAbs, destAbs);
-            })());
+            } catch (e: any) {
+                if (e.code === 'EBUSY' || e.code === 'EPERM') {
+                    failedFiles.push(relPath);
+                } else {
+                    this._log.appendLine(`[UxStudio] 파일 복사 실패 (${relPath}): ${e}`);
+                }
+            }
         }
 
-        await Promise.all(copyPromises);
-
-        // 매핑 저장
-        const mapPath = path.join(this._getUiEnvDir(), 'my-changes-map.json');
-        // 기존 매핑과 병합
-        let existingMap: Record<string, string> = {};
-        if (fs.existsSync(mapPath)) {
-            try { existingMap = JSON.parse(await fs.promises.readFile(mapPath, 'utf8')); } catch { /* ignore */ }
+        if (failedFiles.length > 0) {
+            this._log.appendLine(`[UxStudio] 작업파일 확정 실패 (사용중): ${failedFiles.length}개`);
+            return { success: false, failedFiles };
         }
-        const merged = { ...existingMap, ...newFileMap };
-        await fs.promises.writeFile(mapPath, JSON.stringify(merged, null, 2), 'utf8');
-        this._fileMap = merged;
-
-        // default_typedef.xml 에 My-Changes Service 태그 추가
-        await this._addMyChangesServiceTagAsync();
 
         this._log.appendLine(`[UxStudio] 작업파일 확정: ${selectedFiles.length}개`);
-    }
-
-    private async _addMyChangesServiceTagAsync(): Promise<void> {
-        const xmlPath = path.join(this._getUiEnvDir(), 'default_typedef.xml');
-        if (!fs.existsSync(xmlPath)) return;
-        let content = await fs.promises.readFile(xmlPath, 'utf8');
-        // 이미 My-Changes가 있으면 추가 안 함
-        if (content.includes('prefixid="My-Changes"')) return;
-        const tag = `<Service prefixid="My-Changes" type="remote" url="./my-changes/" version="1" communicationversion="1" cachelevel="0"/>`;
-        content = content.replace(/<\/Services>/i, `        ${tag}\n    </Services>`);
-        await fs.promises.writeFile(xmlPath, content, 'utf8');
+        return { success: true, failedFiles: [] };
     }
 
     // ============================================================
@@ -394,55 +366,58 @@ export class UxStudioService {
     }
 
     // ============================================================
-    // my-changes 파일 감시 (5단계)
+    // 변경 파일 감시 (5단계)
     // ============================================================
 
     public startMyChangesWatcher(): void {
         if (this._myChangesWatcher) return; // 이미 감시 중
 
-        // 매핑 파일 로드
-        this._loadFileMap();
-
+        const uiEnvDir = this._getUiEnvDir();
         const pattern = new vscode.RelativePattern(
-            path.join(this._getUiEnvDir(), 'my-changes'),
-            '**/*'
+            uiEnvDir,
+            '**/*.*'
         );
         this._myChangesWatcher = vscode.workspace.createFileSystemWatcher(pattern, true, false, true);
         this._myChangesWatcher.onDidChange(uri => {
             this._handleMyChangesFileChanged(uri.fsPath);
         });
-        this._log.appendLine('[UxStudio] my-changes 파일 감시 시작');
+        this._log.appendLine('[UxStudio] ui-env 파일 감시 시작');
     }
 
     public stopMyChangesWatcher(): void {
         if (this._myChangesWatcher) {
             this._myChangesWatcher.dispose();
             this._myChangesWatcher = undefined;
-            this._log.appendLine('[UxStudio] my-changes 파일 감시 중지');
+            this._log.appendLine('[UxStudio] ui-env 파일 감시 중지');
         }
     }
 
     private _handleMyChangesFileChanged(destPath: string): void {
-        const normalizedDest = destPath.replace(/\\/g, '/');
-        const srcPath = this._fileMap[normalizedDest];
-        if (!srcPath) {
-            this._log.appendLine(`[UxStudio] 매핑 없음: ${normalizedDest}`);
+        const uiEnvDir = this._getUiEnvDir();
+
+        // ui-env 바로 아래의 파일은 제외 (예: .xprj, .xadl, env.json 등)
+        const relPath = path.relative(uiEnvDir, destPath);
+        if (!relPath.includes(path.sep)) return;
+
+        // 심볼릭 링크 여부 확인 후 제외
+        try {
+            const stat = fs.lstatSync(destPath);
+            if (stat.isSymbolicLink()) return;
+        } catch (e) {
             return;
         }
+
+        const uiDir = path.join(this._projectRoot, 'src', 'webapp', 'ui');
+        const srcPath = path.join(uiDir, relPath);
+
         try {
-            fs.copyFileSync(destPath, srcPath);
-            this._log.appendLine(`[UxStudio] 변경 반영: ${path.basename(destPath)} → ${srcPath}`);
+            if (fs.existsSync(srcPath)) {
+                fs.copyFileSync(destPath, srcPath);
+                this._log.appendLine(`[UxStudio] 변경 반영: ${path.basename(destPath)} → ${srcPath}`);
+            }
         } catch (e) {
             this._log.appendLine(`[UxStudio] 변경 반영 실패: ${e}`);
         }
-    }
-
-    private _loadFileMap(): void {
-        const mapPath = path.join(this._getUiEnvDir(), 'my-changes-map.json');
-        if (!fs.existsSync(mapPath)) return;
-        try {
-            this._fileMap = JSON.parse(fs.readFileSync(mapPath, 'utf8'));
-        } catch { /* ignore */ }
     }
 
     // ============================================================

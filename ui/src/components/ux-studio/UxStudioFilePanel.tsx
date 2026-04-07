@@ -1,12 +1,16 @@
 import { useState, useMemo } from 'react';
 
+import { Modal } from '../common/Modal';
+
 interface Props {
     xfdlFiles: string[];
+    confirmErrorFiles?: string[];
     onRefresh: () => void;
     onConfirm: (selected: string[]) => void;
+    onClearConfirmError?: () => void;
 }
 
-const UxStudioFilePanel: React.FC<Props> = ({ xfdlFiles, onRefresh, onConfirm }) => {
+const UxStudioFilePanel: React.FC<Props> = ({ xfdlFiles, confirmErrorFiles, onRefresh, onConfirm, onClearConfirmError }) => {
     const [keyword, setKeyword] = useState('');
     const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
     const [confirmed, setConfirmed] = useState(false);
@@ -43,9 +47,28 @@ const UxStudioFilePanel: React.FC<Props> = ({ xfdlFiles, onRefresh, onConfirm })
 
     return (
         <div className="ux-file-panel">
+            {confirmErrorFiles && confirmErrorFiles.length > 0 && (
+                <Modal
+                    isOpen={true}
+                    title="파일 복사 실패"
+                    onClose={() => onClearConfirmError?.()}
+                    onConfirm={() => onClearConfirmError?.()}
+                    confirmText="확인"
+                    cancelText=""
+                >
+                    <div style={{ marginBottom: '10px' }}>
+                        다음 파일들이 사용 중이거나 권한이 없어 복사하지 못했습니다. UX Studio를 종료하거나 해당 파일을 닫은 후 다시 시도해주세요.
+                    </div>
+                    <ul style={{ maxHeight: '150px', overflowY: 'auto', background: 'var(--vscode-input-background)', border: '1px solid var(--vscode-input-border)', padding: '5px 5px 5px 25px' }}>
+                        {confirmErrorFiles.map(f => (
+                            <li key={f}>{f}</li>
+                        ))}
+                    </ul>
+                </Modal>
+            )}
             <div className="ux-file-panel__title">커스텀 작업파일 정비</div>
             <div className="ux-file-panel__desc">
-                작업할 xfdl 파일을 선택하면 my-changes 폴더로 복사됩니다.
+                작업할 xfdl 파일을 선택하면 복사됩니다.
                 <button className="ux-file-panel__refresh-btn" onClick={onRefresh} title="파일 목록 새로고침" aria-label="파일 목록 새로고침">
                     ↻
                 </button>
