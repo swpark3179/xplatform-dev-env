@@ -310,14 +310,16 @@ export class UxStudioService {
      * 선택된 xfdl 파일을 my-changes/ 로 복사하고 매핑 파일 저장.
      * selectedFiles: src/webapp/ui/ 기준 상대경로 배열
      */
-    public confirmFiles(selectedFiles: string[]): void {
+    public async confirmFiles(selectedFiles: string[]): Promise<void> {
         const uiDir = path.join(this._projectRoot, 'src', 'webapp', 'ui');
         const myChangesDir = path.join(this._getUiEnvDir(), 'my-changes');
         const newFileMap: Record<string, string> = {};
 
+        const copyPromises: Promise<void>[] = [];
+
         for (const relPath of selectedFiles) {
             const srcAbs = path.join(uiDir, relPath);
-            if (!fs.existsSync(srcAbs)) continue;
+            try { await fs.promises.access(srcAbs); } catch { continue; }
 
             // 마지막 상위 경로 하나 제거한 대상 경로
             const parts = relPath.split('/');
@@ -327,38 +329,43 @@ export class UxStudioService {
                 : parts[parts.length - 1];
 
             const destAbs = path.join(myChangesDir, destRel);
-            fs.mkdirSync(path.dirname(destAbs), { recursive: true });
-            fs.copyFileSync(srcAbs, destAbs);
 
             newFileMap[destAbs.replace(/\\/g, '/')] = srcAbs.replace(/\\/g, '/');
+
+            copyPromises.push((async () => {
+                await fs.promises.mkdir(path.dirname(destAbs), { recursive: true });
+                await fs.promises.copyFile(srcAbs, destAbs);
+            })());
         }
+
+        await Promise.all(copyPromises);
 
         // 매핑 저장
         const mapPath = path.join(this._getUiEnvDir(), 'my-changes-map.json');
         // 기존 매핑과 병합
         let existingMap: Record<string, string> = {};
         if (fs.existsSync(mapPath)) {
-            try { existingMap = JSON.parse(fs.readFileSync(mapPath, 'utf8')); } catch { /* ignore */ }
+            try { existingMap = JSON.parse(await fs.promises.readFile(mapPath, 'utf8')); } catch { /* ignore */ }
         }
         const merged = { ...existingMap, ...newFileMap };
-        fs.writeFileSync(mapPath, JSON.stringify(merged, null, 2), 'utf8');
+        await fs.promises.writeFile(mapPath, JSON.stringify(merged, null, 2), 'utf8');
         this._fileMap = merged;
 
         // default_typedef.xml 에 My-Changes Service 태그 추가
-        this._addMyChangesServiceTag();
+        await this._addMyChangesServiceTagAsync();
 
         this._log.appendLine(`[UxStudio] 작업파일 확정: ${selectedFiles.length}개`);
     }
 
-    private _addMyChangesServiceTag(): void {
+    private async _addMyChangesServiceTagAsync(): Promise<void> {
         const xmlPath = path.join(this._getUiEnvDir(), 'default_typedef.xml');
         if (!fs.existsSync(xmlPath)) return;
-        let content = fs.readFileSync(xmlPath, 'utf8');
+        let content = await fs.promises.readFile(xmlPath, 'utf8');
         // 이미 My-Changes가 있으면 추가 안 함
         if (content.includes('prefixid="My-Changes"')) return;
         const tag = `<Service prefixid="My-Changes" type="remote" url="./my-changes/" version="1" communicationversion="1" cachelevel="0"/>`;
         content = content.replace(/<\/Services>/i, `        ${tag}\n    </Services>`);
-        fs.writeFileSync(xmlPath, content, 'utf8');
+        await fs.promises.writeFile(xmlPath, content, 'utf8');
     }
 
     // ============================================================

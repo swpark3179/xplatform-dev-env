@@ -337,7 +337,7 @@ export class UnifiedPanelProvider extends WebviewProvider {
                 this._postMessage({ type: 'uxStudioXfdlResult', uxXfdlFiles: xfdlFiles });
             },
             uxStudioConfirmFiles: async (selectedFiles) => {
-                this._uxStudioService.confirmFiles(selectedFiles);
+                await this._uxStudioService.confirmFiles(selectedFiles);
                 const xprjFiles = this._uxStudioService.getXprjFiles();
                 this._postMessage({ type: 'uxStudioXprjResult', uxXprjFiles: xprjFiles });
             },
