@@ -15,7 +15,8 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.window.registerWebviewViewProvider(
             'dev-helper.settingsView',
-            panelProvider
+            panelProvider,
+            { webviewOptions: { retainContextWhenHidden: true } }
         )
     );
 
