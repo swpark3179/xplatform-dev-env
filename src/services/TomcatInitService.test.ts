@@ -208,7 +208,7 @@ describe('TomcatInitService', () => {
 
             expect(result).toBe(true);
             expect(cpy).toHaveBeenCalledWith(
-                ['**/*', '!**/WEB-INF/lib'],
+                ['**/*', '!**/WEB-INF/lib', '!**/XPLATFORM_Client_License.xml'],
                 expect.any(String),
                 expect.objectContaining({ cwd: path.join('/test/projectRoot', 'src', 'webapp') })
             );

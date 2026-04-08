@@ -143,7 +143,7 @@ export class TomcatInitService {
             await Promise.all([
                 isDeveloperMode
                     ? this._createStaticSymlinks(webappPath, _deployPath)
-                    : this.copyWithProgress('정적 파일', webappPath, _deployPath, ['**/*', '!**/WEB-INF/lib']),
+                    : this.copyWithProgress('정적 파일', webappPath, _deployPath, ['**/*', '!**/WEB-INF/lib', '!**/XPLATFORM_Client_License.xml']),
                 this.copyWithProgress('Java', srcClassesPath, targetClassesPath, '**/*.class*'),
                 this.copyWithProgress('Query', srcQueryPath, targetClassesPath, '**/*'),
                 this.copyWithProgress('Config', srcConfigPath, targetClassesPath, '**/*'),
@@ -169,7 +169,7 @@ export class TomcatInitService {
             await Promise.all([
                 isDeveloperMode
                     ? this._createStaticSymlinks(webappPath, _deployPath)
-                    : this.copyWithProgress('정적 파일', webappPath, _deployPath, ['**/*', '!**/WEB-INF/lib']),
+                    : this.copyWithProgress('정적 파일', webappPath, _deployPath, ['**/*', '!**/WEB-INF/lib', '!**/XPLATFORM_Client_License.xml']),
                 (javaClassPatterns.length > 0) ? this.copyWithProgress('Java', srcClassesPath, targetClassesPath, javaClassPatterns) : Promise.resolve(),
                 (queryPatterns.length > 0) ? this.copyWithProgress('Query', srcQueryPath, targetClassesPath, queryPatterns) : Promise.resolve(),
                 this.copyWithProgress('Config', srcConfigPath, targetClassesPath, '**/*'),
@@ -270,16 +270,18 @@ export class TomcatInitService {
             return;
         }
 
-        // 클라이언트용 라이센스: output_path = this._tomcatPath/webapps/${contextRoot}/ui
-        const clientOutputPath = path.join(this._tomcatPath, 'webapps', contextRoot, 'ui');
+        // 클라이언트용 라이센스: output_path = this._settings.projectRoot/.vscode/ui-env
+        const clientOutputPath = path.join(this._settings.projectRoot, '.vscode', 'ui-env');
         if (!fs.pathExistsSync(clientOutputPath)) fs.mkdirSync(clientOutputPath, { recursive: true });
+
+        const clientLicenseFile = path.join(clientOutputPath, 'XPLATFORM_Client_License.xml');
         try {
             execFileSync(javaExe, [
                 '-Dfile.encoding=UTF-8',
                 '-jar',
                 licenseCreatorPath,
                 'client',
-                path.join(clientOutputPath, 'XPLATFORM_Client_License.xml')
+                clientLicenseFile
             ], {
                 encoding: 'utf8',
                 stdio: 'pipe',
@@ -287,6 +289,15 @@ export class TomcatInitService {
         } catch (e) {
             this._log.appendLine(`[XPlatform License] 클라이언트용 라이센스 생성 실패: ${e instanceof Error ? e.message : String(e)}`);
             return;
+        }
+
+        // 생성된 클라이언트용 라이센스를 tomcat webapps 하위로 복사
+        const tomcatUiPath = path.join(this._tomcatPath, 'webapps', contextRoot, 'ui');
+        if (!fs.pathExistsSync(tomcatUiPath)) fs.mkdirSync(tomcatUiPath, { recursive: true });
+        try {
+            fs.copyFileSync(clientLicenseFile, path.join(tomcatUiPath, 'XPLATFORM_Client_License.xml'));
+        } catch (e) {
+            this._log.appendLine(`[XPlatform License] 클라이언트 라이센스 복사 실패: ${e instanceof Error ? e.message : String(e)}`);
         }
 
         this._log.appendLine('[XPlatform License] 데모 라이센스 생성 완료');
@@ -322,7 +333,7 @@ spring.bean_refresh=true`;
         fs.writeFileSync(webProfilePath, content, 'utf8');
     }
 
-    /** 개발자 모드: 정적 파일 복사 대신 심볼릭 링크 생성 (WEB-INF/lib 제외) */
+    /** 개발자 모드: 정적 파일 복사 대신 심볼릭 링크 생성 (WEB-INF/lib 제외, ui/XPLATFORM_Client_License.xml 제외) */
     private async _createStaticSymlinks(webappPath: string, deployPath: string): Promise<void> {
         if (!fs.pathExistsSync(webappPath)) return;
         const entries = fs.readdirSync(webappPath, { withFileTypes: true });
@@ -339,6 +350,17 @@ spring.bean_refresh=true`;
                     const wiDest = path.join(destFull, wi.name);
                     if (fs.existsSync(wiDest)) fs.removeSync(wiDest);
                     fs.symlinkSync(wiSrc, wiDest, wi.isDirectory() ? 'junction' : 'file');
+                }
+                continue;
+            } else if (entry.name === 'ui' && entry.isDirectory()) {
+                fs.ensureDirSync(destFull);
+                const uiEntries = fs.readdirSync(srcFull, { withFileTypes: true });
+                for (const uiEntry of uiEntries) {
+                    if (uiEntry.name === 'XPLATFORM_Client_License.xml') continue;
+                    const uiSrc = path.join(srcFull, uiEntry.name);
+                    const uiDest = path.join(destFull, uiEntry.name);
+                    if (fs.existsSync(uiDest)) fs.removeSync(uiDest);
+                    fs.symlinkSync(uiSrc, uiDest, uiEntry.isDirectory() ? 'junction' : 'file');
                 }
                 continue;
             }
