@@ -30,18 +30,34 @@ export const DeployListModal: React.FC<{
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, searchKeyword, actions.deploy]);
 
-  // 검색어 입력 변경 핸들러
+  // 팝업 오픈 시 전체 배포 대상 파일 조회
+  React.useEffect(() => {
+    if (isOpen) {
+      actions.deploy.getAllDeployableFiles();
+    }
+  }, [isOpen, actions.deploy]);
+
+  // 새로고침 버튼 클릭 핸들러
+  const handleRefreshDeployableFiles = () => {
+    actions.deploy.getAllDeployableFiles();
+    // 검색어가 있다면 검색 결과도 빈 배열로 초기화 후 다시 검색되도록 함
+    actions.deploy.clearSearchResult();
+  };
+
+  // 검색어 입력 변경 핸들러 (메모리에서 로컬 필터링)
   React.useEffect(() => {
     if (!isOpen) return;
     if (searchKeyword.trim() === "") {
       actions.deploy.clearSearchResult();
     } else {
-      const timeoutId = setTimeout(() => {
-        actions.deploy.searchDeployFiles(searchKeyword);
-      }, 300);
-      return () => clearTimeout(timeoutId);
+      // 대소문자 구분 없이 검색
+      const lowerKeyword = searchKeyword.toLowerCase();
+      // state.deploy.allDeployableFiles를 필터링
+      const allFiles = state.deploy.allDeployableFiles || [];
+      const filtered = allFiles.filter(file => file.toLowerCase().includes(lowerKeyword));
+      actions.deploy.setStateSearchResult(filtered);
     }
-  }, [searchKeyword, isOpen]);
+  }, [searchKeyword, isOpen, state.deploy.allDeployableFiles, actions.deploy]);
 
   // 참조 체인 분석 완료 시 로딩 상태 해제
   React.useEffect(() => {
@@ -142,14 +158,16 @@ export const DeployListModal: React.FC<{
           className="search-pane"
           style={{ display: "flex", flexDirection: "column", gap: "5px" }}
         >
-          <div style={{ position: "relative" }}>
-            <input
-              type="text"
-              placeholder={"추가할 파일명 검색... (Java 및 Query)"}
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-            />
-            {searchKeyword.trim().length > 0 && (
+          <div style={{ display: "flex", gap: "5px", position: "relative" }}>
+            <div style={{ position: "relative", flex: 1 }}>
+              <input
+                type="text"
+                placeholder={"추가할 파일명 검색... (Java 및 Query)"}
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                style={{ width: "100%" }}
+              />
+              {searchKeyword.trim().length > 0 && (
               <div
                 style={{
                   position: "absolute",
@@ -235,7 +253,24 @@ export const DeployListModal: React.FC<{
                   )
                 )}
               </div>
-            )}
+              )}
+            </div>
+            <button
+              title="파일 목록 새로고침"
+              onClick={handleRefreshDeployableFiles}
+              style={{
+                fontSize: "12px",
+                padding: "0 8px",
+                cursor: "pointer",
+                background: "var(--vscode-button-secondaryBackground, #3a3d41)",
+                color: "var(--vscode-button-secondaryForeground, #ccc)",
+                border: "1px solid var(--vscode-panel-border)",
+                borderRadius: "3px",
+                whiteSpace: "nowrap",
+              }}
+            >
+              🔄
+            </button>
           </div>
         </div>
 

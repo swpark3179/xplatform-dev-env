@@ -244,6 +244,10 @@ export class UnifiedPanelProvider extends WebviewProvider {
                 const filtered = await this._deployService.searchDeployFiles(keyword);
                 this._postMessage({ type: 'deployFilesSearchResult', searchResult: filtered });
             },
+            getAllDeployableFiles: async () => { // 배포목록관리 팝업에서 전체 배포 파일 검색
+                const allFiles = await this._deployService.getAllDeployableFiles();
+                this._postMessage({ type: 'allDeployableFilesResult', allFiles });
+            },
             updateDeployFiles: (deployFileList, targetFile, fileType, changeType) => { // 배포목록관리 팝업에서 배포목록 업데이트 핸들러
                 this._deployService.updateDeployList(deployFileList, targetFile, fileType, changeType);
                 if (this._tomcatState.running && changeType === 'add') this._postMessage({ type: 'changedFilesUpdate', changedFiles: this._changedFiles });

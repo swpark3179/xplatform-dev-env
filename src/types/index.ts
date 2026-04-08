@@ -101,6 +101,7 @@ export type MessageFromWebview =
     | { type: 'setupHomeSettings' }
     | { type: 'updateDeployFiles'; deployFileList: { java: string[], query: string[] }, targetFile: string, fileType: string, changeType: string }
     | { type: 'searchDeployFiles'; keyword: string }
+    | { type: 'getAllDeployableFiles' }
     | { type: 'getChangedFiles' }
     | { type: 'clearChangedFiles' }
     | { type: 'applyChangedFiles' }
@@ -125,6 +126,7 @@ export type MessageFromExtension =
     | { type: 'navigateTo'; page: string; validation?: ValidationState, validationState?: ValidationState }
     | { type: 'tomcatStateUpdate'; tomcat: TomcatState }
     | { type: 'deployFilesSearchResult'; searchResult: string[] }
+    | { type: 'allDeployableFilesResult'; allFiles: string[] }
     | { type: 'changedFilesUpdate'; changedFiles: { java: string[], query: string[] } }
     | { type: 'referenceChainResult'; deployFileList: { java: string[], query: string[] } }
     | { type: 'favoritesListResult'; favorites: DeployFavorite[] }
