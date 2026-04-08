@@ -12,6 +12,7 @@ export interface UxStudioEnvConfig {
     mode: 'default' | 'selected';
     customPrefixIds: string[];  // 커스텀 체크박스 선택된 prefixid 목록
     urlAutoCorrect: boolean;    // url 자동보정
+    selectedFiles?: string[];   // 작업파일 정비 시 선택된 파일 목록
 }
 
 // ==================== Settings ====================

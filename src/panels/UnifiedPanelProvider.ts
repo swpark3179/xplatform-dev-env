@@ -350,26 +350,18 @@ export class UnifiedPanelProvider extends WebviewProvider {
                 this._uxStudioService.launchXprj(filePath);
             },
             uxStudioResetSetup: async () => {
-                const answer = await vscode.window.showInformationMessage('설정을 초기화하면 현재 설정 정보가 삭제됩니다. 계속하시겠습니까?', '예', '아니오');
-                if (answer === '예') {
-                    this._uxStudioService.stopMyChangesWatcher();
-                    this._uxStudioService.resetSetup();
-                    const allServices = this._uxStudioService.parseDefaultTypedef();
-                    this._postMessage({
-                        type: 'uxStudioResult',
-                        uxIsDevMode: true,
-                        uxStudioStatus: 'new' as const,
-                        uxServices: allServices,
-                        uxEnvConfig: null,
-                        uxXfdlFiles: [],
-                        uxXprjFiles: [],
-                    });
-                } else {
-                    this._postMessage({
-                        type: 'uxStudioResult',
-                        uxStudioStatus: 'configured' as const
-                    });
-                }
+                this._uxStudioService.stopMyChangesWatcher();
+                this._uxStudioService.resetSetup();
+                const allServices = this._uxStudioService.parseDefaultTypedef();
+                this._postMessage({
+                    type: 'uxStudioResult',
+                    uxIsDevMode: true,
+                    uxStudioStatus: 'new' as const,
+                    uxServices: allServices,
+                    uxEnvConfig: null,
+                    uxXfdlFiles: [],
+                    uxXprjFiles: [],
+                });
             },
         };
     }

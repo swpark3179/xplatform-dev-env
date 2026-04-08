@@ -5,14 +5,15 @@ import { Modal } from '../common/Modal';
 interface Props {
     xfdlFiles: string[];
     confirmErrorFiles?: string[];
+    initialSelectedFiles?: string[];
     onRefresh: () => void;
     onConfirm: (selected: string[]) => void;
     onClearConfirmError?: () => void;
 }
 
-const UxStudioFilePanel: React.FC<Props> = ({ xfdlFiles, confirmErrorFiles, onRefresh, onConfirm, onClearConfirmError }) => {
+const UxStudioFilePanel: React.FC<Props> = ({ xfdlFiles, confirmErrorFiles, initialSelectedFiles = [], onRefresh, onConfirm, onClearConfirmError }) => {
     const [keyword, setKeyword] = useState('');
-    const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+    const [selectedFiles, setSelectedFiles] = useState<string[]>(initialSelectedFiles);
     const [confirmed, setConfirmed] = useState(false);
 
     // 선택되지 않은 파일 목록에서 keyword로 필터링

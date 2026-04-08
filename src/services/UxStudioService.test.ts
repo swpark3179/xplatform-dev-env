@@ -196,24 +196,11 @@ describe('UxStudioService', () => {
         it('should apply settings in default mode', async () => {
             const mockConfig = { mode: 'default' } as any;
             (fs.existsSync as jest.Mock).mockReturnValue(true);
-            (fs.readdirSync as jest.Mock)
-                .mockReturnValueOnce([]) // for _cleanUiEnvDir
-                .mockReturnValueOnce([
-                    { name: 'test.xprj', isDirectory: () => false },
-                    { name: 'test.xadl', isDirectory: () => false },
-                    { name: 'lib', isDirectory: () => true }
-                ]) // for _createFilesAndSymlinks
-                .mockReturnValueOnce(['test.xprj', 'test.xadl']); // for replacing xml content
-
-            (fs.readFileSync as jest.Mock).mockReturnValue('default_typedef.xml');
 
             await service.applySettings(mockConfig, []);
 
-            expect(fs.writeFileSync).toHaveBeenCalledWith(
-                expect.stringContaining('test.xprj'),
-                expect.stringContaining('/test/projectRoot/src/webapp/ui/default_typedef.xml'),
-                'utf8'
-            );
+            // In default mode, no files should be copied/linked, only env.json should be saved
+            expect(fs.writeFileSync).toHaveBeenCalledTimes(1);
             expect(fs.writeFileSync).toHaveBeenCalledWith(
                 expect.stringContaining('env.json'),
                 expect.stringContaining('"mode": "default"'),

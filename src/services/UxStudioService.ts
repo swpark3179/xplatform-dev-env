@@ -131,25 +131,18 @@ export class UxStudioService {
         const uiEnvDir = this._getUiEnvDir();
         const uiSrcDir = path.join(this._projectRoot, 'src', 'webapp', 'ui');
 
-        // 1. ui-env/ 내 XPLATFORM_Client_License.xml 제외 모든 파일·폴더 삭제
-        this._cleanUiEnvDir(uiEnvDir);
-
-        // 2. src/webapp/ui/ 내 xprj, xadl은 실제 파일 복사, xtheme, globalvars*.xml은 심볼릭 링크 생성
-        await this._createFilesAndSymlinks(uiSrcDir, uiEnvDir, config.mode);
-
         if (config.mode === 'default') {
-            // 기본모드인 경우, xprj 및 xadl 파일마다 내용을 수정하여 default_typedef.xml 문자열을 절대 경로로 치환
-            const destXmlAbsPath = path.join(uiSrcDir, 'default_typedef.xml').replace(/\\/g, '/');
-            const files = fs.readdirSync(uiEnvDir);
-            for (const file of files) {
-                if (file.endsWith('.xprj') || file.endsWith('.xadl')) {
-                    const filePath = path.join(uiEnvDir, file);
-                    let content = fs.readFileSync(filePath, 'utf8');
-                    content = content.replace(/default_typedef\.xml/g, destXmlAbsPath);
-                    fs.writeFileSync(filePath, content, 'utf8');
-                }
+            // 기본모드: env.json만 생성
+            if (!fs.existsSync(uiEnvDir)) {
+                fs.mkdirSync(uiEnvDir, { recursive: true });
             }
         } else {
+            // 1. ui-env/ 내 XPLATFORM_Client_License.xml 제외 모든 파일·폴더 삭제
+            this._cleanUiEnvDir(uiEnvDir);
+
+            // 2. src/webapp/ui/ 내 xprj, xadl은 실제 파일 복사, xtheme, globalvars*.xml은 심볼릭 링크 생성
+            await this._createFilesAndSymlinks(uiSrcDir, uiEnvDir, config.mode);
+
             // 3. 선택모드인 경우 default_typedef.xml 복사
             const srcXml = path.join(uiSrcDir, 'default_typedef.xml');
             const destXml = path.join(uiEnvDir, 'default_typedef.xml');
@@ -353,6 +346,45 @@ export class UxStudioService {
             return { success: false, failedFiles };
         }
 
+        // 실패하지 않은 파일들만 필터링
+        const successfulFiles = selectedFiles.filter(f => !failedFiles.includes(f));
+
+        // env.json에 selectedFiles 추가 및 저장
+        const config = this.loadEnvConfig();
+        if (config) {
+            config.selectedFiles = successfulFiles;
+            fs.writeFileSync(path.join(uiEnvDir, 'env.json'), JSON.stringify(config, null, 2), 'utf8');
+        }
+
+        // default_typedef.xml 수정 (선택된 파일의 상위 폴더 경로 추가)
+        const xmlPath = path.join(uiEnvDir, 'default_typedef.xml');
+        if (fs.existsSync(xmlPath)) {
+            let content = fs.readFileSync(xmlPath, 'utf8');
+            const newServices = new Set<string>();
+
+            for (const relPath of successfulFiles) {
+                const dirPath = path.dirname(relPath).replace(/\\/g, '/');
+                if (dirPath === '.') continue; // 상위 폴더가 없는 경우 제외
+
+                const prefixid = dirPath.split('/').pop();
+                if (!prefixid) continue;
+
+                // 이미 해당 prefixid가 존재하는지 확인
+                const regex = new RegExp(`<Service\\s+[^>]*prefixid\\s*=\\s*["']${prefixid}["'][^>]*>`, 'i');
+                if (!regex.test(content) && !newServices.has(prefixid)) {
+                    newServices.add(prefixid);
+                    const newServiceTag = `\t<Service prefixid="${prefixid}" type="form" url=".${dirPath.startsWith('/') ? '' : '/'}${dirPath}" version="0" communicationversion="0" cachelevel="none"/>\n`;
+                    // </Services> 태그 바로 앞에 추가
+                    content = content.replace('</Services>', `${newServiceTag}</Services>`);
+                }
+            }
+
+            if (newServices.size > 0) {
+                fs.writeFileSync(xmlPath, content, 'utf8');
+                this._log.appendLine(`[UxStudio] default_typedef.xml에 ${newServices.size}개의 Service 추가됨`);
+            }
+        }
+
         this._log.appendLine(`[UxStudio] 작업파일 확정: ${selectedFiles.length}개`);
         return { success: true, failedFiles: [] };
     }
@@ -362,11 +394,15 @@ export class UxStudioService {
     // ============================================================
 
     public getXprjFiles(): string[] {
-        const uiEnvDir = this._getUiEnvDir();
-        if (!fs.existsSync(uiEnvDir)) return [];
-        return fs.readdirSync(uiEnvDir)
+        const config = this.loadEnvConfig();
+        const searchDir = config?.mode === 'default'
+            ? path.join(this._projectRoot, 'src', 'webapp', 'ui')
+            : this._getUiEnvDir();
+
+        if (!fs.existsSync(searchDir)) return [];
+        return fs.readdirSync(searchDir)
             .filter(f => f.endsWith('.xprj'))
-            .map(f => path.join(uiEnvDir, f).replace(/\\/g, '/'));
+            .map(f => path.join(searchDir, f).replace(/\\/g, '/'));
     }
 
     /** xprj 파일을 OS 기본 연결 프로그램으로 실행 */
