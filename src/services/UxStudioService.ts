@@ -134,7 +134,7 @@ export class UxStudioService {
         this._cleanUiEnvDir(uiEnvDir);
 
         // 2. src/webapp/ui/ 내 xprj, xadl은 실제 파일 복사, xtheme, globalvars*.xml은 심볼릭 링크 생성
-        await this._createFilesAndSymlinks(uiSrcDir, uiEnvDir);
+        await this._createFilesAndSymlinks(uiSrcDir, uiEnvDir, config.mode);
 
         if (config.mode === 'default') {
             // 기본모드인 경우, xprj 및 xadl 파일마다 내용을 수정하여 default_typedef.xml 문자열을 절대 경로로 치환
@@ -186,31 +186,43 @@ export class UxStudioService {
         }
     }
 
-    private async _createFilesAndSymlinks(srcDir: string, destDir: string): Promise<void> {
+    private async _createFilesAndSymlinks(srcDir: string, destDir: string, mode: 'default' | 'selected'): Promise<void> {
         if (!fs.existsSync(srcDir)) return;
 
         const copyPatterns = [/\.xprj$/, /\.xadl$/];
         const symlinkPatterns = [/\.xtheme$/, /^globalvars.*\.xml$/];
-        const files = fs.readdirSync(srcDir);
+        const entries = fs.readdirSync(srcDir, { withFileTypes: true });
 
-        const operations = files.map(async (file) => {
-            const isCopy = copyPatterns.some(p => p.test(file));
-            const isSymlink = symlinkPatterns.some(p => p.test(file));
+        const operations = entries.map(async (entry) => {
+            const file = entry.name;
+            const isDir = entry.isDirectory();
 
-            if (!isCopy && !isSymlink) return;
+            const isCopy = !isDir && copyPatterns.some(p => p.test(file));
+            const isSymlink = !isDir && symlinkPatterns.some(p => p.test(file));
+            const isDefaultDirSymlink = isDir && mode === 'default';
+
+            if (!isCopy && !isSymlink && !isDefaultDirSymlink) return;
 
             const srcFile = path.join(srcDir, file);
             const destFile = path.join(destDir, file);
 
             try {
                 if (fs.existsSync(destFile)) {
-                    await fs.promises.unlink(destFile);
+                    // Use rm for directories in case it's a junction or real dir left over
+                    const stat = fs.lstatSync(destFile);
+                    if (stat.isDirectory() && !stat.isSymbolicLink()) {
+                        await fs.promises.rm(destFile, { recursive: true, force: true });
+                    } else {
+                        await fs.promises.unlink(destFile);
+                    }
                 }
 
                 if (isCopy) {
                     await fs.promises.copyFile(srcFile, destFile);
                 } else if (isSymlink) {
                     await fs.promises.symlink(srcFile, destFile, 'file');
+                } else if (isDefaultDirSymlink) {
+                    await fs.promises.symlink(srcFile, destFile, 'junction');
                 }
             } catch (e) {
                 const action = isCopy ? '파일 복사' : '심볼릭 링크';
