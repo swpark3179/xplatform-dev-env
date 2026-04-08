@@ -317,7 +317,15 @@ export const DeployListModal: React.FC<{
             <div className="tree-section">
               <div
                 className="tree-header"
+                role="button"
+                tabIndex={0}
                 onClick={() => setIsJavaOpen(!isJavaOpen)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setIsJavaOpen(!isJavaOpen);
+                  }
+                }}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -408,7 +416,15 @@ export const DeployListModal: React.FC<{
             <div className="tree-section">
               <div
                 className="tree-header"
+                role="button"
+                tabIndex={0}
                 onClick={() => setIsQueryOpen(!isQueryOpen)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setIsQueryOpen(!isQueryOpen);
+                  }
+                }}
                 style={{
                   display: "flex",
                   alignItems: "center",
