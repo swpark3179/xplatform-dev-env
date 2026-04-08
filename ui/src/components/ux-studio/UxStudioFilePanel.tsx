@@ -78,14 +78,29 @@ const UxStudioFilePanel: React.FC<Props> = ({ xfdlFiles, confirmErrorFiles, onRe
                 {/* 좌측: 전체 파일 목록 */}
                 <div className="ux-file-panel__col">
                     <div className="ux-file-panel__col-label">전체 파일 목록 ({availableFiles.length})</div>
-                    <input
-                        className="ux-file-panel__search"
-                        type="text"
-                        placeholder="파일명 검색..."
-                        value={keyword}
-                        onChange={e => setKeyword(e.target.value)}
-                        id="ux-file-search"
-                    />
+                    <div className="ux-file-panel__search-wrapper">
+                        <input
+                            className="ux-file-panel__search"
+                            type="text"
+                            placeholder="파일명 검색..."
+                            value={keyword}
+                            onChange={e => setKeyword(e.target.value)}
+                            id="ux-file-search"
+                            aria-label="파일명 검색"
+                            style={{ paddingRight: keyword ? '24px' : undefined, boxSizing: 'border-box' }}
+                        />
+                        {keyword && (
+                            <button
+                                type="button"
+                                className="ux-file-panel__search-clear"
+                                onClick={() => setKeyword('')}
+                                aria-label="검색어 지우기"
+                                title="검색어 지우기"
+                            >
+                                ×
+                            </button>
+                        )}
+                    </div>
                     <div className="ux-file-panel__list">
                         {availableFiles.map(file => (
                             <div
