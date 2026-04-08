@@ -59,6 +59,7 @@ export function useAppState() {
     // 배포 파일
     const [deployFileList, setDeployFileList] = useState<{ java: string[], query: string[] }>({ java: [], query: [] });
     const [searchResult, setSearchResult] = useState<string[]>([]);
+    const [allDeployableFiles, setAllDeployableFiles] = useState<string[]>([]);
     const [changedFiles, setChangedFiles] = useState<{ java: string[], query: string[] }>({ java: [], query: [] });
 
     // 즐겨찾기
@@ -122,6 +123,9 @@ export function useAppState() {
                     break;
                 case 'deployFilesSearchResult':
                     if (msg.searchResult) setSearchResult(msg.searchResult);
+                    break;
+                case 'allDeployableFilesResult':
+                    if (msg.allFiles) setAllDeployableFiles(msg.allFiles);
                     break;
                 case 'changedFilesUpdate':
                     if (msg.changedFiles) setChangedFiles(msg.changedFiles);
@@ -191,6 +195,7 @@ export function useAppState() {
         } as TomcatState,
         deploy: {
             searchResult: searchResult,
+            allDeployableFiles: allDeployableFiles,
             deployFileList: deployFileList,
             changedFiles: changedFiles,
             favorites: favorites,
@@ -218,6 +223,7 @@ export function useAppState() {
         tomcatIsHotReloading,
         deployFileList,
         searchResult,
+        allDeployableFiles,
         changedFiles,
         favorites,
         activeFavoriteId,

@@ -104,6 +104,9 @@ export function useAppActions(deps: UseAppActionsDeps) {
         searchDeployFiles: useCallback((keyword: string) => {
             postMessage({ type: 'searchDeployFiles', keyword } as any);
         }, []),
+        getAllDeployableFiles: useCallback(() => {
+            postMessage({ type: 'getAllDeployableFiles' } as any);
+        }, []),
         clearSearchResult: useCallback(() => {
             setSearchResult([]);
         }, [setSearchResult]),

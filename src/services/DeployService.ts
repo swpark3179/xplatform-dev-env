@@ -47,6 +47,24 @@ export class DeployService {
         return filtered;
     }
 
+    // 배포목록관리 팝업에서 전체 배포 가능 파일 목록(Java, Query) 반환 기능
+    public async getAllDeployableFiles(): Promise<string[]> {
+        const pattern = new vscode.RelativePattern(this._settings.projectRoot, `src/{java,query}/**/*.*`);
+        // 최대 검색 건수를 무제한으로 하려면 maxResults를 지정하지 않거나 크게 지정
+        // 여기서는 전체를 가져오기 위해 제외파일만 지정
+        const uris = await vscode.workspace.findFiles(pattern, '**/*Config.java');
+
+        const result = uris
+            .map(u => u.fsPath.replace(/\\/g, '/'))
+            // 자바(.java) 및 쿼리(.xml) 확장자만 포함
+            .filter(path => path.endsWith('.java') || path.endsWith('.xml'));
+
+        const currentJavaSet = new Set(this._deployFileList.java);
+        const currentQuerySet = new Set(this._deployFileList.query);
+        const filtered = result.filter(r => !currentJavaSet.has(r) && !currentQuerySet.has(r));
+        return filtered;
+    }
+
     // 배포목록관리 팝업에서 배포대상 목록 업데이트 핸들러. autoDetectedAdded: 자동 탐지로 이번에 추가된 파일 목록(있으면 해당 목록을 자동탐지 완료로 기록 후 저장)
     public updateDeployList(deployFileList: DeployFileList, targetFile: string, fileType: string, changeType: string, autoDetectedAdded?: string[]): void {
         if (this._tomcatState.running) {

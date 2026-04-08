@@ -152,6 +152,31 @@ describe('DeployService', () => {
         });
     });
 
+    describe('getAllDeployableFiles', () => {
+        it('should return all java and xml files that are not already in the deploy list', async () => {
+            const mockFiles = [
+                { fsPath: '/test/project/src/java/Test1.java' },
+                { fsPath: '/test/project/src/java/Test2.java' },
+                { fsPath: '/test/project/src/query/Test1Query.xml' },
+                { fsPath: '/test/project/src/java/NotRelated.txt' },
+            ];
+            (vscode.workspace.findFiles as jest.Mock).mockResolvedValue(mockFiles);
+
+            mockDeployFileList.java = ['/test/project/src/java/Test1.java'];
+
+            const result = await deployService.getAllDeployableFiles();
+
+            expect(result).toEqual([
+                '/test/project/src/java/Test2.java',
+                '/test/project/src/query/Test1Query.xml'
+            ]);
+            expect(vscode.workspace.findFiles).toHaveBeenCalledWith(
+                expect.anything(),
+                '**/*Config.java'
+            );
+        });
+    });
+
     describe('updateDeployList', () => {
         it('should show warning and return if tomcat is running', () => {
             mockTomcatState.running = true;

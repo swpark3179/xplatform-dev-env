@@ -87,6 +87,8 @@ export interface MessageFromExtension {
     page?: string;
     deployFileList?: { java: string[], query: string[] };
     searchResult?: string[];
+    allDeployableFiles?: string[];
+    allFiles?: string[];
     changedFiles?: { java: string[], query: string[] };
     // 즐겨찾기 관련
     favorites?: DeployFavorite[];
