@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { UxServiceEntry, UxStudioEnvConfig } from '../../types';
 
 const SAMPLE_PREFIX_IDS = ['guide', 'Sample', 'xchart', 'DESIGN', 'UX_DESIGN', 'UX_CRM', 'UX_MES', 'UX_GUIDE_Component', 'UX_GUIDE_Templates', 'UX_GUIDE_Objects'];
@@ -12,6 +12,14 @@ interface Props {
 const UxStudioSetupPanel: React.FC<Props> = ({ services, onApply }) => {
     const [mode, setMode] = useState<'default' | 'selected'>('default');
     const [urlAutoCorrect, setUrlAutoCorrect] = useState(true);
+
+    useEffect(() => {
+        if (mode === 'default') {
+            setUrlAutoCorrect(false);
+        } else {
+            setUrlAutoCorrect(true);
+        }
+    }, [mode]);
 
     // 커스텀 체크박스 대상: 기본/샘플 제외, url이 ./로 시작하는 것
     const customServices = services.filter(
@@ -96,6 +104,7 @@ const UxStudioSetupPanel: React.FC<Props> = ({ services, onApply }) => {
                     type="checkbox"
                     checked={urlAutoCorrect}
                     onChange={e => setUrlAutoCorrect(e.target.checked)}
+                    disabled={mode === 'default'}
                     id="ux-url-autocorrect"
                 />
                 <span>url 자동보정</span>

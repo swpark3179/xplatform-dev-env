@@ -12,6 +12,7 @@ export interface UxStudioEnvConfig {
     mode: 'default' | 'selected';
     customPrefixIds: string[];
     urlAutoCorrect: boolean;
+    selectedFiles?: string[];
 }
 
 // ==================== Settings ====================
