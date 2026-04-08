@@ -198,7 +198,11 @@ describe('UxStudioService', () => {
             (fs.existsSync as jest.Mock).mockReturnValue(true);
             (fs.readdirSync as jest.Mock)
                 .mockReturnValueOnce([]) // for _cleanUiEnvDir
-                .mockReturnValueOnce(['test.xprj', 'test.xadl']) // for _createFilesAndSymlinks
+                .mockReturnValueOnce([
+                    { name: 'test.xprj', isDirectory: () => false },
+                    { name: 'test.xadl', isDirectory: () => false },
+                    { name: 'lib', isDirectory: () => true }
+                ]) // for _createFilesAndSymlinks
                 .mockReturnValueOnce(['test.xprj', 'test.xadl']); // for replacing xml content
 
             (fs.readFileSync as jest.Mock).mockReturnValue('default_typedef.xml');
@@ -223,7 +227,12 @@ describe('UxStudioService', () => {
             const mockAllServices = [{ prefixid: 'Custom1', url: './Custom1/' }] as any[];
 
             (fs.existsSync as jest.Mock).mockReturnValue(true);
-            (fs.readdirSync as jest.Mock).mockReturnValue([]);
+            (fs.readdirSync as jest.Mock)
+                .mockReturnValueOnce([]) // for _cleanUiEnvDir
+                .mockReturnValueOnce([
+                    { name: 'test.xprj', isDirectory: () => false },
+                    { name: 'lib', isDirectory: () => true }
+                ]); // for _createFilesAndSymlinks
             (fs.readFileSync as jest.Mock).mockReturnValue('<Service prefixid="Custom1" url="./Custom1/"/> <Service prefixid="Custom2" url="./Custom2/"/> localhost:7001/ep/');
 
             await service.applySettings(mockConfig, mockAllServices);
