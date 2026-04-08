@@ -5,6 +5,7 @@ import type { UxServiceEntry, UxStudioEnvConfig } from '../types';
 
 // 기본 제외 폴더 목록
 const BASE_PREFIX_IDS = ['lib', 'Images', 'CSS', 'WORK', 'comm', 'composite', 'frame', 'frame_sgips', 'cmc'];
+const BASE_PREFIX_IDS_SET = new Set(BASE_PREFIX_IDS);
 
 // url 자동보정 치환 대상
 const URL_CORRECT_FROM = 'localhost:7001/ep/';
@@ -255,7 +256,7 @@ export class UxStudioService {
             const newTag = `<Service ${beforeUrl}url="${absoluteUrl}"${afterUrl}/>`;
 
             // 삭제 대상 조건: 커스텀 서비스(기본 폴더가 아님)인데 선택되지 않은 경우
-            if (!BASE_PREFIX_IDS.includes(prefixid) && !config.customPrefixIds.includes(prefixid)) {
+            if (!BASE_PREFIX_IDS_SET.has(prefixid) && !config.customPrefixIds.includes(prefixid)) {
                 return ''; // content에서 제거
             }
 
@@ -307,7 +308,7 @@ export class UxStudioService {
             const fullPath = path.join(currentDir, entry.name);
             if (entry.isDirectory()) {
                 // 최상위 레벨에서만 제외 폴더 처리
-                if (currentDir === baseDir && BASE_PREFIX_IDS.includes(entry.name)) continue;
+                if (currentDir === baseDir && BASE_PREFIX_IDS_SET.has(entry.name)) continue;
                 this._collectXfdl(baseDir, fullPath, results);
             } else if (entry.isFile() && entry.name.endsWith('.xfdl')) {
                 results.push(path.relative(baseDir, fullPath).replace(/\\/g, '/'));
@@ -442,7 +443,6 @@ export class UxStudioService {
 
     /** 커스텀 체크박스 대상 Service 목록 반환 (기본 제외, url이 ./로 시작하는 것) */
     public getCustomServices(allServices: UxServiceEntry[]): UxServiceEntry[] {
-        const excludeIds = new Set(BASE_PREFIX_IDS);
-        return allServices.filter(s => !excludeIds.has(s.prefixid) && s.url.startsWith('./'));
+        return allServices.filter(s => !BASE_PREFIX_IDS_SET.has(s.prefixid) && s.url.startsWith('./'));
     }
 }
