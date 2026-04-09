@@ -152,8 +152,8 @@ describe('DeployService', () => {
             ]);
             expect(vscode.workspace.findFiles).toHaveBeenCalledWith(
                 expect.objectContaining({ pattern: 'src/java/**/*Test*.*' }),
-                '**/*Config.java',
-                50
+                null,
+                1000
             );
         });
     });
@@ -184,7 +184,8 @@ describe('DeployService', () => {
             ]);
             expect(vscode.workspace.findFiles).toHaveBeenCalledWith(
                 expect.objectContaining({ pattern: 'src/java/**/*.*' }),
-                '**/*Config.java'
+                null,
+                10000
             );
         });
     });
