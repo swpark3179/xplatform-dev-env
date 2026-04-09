@@ -186,7 +186,19 @@ export class UnifiedPanelProvider extends WebviewProvider {
                     this._tomcatState.starting = false;
                     this._updateTomcatStatusBar();
                     this._sendTomcatState();
-                }, () => this._tomcatInitService.deployServiceFiles(this._tomcatState.contextRoot, this._tomcatState.deployMode, this._tomcatService.isDeveloperMode));
+                }, async () => {
+                    await new Promise<void>((resolve) => {
+                        this._gradleService.buildClassesWithCallback((success) => {
+                            if (success) {
+                                this._log.appendLine('[Tomcat 기동] gradle classes 성공. 서비스 파일 배포 진행.');
+                            } else {
+                                this._log.appendLine('[Tomcat 기동] gradle classes 실패. 서비스 파일 배포는 그대로 진행합니다.');
+                            }
+                            resolve();
+                        });
+                    });
+                    return this._tomcatInitService.deployServiceFiles(this._tomcatState.contextRoot, this._tomcatState.deployMode, this._tomcatService.isDeveloperMode);
+                });
 
                 return Promise.resolve();
             },
@@ -205,7 +217,19 @@ export class UnifiedPanelProvider extends WebviewProvider {
                         this._updateTomcatStatusBar();
                         this._sendTomcatState();
                     },
-                    () => this._tomcatInitService.deployServiceFiles(this._tomcatState.contextRoot, this._tomcatState.deployMode, this._tomcatService.isDeveloperMode)
+                    async () => {
+                        await new Promise<void>((resolve) => {
+                            this._gradleService.buildClassesWithCallback((success) => {
+                                if (success) {
+                                    this._log.appendLine('[Tomcat 기동] gradle classes 성공. 서비스 파일 배포 진행.');
+                                } else {
+                                    this._log.appendLine('[Tomcat 기동] gradle classes 실패. 서비스 파일 배포는 그대로 진행합니다.');
+                                }
+                                resolve();
+                            });
+                        });
+                        return this._tomcatInitService.deployServiceFiles(this._tomcatState.contextRoot, this._tomcatState.deployMode, this._tomcatService.isDeveloperMode);
+                    }
                 );
             },
             stopTomcat: async () => { // 메인 창에서 Tomcat 중지 핸들러
