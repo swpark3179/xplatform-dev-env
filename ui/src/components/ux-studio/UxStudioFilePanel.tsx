@@ -69,7 +69,7 @@ const UxStudioFilePanel: React.FC<Props> = ({ xfdlFiles, confirmErrorFiles, init
             )}
             <div className="ux-file-panel__title">커스텀 작업파일 정비</div>
             <div className="ux-file-panel__desc">
-                작업할 xfdl 파일을 선택하면 복사됩니다.
+                작업할 xfdl, xjs 파일을 선택하면 복사됩니다.
                 <button className="ux-file-panel__refresh-btn" onClick={onRefresh} title="파일 목록 새로고침" aria-label="파일 목록 새로고침">
                     ↻
                 </button>

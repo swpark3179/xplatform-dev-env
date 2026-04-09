@@ -264,6 +264,7 @@ describe('UxStudioService', () => {
                 if (dirPath.endsWith('Custom')) {
                     return [
                         { name: 'custom.xfdl', isDirectory: () => false, isFile: () => true },
+                        { name: 'script.xjs', isDirectory: () => false, isFile: () => true },
                         { name: 'other.txt', isDirectory: () => false, isFile: () => true }
                     ];
                 }
@@ -271,8 +272,9 @@ describe('UxStudioService', () => {
             });
 
             const result = service.searchXfdlFiles();
-            expect(result).toHaveLength(2);
+            expect(result).toHaveLength(3);
             expect(result).toContain('Custom/custom.xfdl');
+            expect(result).toContain('Custom/script.xjs');
             expect(result).toContain('test.xfdl');
         });
     });
