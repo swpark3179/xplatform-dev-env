@@ -34,6 +34,8 @@ export class UnifiedPanelProvider extends WebviewProvider {
 
     // 배포 관련 상태값 관리
     private _deployFileList: DeployFileList = { java: [], query: [] }; // 선택모드에서의 배포대상 목록
+    private _deployFileListJavaSet: Set<string> = new Set();
+    private _deployFileListQuerySet: Set<string> = new Set();
     private _fileWatchers: vscode.FileSystemWatcher[] = [];
     private _changedFiles: ChangedFiles = { java: [], query: [] }; // Tomcat 기동 중 변경된 파일 목록
 
@@ -85,6 +87,8 @@ export class UnifiedPanelProvider extends WebviewProvider {
         this._gradleService = new GradleService(this._log, this._settings, () => this._notifyGradleComplete());
         this._projectService = new ProjectService(this._log, this._settings, this._extensionUri);
         this._deployService = new DeployService(this._log, this._settings, this._deployFileList, this._changedFiles, this._fileWatchers, this._tomcatState, this._gradleService, this._tomcatService);
+        this._deployFileListJavaSet = new Set(this._deployFileList.java);
+        this._deployFileListQuerySet = new Set(this._deployFileList.query);
         this._tomcatInitService.setDeployService(this._deployService);
         this._tomcatStatusBar = new TomcatStatusBar();
         this._uxStudioService = new UxStudioService(this._log, this._settings.projectRoot);
@@ -467,11 +471,15 @@ export class UnifiedPanelProvider extends WebviewProvider {
     // 배포대상 여부를 판단하는 함수 (데코레이션 프로바이더에서 사용)
     public hasDeployTargetFile(filePath: string): boolean {
         const normalized = filePath.replace(/\\/g, '/');
-        return this._deployFileList.java.includes(normalized) || this._deployFileList.query.includes(normalized);
+        return this._deployFileListJavaSet.has(normalized) || this._deployFileListQuerySet.has(normalized);
     }
 
     // 데코레이션 프로바이더 업데이트를 위한 콜백함수 등록
     public setOnDeployListChanged(refresh: (uri: any) => void) {
-        this._deployService.setOnDeployListChanged(refresh);
+        this._deployService.setOnDeployListChanged((uri) => {
+            this._deployFileListJavaSet = new Set(this._deployFileList.java);
+            this._deployFileListQuerySet = new Set(this._deployFileList.query);
+            refresh(uri);
+        });
     }
 }

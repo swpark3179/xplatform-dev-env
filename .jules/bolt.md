@@ -1,3 +1,3 @@
-## 2026-04-06 - [Optimize analyzeOutboundFromFile file I/O]
-**Learning:** Sequential synchronous file system calls (like `fs.existsSync`, `fs.readdirSync`) within deep loops block the VS Code Extension Host main thread and significantly degrade extension responsiveness.
-**Action:** Replace synchronous I/O loops with `fs.promises` methods (like `fs.promises.readdir`, `fs.promises.access`) combined with `Promise.all()` for concurrent, non-blocking execution, and use `Set` to deduplicate items before issuing I/O checks.
+## 2024-05-18 - [Optimize hasDeployTargetFile]
+**Learning:** `DeployService.setOnDeployListChanged` is a single-listener setter. Wrapping this listener within `UnifiedPanelProvider` overrides the existing callback (which triggers the UI repaint). The correct approach to synchronize internal state before the callback execution is to intercept the callback setter and wrap it inside the `setOnDeployListChanged` method in `UnifiedPanelProvider`.
+**Action:** Check if an event listener registration method (like `setOn...`) is meant for a single listener before overriding it. When intercepting events to update internal caches, ensure you execute the originally provided callback after your logic.
