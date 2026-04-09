@@ -286,6 +286,7 @@ export class UnifiedPanelProvider extends WebviewProvider {
                 const applied = this._deployService.applyFavorite(id);
                 if (applied) {
                     this._postMessage({ type: 'favoriteApplied', deployFileList: this._deployFileList, favoriteId: applied.id, favoriteName: applied.name });
+                    this._postMessage({ type: 'mainStateUpdate', deployFileList: this._deployFileList });
                 }
             },
             deleteFavorite: async (id) => { // 즐겨찾기 삭제

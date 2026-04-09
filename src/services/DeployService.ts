@@ -42,11 +42,14 @@ export class DeployService {
         const queryPattern = new vscode.RelativePattern(this._settings.projectRoot, `src/query/**/*${keyword}*.*`);
 
         const [javaUris, queryUris] = await Promise.all([
-            vscode.workspace.findFiles(javaPattern, '**/*Config.java', 50),
-            vscode.workspace.findFiles(queryPattern, '**/*Config.java', 50)
+            vscode.workspace.findFiles(javaPattern, null, 1000),
+            vscode.workspace.findFiles(queryPattern, null, 1000)
         ]);
 
-        const result = [...javaUris, ...queryUris].map(u => u.fsPath.replace(/\\/g, '/'));
+        const result = [...javaUris, ...queryUris]
+            .map(u => u.fsPath.replace(/\\/g, '/'))
+            .filter(path => !path.endsWith('Config.java'));
+
         const currentJavaSet = new Set(this._deployFileList.java);
         const currentQuerySet = new Set(this._deployFileList.query);
         const filtered = result.filter(r => !currentJavaSet.has(r) && !currentQuerySet.has(r));
@@ -59,14 +62,14 @@ export class DeployService {
         const queryPattern = new vscode.RelativePattern(this._settings.projectRoot, 'src/query/**/*.*');
 
         // 최대 검색 건수를 무제한으로 하려면 maxResults를 지정하지 않거나 크게 지정
-        // 여기서는 전체를 가져오기 위해 제외파일만 지정
         const [javaUris, queryUris] = await Promise.all([
-            vscode.workspace.findFiles(javaPattern, '**/*Config.java'),
-            vscode.workspace.findFiles(queryPattern, '**/*Config.java')
+            vscode.workspace.findFiles(javaPattern, null, 10000),
+            vscode.workspace.findFiles(queryPattern, null, 10000)
         ]);
 
         const result = [...javaUris, ...queryUris]
             .map(u => u.fsPath.replace(/\\/g, '/'))
+            .filter(path => !path.endsWith('Config.java'))
             // 자바(.java) 및 쿼리(.xml) 확장자만 포함
             .filter(path => path.endsWith('.java') || path.endsWith('.xml'));
 
@@ -590,6 +593,7 @@ export class DeployService {
             this._deployFileList.java = java;
             this._deployFileList.query = query;
             this.saveDeploySettings();
+            this._onDeployListChanged?.(vscode.Uri.parse('deploy://refresh-all'));
             return data;
         } catch {
             return null;
