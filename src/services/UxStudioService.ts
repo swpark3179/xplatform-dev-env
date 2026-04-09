@@ -284,7 +284,7 @@ export class UxStudioService {
     // ============================================================
 
     /**
-     * src/webapp/ui/ 내에서 제외 폴더를 건너뛰고 xfdl 파일을 재귀 수집.
+     * src/webapp/ui/ 내에서 제외 폴더를 건너뛰고 xfdl, xjs 파일을 재귀 수집.
      * 반환값: 상대경로 배열 (src/webapp/ui/ 기준)
      */
     public searchXfdlFiles(): string[] {
@@ -303,7 +303,7 @@ export class UxStudioService {
                 // 최상위 레벨에서만 제외 폴더 처리
                 if (currentDir === baseDir && BASE_PREFIX_IDS_SET.has(entry.name)) continue;
                 this._collectXfdl(baseDir, fullPath, results);
-            } else if (entry.isFile() && entry.name.endsWith('.xfdl')) {
+            } else if (entry.isFile() && (entry.name.endsWith('.xfdl') || entry.name.endsWith('.xjs'))) {
                 results.push(path.relative(baseDir, fullPath).replace(/\\/g, '/'));
             }
         }
