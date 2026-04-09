@@ -22,7 +22,7 @@ jest.mock('vscode', () => {
             findFiles: jest.fn(),
             createFileSystemWatcher: jest.fn(),
         },
-        RelativePattern: jest.fn(),
+        RelativePattern: jest.fn((base, pattern) => ({ base, pattern })),
         Uri: mUri,
         ProgressLocation: {
             Notification: 1,
@@ -129,12 +129,18 @@ describe('DeployService', () => {
 
     describe('searchDeployFiles', () => {
         it('should return files that are not already in the deploy list', async () => {
-            const mockFiles = [
+            const mockJavaFiles = [
                 { fsPath: '/test/project/src/java/Test1.java' },
                 { fsPath: '/test/project/src/java/Test2.java' },
+            ];
+            const mockQueryFiles = [
                 { fsPath: '/test/project/src/query/Test1Query.xml' },
             ];
-            (vscode.workspace.findFiles as jest.Mock).mockResolvedValue(mockFiles);
+            (vscode.workspace.findFiles as jest.Mock).mockImplementation((pattern: vscode.RelativePattern) => {
+                if (pattern.pattern?.includes('java')) return Promise.resolve(mockJavaFiles);
+                if (pattern.pattern?.includes('query')) return Promise.resolve(mockQueryFiles);
+                return Promise.resolve([]);
+            });
 
             mockDeployFileList.java = ['/test/project/src/java/Test1.java'];
 
@@ -145,7 +151,7 @@ describe('DeployService', () => {
                 '/test/project/src/query/Test1Query.xml'
             ]);
             expect(vscode.workspace.findFiles).toHaveBeenCalledWith(
-                expect.anything(),
+                expect.objectContaining({ pattern: 'src/java/**/*Test*.*' }),
                 '**/*Config.java',
                 50
             );
@@ -154,13 +160,19 @@ describe('DeployService', () => {
 
     describe('getAllDeployableFiles', () => {
         it('should return all java and xml files that are not already in the deploy list', async () => {
-            const mockFiles = [
+            const mockJavaFiles = [
                 { fsPath: '/test/project/src/java/Test1.java' },
                 { fsPath: '/test/project/src/java/Test2.java' },
-                { fsPath: '/test/project/src/query/Test1Query.xml' },
                 { fsPath: '/test/project/src/java/NotRelated.txt' },
             ];
-            (vscode.workspace.findFiles as jest.Mock).mockResolvedValue(mockFiles);
+            const mockQueryFiles = [
+                { fsPath: '/test/project/src/query/Test1Query.xml' },
+            ];
+            (vscode.workspace.findFiles as jest.Mock).mockImplementation((pattern: vscode.RelativePattern) => {
+                if (pattern.pattern?.includes('java')) return Promise.resolve(mockJavaFiles);
+                if (pattern.pattern?.includes('query')) return Promise.resolve(mockQueryFiles);
+                return Promise.resolve([]);
+            });
 
             mockDeployFileList.java = ['/test/project/src/java/Test1.java'];
 
@@ -171,7 +183,7 @@ describe('DeployService', () => {
                 '/test/project/src/query/Test1Query.xml'
             ]);
             expect(vscode.workspace.findFiles).toHaveBeenCalledWith(
-                expect.anything(),
+                expect.objectContaining({ pattern: 'src/java/**/*.*' }),
                 '**/*Config.java'
             );
         });

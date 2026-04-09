@@ -38,9 +38,15 @@ export class DeployService {
 
     // 배포목록관리 팝업에서 파일검색 기능
     public async searchDeployFiles(keyword: string): Promise<string[]> {
-        const pattern = new vscode.RelativePattern(this._settings.projectRoot, `src/{java,query}/**/*${keyword}*.*`);
-        const uris = await vscode.workspace.findFiles(pattern, '**/*Config.java', 50); // 두번째 인자는 제외파일, 세번째 인자는 최대 검색 건수
-        const result = uris.map(u => u.fsPath.replace(/\\/g, '/'));
+        const javaPattern = new vscode.RelativePattern(this._settings.projectRoot, `src/java/**/*${keyword}*.*`);
+        const queryPattern = new vscode.RelativePattern(this._settings.projectRoot, `src/query/**/*${keyword}*.*`);
+
+        const [javaUris, queryUris] = await Promise.all([
+            vscode.workspace.findFiles(javaPattern, '**/*Config.java', 50),
+            vscode.workspace.findFiles(queryPattern, '**/*Config.java', 50)
+        ]);
+
+        const result = [...javaUris, ...queryUris].map(u => u.fsPath.replace(/\\/g, '/'));
         const currentJavaSet = new Set(this._deployFileList.java);
         const currentQuerySet = new Set(this._deployFileList.query);
         const filtered = result.filter(r => !currentJavaSet.has(r) && !currentQuerySet.has(r));
@@ -49,12 +55,17 @@ export class DeployService {
 
     // 배포목록관리 팝업에서 전체 배포 가능 파일 목록(Java, Query) 반환 기능
     public async getAllDeployableFiles(): Promise<string[]> {
-        const pattern = new vscode.RelativePattern(this._settings.projectRoot, `src/{java,query}/**/*.*`);
+        const javaPattern = new vscode.RelativePattern(this._settings.projectRoot, 'src/java/**/*.*');
+        const queryPattern = new vscode.RelativePattern(this._settings.projectRoot, 'src/query/**/*.*');
+
         // 최대 검색 건수를 무제한으로 하려면 maxResults를 지정하지 않거나 크게 지정
         // 여기서는 전체를 가져오기 위해 제외파일만 지정
-        const uris = await vscode.workspace.findFiles(pattern, '**/*Config.java');
+        const [javaUris, queryUris] = await Promise.all([
+            vscode.workspace.findFiles(javaPattern, '**/*Config.java'),
+            vscode.workspace.findFiles(queryPattern, '**/*Config.java')
+        ]);
 
-        const result = uris
+        const result = [...javaUris, ...queryUris]
             .map(u => u.fsPath.replace(/\\/g, '/'))
             // 자바(.java) 및 쿼리(.xml) 확장자만 포함
             .filter(path => path.endsWith('.java') || path.endsWith('.xml'));
