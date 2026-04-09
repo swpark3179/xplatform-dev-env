@@ -257,6 +257,7 @@ export const DeployListModal: React.FC<{
             </div>
             <button
               title="파일 목록 새로고침"
+              aria-label="파일 목록 새로고침"
               onClick={handleRefreshDeployableFiles}
               style={{
                 fontSize: "12px",
