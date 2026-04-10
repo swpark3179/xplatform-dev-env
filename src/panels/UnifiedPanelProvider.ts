@@ -279,6 +279,7 @@ export class UnifiedPanelProvider extends WebviewProvider {
             updateDeployFiles: (deployFileList, targetFile, fileType, changeType) => { // 배포목록관리 팝업에서 배포목록 업데이트 핸들러
                 this._deployService.updateDeployList(deployFileList, targetFile, fileType, changeType);
                 if (this._tomcatState.running && changeType === 'add') this._postMessage({ type: 'changedFilesUpdate', changedFiles: this._changedFiles });
+                this._postMessage({ type: 'mainStateUpdate', deployFileList: this._deployFileList });
             },
             applyChangedFiles: async () => { // tomcat 기동 중 변경된 파일을 로컬 서버에 적용
                 await this._deployService.applyChangedFiles();
@@ -291,6 +292,7 @@ export class UnifiedPanelProvider extends WebviewProvider {
             clearDeployFiles: () => { // 배포목록관리 데이터 초기화
                 this._deployService.clearDeployFiles();
                 this._postMessage({ type: 'favoriteCleared' }); // 즐겨찾기 활성 상태 리셋
+                this._postMessage({ type: 'mainStateUpdate', deployFileList: this._deployFileList });
             },
             loadFavorites: async () => { // 즐겨찾기 목록 조회 (리프레시 버튼 클릭)
                 const favorites = await this._deployService.loadFavorites();
