@@ -22,17 +22,21 @@ const UxStudioLaunchPanel: React.FC<Props> = ({ xprjFiles, onLaunch }) => {
         <div className="ux-launch-panel">
             <div className="ux-launch-panel__title">UX Studio 실행</div>
             <div className="ux-launch-panel__list">
-                {xprjFiles.map(filePath => (
-                    <button
-                        key={filePath}
-                        className="ux-launch-panel__btn"
-                        onClick={() => onLaunch(filePath)}
-                        id={`ux-launch-${baseName(filePath)}`}
-                        title={filePath}
-                    >
-                        {baseName(filePath)}
-                    </button>
-                ))}
+                {xprjFiles.map(filePath => {
+                    const name = baseName(filePath);
+                    return (
+                        <button
+                            key={filePath}
+                            type="button"
+                            className="ux-launch-panel__btn"
+                            onClick={() => onLaunch(filePath)}
+                            id={`ux-launch-${name}`}
+                            title={name}
+                        >
+                            {name}
+                        </button>
+                    );
+                })}
             </div>
         </div>
     );
