@@ -82,11 +82,12 @@ export const DeployListModal: React.FC<{
     const currentList = state.deploy.deployFileList[type];
     if (currentList.includes(fileToAdd)) return;
     const updatedList = [...currentList, fileToAdd];
+    const newDeployFileList = {
+      ...state.deploy.deployFileList,
+      [type]: updatedList,
+    };
     actions.deploy.updateDeployFiles(
-      {
-        ...state.deploy.deployFileList,
-        [type]: updatedList,
-      },
+      newDeployFileList,
       fileToAdd,
       type,
       "add",

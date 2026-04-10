@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import { postMessage } from '../vscode';
 import type { ProjectSettingsOptions, TomcatDeployMode } from '../types';
 
@@ -31,7 +31,7 @@ export function useAppActions(deps: UseAppActionsDeps) {
         setUxConfirmErrorFiles,
     } = deps;
 
-    const navigation = {
+    const navigation = useMemo(() => ({
         goToSettings: useCallback(() => {
             setCurrentPage('settings');
         }, [setCurrentPage]),
@@ -44,9 +44,9 @@ export function useAppActions(deps: UseAppActionsDeps) {
         goToUxStudio: useCallback(() => {
             setCurrentPage('ux-studio');
         }, [setCurrentPage]),
-    };
+    }), [setCurrentPage]);
 
-    const settings = {
+    const settings = useMemo(() => ({
         initProject: useCallback(() => {
             postMessage({ type: 'initProject' });
         }, []),
@@ -59,9 +59,9 @@ export function useAppActions(deps: UseAppActionsDeps) {
         validateAll: useCallback(() => {
             postMessage({ type: 'validateAll' });
         }, []),
-    };
+    }), []);
 
-    const build = {
+    const build = useMemo(() => ({
         buildClasses: useCallback(() => {
             setIsGradleRunning(true);
             postMessage({ type: 'buildClasses' });
@@ -73,9 +73,9 @@ export function useAppActions(deps: UseAppActionsDeps) {
         stopGradle: useCallback(() => {
             postMessage({ type: 'stopGradle' });
         }, []),
-    };
+    }), [setIsGradleRunning]);
 
-    const tomcat = {
+    const tomcat = useMemo(() => ({
         initTomcat: useCallback((contextRoot: string, profile: string, isBatch: boolean, deployMode: TomcatDeployMode) => {
             postMessage({ type: 'initTomcat', contextRoot, profile, isBatch, deployMode });
         }, []),
@@ -94,13 +94,13 @@ export function useAppActions(deps: UseAppActionsDeps) {
         setStateIsHotReloading: useCallback((value: boolean) => {
             setTomcatIsHotReloading(value);
         }, [setTomcatIsHotReloading]),
-    };
+    }), [setTomcatIsHotReloading]);
 
-    const deploy = {
+    const deploy = useMemo(() => ({
         updateDeployFiles: useCallback((deployFileList: { java: string[], query: string[] }, targetFile: string, fileType: string, changeType: string) => {
             setDeployFileList(deployFileList);
             postMessage({ type: 'updateDeployFiles', deployFileList: deployFileList, targetFile: targetFile, fileType: fileType, changeType: changeType });
-        }, []),
+        }, [setDeployFileList]),
         searchDeployFiles: useCallback((keyword: string) => {
             postMessage({ type: 'searchDeployFiles', keyword } as any);
         }, []),
@@ -140,18 +140,18 @@ export function useAppActions(deps: UseAppActionsDeps) {
         deleteFavorite: useCallback((id: string) => {
             postMessage({ type: 'deleteFavorite', id } as any);
         }, []),
-    };
+    }), [setDeployFileList, setSearchResult, setChangedFiles]);
 
-    const project = {
+    const project = useMemo(() => ({
         applyProjectSettings: useCallback((options: ProjectSettingsOptions) => {
             postMessage({ type: 'applyProjectSettings', options });
         }, []),
         setupHomeSettings: useCallback(() => {
             postMessage({ type: 'setupHomeSettings' });
         }, []),
-    };
+    }), []);
 
-    const uxStudio = {
+    const uxStudio = useMemo(() => ({
         init: useCallback(() => {
             postMessage({ type: 'uxStudioInit' });
         }, []),
@@ -174,9 +174,9 @@ export function useAppActions(deps: UseAppActionsDeps) {
             setUxStudioStatus(null); // 로칼 상태 먼저 전환
             postMessage({ type: 'uxStudioResetSetup' });
         }, [setUxStudioStatus]),
-    };
+    }), [setUxConfirmErrorFiles, setUxStudioStatus]);
 
-    return {
+    return useMemo(() => ({
         navigation,
         settings,
         build,
@@ -184,5 +184,5 @@ export function useAppActions(deps: UseAppActionsDeps) {
         deploy,
         project,
         uxStudio,
-    };
+    }), [navigation, settings, build, tomcat, deploy, project, uxStudio]);
 }
