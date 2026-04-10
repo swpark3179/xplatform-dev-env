@@ -294,6 +294,7 @@ export const DeployListModal: React.FC<{
               <div style={{ display: "flex", gap: "6px", marginLeft: "auto" }}>
                 <button
                   title="배포 목록의 Java 파일에서 참조하는 클래스를 재귀적으로 탐색해 목록에 추가합니다"
+                  aria-label="배포 목록의 Java 파일에서 참조하는 클래스를 재귀적으로 탐색해 목록에 추가합니다"
                   disabled={
                     state.deploy.deployFileList.java.length === 0 || isAnalyzing
                   }
@@ -322,6 +323,8 @@ export const DeployListModal: React.FC<{
                   {isAnalyzing ? "⏳ 분석 중..." : "🔗 참조 자동등록"}
                 </button>
                 <button
+                  title="배포 목록 초기화"
+                  aria-label="배포 목록 초기화"
                   style={{
                     fontSize: "11px",
                     padding: "3px 8px",
