@@ -118,6 +118,7 @@ export const DeployFavoriteModal: React.FC<{
                                 <button
                                     onClick={handleOverwrite}
                                     title="현재 배포목록으로 선택된 즐겨찾기를 덮어씁니다"
+                                    aria-label="현재 배포목록으로 선택된 즐겨찾기를 덮어씁니다"
                                     style={btnStyle}
                                 >
                                     💾 덮어쓰기
@@ -127,6 +128,7 @@ export const DeployFavoriteModal: React.FC<{
                                 onClick={handleSaveNew}
                                 disabled={!hasFiles}
                                 title={hasFiles ? '현재 배포목록을 새 이름의 즐겨찾기로 저장합니다' : '배포목록이 비어있습니다'}
+                                aria-label={hasFiles ? '현재 배포목록을 새 이름의 즐겨찾기로 저장합니다' : '배포목록이 비어있습니다'}
                                 style={{ ...btnStyle, opacity: hasFiles ? 1 : 0.5, cursor: hasFiles ? 'pointer' : 'not-allowed' }}
                             >
                                 ➕ 새 이름으로 저장
