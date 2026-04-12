@@ -124,7 +124,13 @@ export class UnifiedPanelProvider extends WebviewProvider {
 
         // 메시지 핸들러 등록
         webviewView.webview.onDidReceiveMessage(async (data: MessageFromWebview) => {
-            await (data => handleWebviewMessage(data, this._getActionEngine()))(data);
+            try {
+                await handleWebviewMessage(data, this._getActionEngine());
+            } catch (err) {
+                this._log.appendLine(`[메시지 처리 오류] ${data?.type}: ${err}`);
+                // 에러가 발생해도 현재 상태를 UI로 전송하여 빈 화면 방지
+                this._sendState();
+            }
         });
     }
 
@@ -412,18 +418,22 @@ export class UnifiedPanelProvider extends WebviewProvider {
             return;
         }
         this._validation.isFirstLoaded = true;
-        this._validationService.validateProjectStructure(this._settingsService.projectRoot); // 프로젝트 구조 검증
-        if (this._settingsService.loadSavedSettings()) this._validationService.setAsValidated(this._settingsService.settings);
-        this._syncContextRootFromServerXml();
-        if (!this._tomcatState.initialized || !this._tomcatState.contextRoot) {
-            this._syncContextRootFromWebXml();
+        try {
+            this._validationService.validateProjectStructure(this._settingsService.projectRoot); // 프로젝트 구조 검증
+            if (this._settingsService.loadSavedSettings()) this._validationService.setAsValidated(this._settingsService.settings);
+            this._syncContextRootFromServerXml();
+            if (!this._tomcatState.initialized || !this._tomcatState.contextRoot) {
+                this._syncContextRootFromWebXml();
+            }
+            this._deployService.loadDeploySettings(); // 배포 설정 파일에서 복원
+            if (!this._tomcatState.running && this._tomcatService.areTomcatPortsInUse()) this._tomcatState.portsBlocked = true; // 타 프로세스가 7001, 12001 포트를 사용 중이면 포트 블록 상태로 설정
+            this._updateTomcatStatusBar();
+            // 즐겨찾기 목록 최초 로드
+            const favorites = await this._deployService.loadFavorites();
+            this._postMessage({ type: 'favoritesListResult', favorites });
+        } catch (err) {
+            this._log.appendLine(`[초기화 오류] ${err}`);
         }
-        this._deployService.loadDeploySettings(); // 배포 설정 파일에서 복원
-        if (!this._tomcatState.running && this._tomcatService.areTomcatPortsInUse()) this._tomcatState.portsBlocked = true; // 타 프로세스가 7001, 12001 포트를 사용 중이면 포트 블록 상태로 설정
-        this._updateTomcatStatusBar();
-        // 즐겨찾기 목록 최초 로드
-        const favorites = await this._deployService.loadFavorites();
-        this._postMessage({ type: 'favoritesListResult', favorites });
         if (this._validation.allValid) this._postMessage({ type: 'navigateTo', page: 'main', validation: this._validation });
     }
 

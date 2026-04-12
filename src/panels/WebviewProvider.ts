@@ -39,12 +39,15 @@ export abstract class WebviewProvider implements vscode.WebviewViewProvider {
             html = html.replace(/src="\/assets\//g, `src="${assetsUri}/`);
             html = html.replace(/href="\/assets\//g, `href="${assetsUri}/`);
 
+            // crossorigin 속성 제거 (vscode webview 프로토콜에서 CORS 에러 방지)
+            html = html.replace(/\s+crossorigin/g, '');
+
             // CSP 설정 추가
             const nonce = getNonce();
             const cspSource = webview.cspSource;
 
             // meta 태그 추가 (head 태그 바로 뒤에)
-            const cspMeta = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'unsafe-inline'; script-src ${cspSource} 'unsafe-inline'; font-src ${cspSource};">`;
+            const cspMeta = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'unsafe-inline'; script-src ${cspSource} 'unsafe-inline'; connect-src ${cspSource}; img-src ${cspSource}; font-src ${cspSource};">`;
             html = html.replace(/<head>/, `<head>\n    ${cspMeta}`);
 
             // script 태그에 nonce 추가 (type="module" 포함)
