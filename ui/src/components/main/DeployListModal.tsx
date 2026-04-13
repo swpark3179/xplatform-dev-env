@@ -427,6 +427,7 @@ export const DeployListModal: React.FC<{
                         </span>
                         {!state.tomcat.running && (
                           <button
+                            title="제거"
                             aria-label="제거"
                             className="icon-btn tree-item-action"
                             onClick={(e) => {
@@ -526,6 +527,7 @@ export const DeployListModal: React.FC<{
                         </span>
                         {!state.tomcat.running && (
                           <button
+                            title="제거"
                             aria-label="제거"
                             className="icon-btn tree-item-action"
                             onClick={(e) => {
