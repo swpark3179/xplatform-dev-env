@@ -20,6 +20,12 @@ export class DeployService {
     /** 자동 탐지로 배포 목록에 추가된 Java 파일 (전체 경로). 재분석 시 스킵용 */
     private _autoDetectedJava: Set<string> = new Set();
 
+    // O(1) 조회를 위한 내부 Set 캐시
+    private _deployJavaSet: Set<string>;
+    private _deployQuerySet: Set<string>;
+    private _changedJavaSet: Set<string>;
+    private _changedQuerySet: Set<string>;
+
     constructor(log: vscode.OutputChannel, settings: Settings, deployFileList: DeployFileList, changedFiles: ChangedFiles, fileWatchers: vscode.FileSystemWatcher[], tomcatState: TomcatState, gradleService: GradleService, tomcatService: TomcatService) {
         this._log = log;
         this._settings = settings;
@@ -29,6 +35,12 @@ export class DeployService {
         this._tomcatState = tomcatState;
         this._gradleService = gradleService;
         this._tomcatService = tomcatService;
+
+        // 내부 캐시 초기화
+        this._deployJavaSet = new Set(this._deployFileList.java);
+        this._deployQuerySet = new Set(this._deployFileList.query);
+        this._changedJavaSet = new Set(this._changedFiles.java);
+        this._changedQuerySet = new Set(this._changedFiles.query);
     }
 
     // 데코레이션 프로바이더 업데이트를 위한 콜백함수 등록
@@ -87,6 +99,8 @@ export class DeployService {
         }
         this._deployFileList.java = deployFileList.java;
         this._deployFileList.query = deployFileList.query;
+        this._deployJavaSet = new Set(this._deployFileList.java);
+        this._deployQuerySet = new Set(this._deployFileList.query);
         this._onDeployListChanged?.(vscode.Uri.file(targetFile));
         if (autoDetectedAdded && autoDetectedAdded.length > 0) {
             this.saveDeploySettings(autoDetectedAdded);
@@ -112,13 +126,22 @@ export class DeployService {
 
     // 배포대상 목록에서 추가/제거 토글 기능
     private toggleInList(list: string[], normalizedPath: string, category: string): void {
-        if (!list.includes(normalizedPath)) {
+        let setCache: Set<string>;
+        if (category === 'java') {
+            setCache = this._deployJavaSet;
+        } else {
+            setCache = this._deployQuerySet;
+        }
+
+        if (!setCache.has(normalizedPath)) {
             list.push(normalizedPath); // 배포대상에 추가
+            setCache.add(normalizedPath);
         } else {
             const index = list.indexOf(normalizedPath);
             if (index !== -1) {
                 list.splice(index, 1); // 배포대상에서 제거
             }
+            setCache.delete(normalizedPath);
         }
         this.saveDeploySettings();
     }
@@ -165,8 +188,14 @@ export class DeployService {
             const srcPrefix = `${this._settings.projectRoot.replace(/\\/g, '/')}/src/`;
             const addPrefix = (list: string[]) => list.map((p: string) => `${srcPrefix}${p}`);
             if (data.deployFileList) {
-                if (Array.isArray(data.deployFileList.java)) this._deployFileList.java = addPrefix(data.deployFileList.java);
-                if (Array.isArray(data.deployFileList.query)) this._deployFileList.query = addPrefix(data.deployFileList.query);
+                if (Array.isArray(data.deployFileList.java)) {
+                    this._deployFileList.java = addPrefix(data.deployFileList.java);
+                    this._deployJavaSet = new Set(this._deployFileList.java);
+                }
+                if (Array.isArray(data.deployFileList.query)) {
+                    this._deployFileList.query = addPrefix(data.deployFileList.query);
+                    this._deployQuerySet = new Set(this._deployFileList.query);
+                }
             }
             if (Array.isArray(data.autoDetectedJava)) {
                 this._autoDetectedJava = new Set(addPrefix(data.autoDetectedJava));
@@ -184,7 +213,10 @@ export class DeployService {
     // 파일 변경 감지 시작 (Tomcat 기동/디버그 시 호출)
     public startFileWatcher(_postMessage: (message: unknown) => void): void {
         this.stopFileWatcher(); // 기존 watcher 정리
-        this._changedFiles.java.length = 0, this._changedFiles.query.length = 0; // 변경 목록 초기화
+        this._changedFiles.java.length = 0;
+        this._changedFiles.query.length = 0; // 변경 목록 초기화
+        this._changedJavaSet.clear();
+        this._changedQuerySet.clear();
 
         const projectRoot = this._settings.projectRoot;
         const dirs = [
@@ -229,15 +261,18 @@ export class DeployService {
         // 배포 모드가 선택 모드인 경우에는 java 또는 query 파일은 배포대상인 경우에만 변경목록에 추가
         if (this._tomcatState.deployMode === 'selected') {
             if (category === 'java') {
-                if (!this._deployFileList.java.includes(normalizedPath)) return;
+                if (!this._deployJavaSet.has(normalizedPath)) return;
             }
             else if (category === 'query') {
-                if (!this._deployFileList.query.includes(normalizedPath)) return;
+                if (!this._deployQuerySet.has(normalizedPath)) return;
             }
         }
+
         // 변경 목록에 추가하고 ui 업데이트
-        if (!this._changedFiles[category as keyof ChangedFiles].includes(normalizedPath)) {
+        const changedSet = category === 'java' ? this._changedJavaSet : this._changedQuerySet;
+        if (!changedSet.has(normalizedPath)) {
             this._changedFiles[category as keyof ChangedFiles].push(normalizedPath);
+            changedSet.add(normalizedPath);
             _postMessage({ type: 'changedFilesUpdate', changedFiles: this._changedFiles });
         }
     }
@@ -334,6 +369,8 @@ export class DeployService {
         this._log.appendLine('[배포 적용] 변경 파일 Tomcat 반영 완료.');
         this._changedFiles.java.length = 0;
         this._changedFiles.query.length = 0;
+        this._changedJavaSet.clear();
+        this._changedQuerySet.clear();
     }
 
     // 배포목록관리 팝업에서 참조 파일 자동 추가 기능
@@ -495,6 +532,8 @@ export class DeployService {
     public clearDeployFiles(): void {
         this._deployFileList.java.length = 0;
         this._deployFileList.query.length = 0;
+        this._deployJavaSet.clear();
+        this._deployQuerySet.clear();
         this.saveDeploySettings();
     }
 
@@ -592,6 +631,8 @@ export class DeployService {
             // 배포목록 교체 및 shi-deploy.json 저장
             this._deployFileList.java = java;
             this._deployFileList.query = query;
+            this._deployJavaSet = new Set(this._deployFileList.java);
+            this._deployQuerySet = new Set(this._deployFileList.query);
             this.saveDeploySettings();
             this._onDeployListChanged?.(vscode.Uri.parse('deploy://refresh-all'));
             return data;
