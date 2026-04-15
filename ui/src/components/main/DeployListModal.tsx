@@ -236,7 +236,7 @@ export const DeployListModal: React.FC<{
                             </span>
                           </span>
                           <button
-                            aria-label="추가"
+                            aria-label={`${getFileName(file)} 추가`}
                             className="icon-btn tree-item-action"
                             style={{
                               width: "20px",
@@ -428,7 +428,7 @@ export const DeployListModal: React.FC<{
                         {!state.tomcat.running && (
                           <button
                             title="제거"
-                            aria-label="제거"
+                            aria-label={`${getFileName(file)} 제거`}
                             className="icon-btn tree-item-action"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -528,7 +528,7 @@ export const DeployListModal: React.FC<{
                         {!state.tomcat.running && (
                           <button
                             title="제거"
-                            aria-label="제거"
+                            aria-label={`${getFileName(file)} 제거`}
                             className="icon-btn tree-item-action"
                             onClick={(e) => {
                               e.stopPropagation();
