@@ -34,6 +34,7 @@ export const ChangedFilesModal: React.FC<{
                 className="tree-header"
                 role="button"
                 tabIndex={0}
+                aria-expanded={isOpen}
                 onClick={toggle}
                 onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
