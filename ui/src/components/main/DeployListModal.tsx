@@ -236,6 +236,7 @@ export const DeployListModal: React.FC<{
                             </span>
                           </span>
                           <button
+                            title={`${getFileName(file)} 추가`}
                             aria-label={`${getFileName(file)} 추가`}
                             className="icon-btn tree-item-action"
                             style={{
@@ -359,6 +360,7 @@ export const DeployListModal: React.FC<{
                 className="tree-header"
                 role="button"
                 tabIndex={0}
+                aria-expanded={isJavaOpen}
                 onClick={() => setIsJavaOpen(!isJavaOpen)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -427,7 +429,7 @@ export const DeployListModal: React.FC<{
                         </span>
                         {!state.tomcat.running && (
                           <button
-                            title="제거"
+                            title={`${getFileName(file)} 제거`}
                             aria-label={`${getFileName(file)} 제거`}
                             className="icon-btn tree-item-action"
                             onClick={(e) => {
@@ -459,6 +461,7 @@ export const DeployListModal: React.FC<{
                 className="tree-header"
                 role="button"
                 tabIndex={0}
+                aria-expanded={isQueryOpen}
                 onClick={() => setIsQueryOpen(!isQueryOpen)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -527,7 +530,7 @@ export const DeployListModal: React.FC<{
                         </span>
                         {!state.tomcat.running && (
                           <button
-                            title="제거"
+                            title={`${getFileName(file)} 제거`}
                             aria-label={`${getFileName(file)} 제거`}
                             className="icon-btn tree-item-action"
                             onClick={(e) => {

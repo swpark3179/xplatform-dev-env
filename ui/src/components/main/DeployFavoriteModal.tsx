@@ -188,7 +188,7 @@ export const DeployFavoriteModal: React.FC<{
                                         </span>
                                         <button
                                             onClick={(e) => handleDeleteClick(e, fav)}
-                                            title="즐겨찾기 삭제"
+                                            title={`${fav.name} 즐겨찾기 삭제`}
                                             aria-label={`${fav.name} 즐겨찾기 삭제`}
                                             className="icon-btn tree-item-action"
                                             style={{ width: '20px', height: '20px', border: 'none', background: 'transparent', color: 'inherit', padding: 0, flexShrink: 0 }}
