@@ -166,8 +166,19 @@ export const DeployListModal: React.FC<{
                 placeholder={"추가할 파일명 검색... (Java 및 Query)"}
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
-                style={{ width: "100%" }}
+                style={{ width: "100%", paddingRight: searchKeyword ? '24px' : undefined, boxSizing: 'border-box' }}
               />
+              {searchKeyword && (
+                <button
+                  type="button"
+                  className="ux-file-panel__search-clear"
+                  onClick={() => setSearchKeyword('')}
+                  aria-label="검색어 지우기"
+                  title="검색어 지우기"
+                >
+                  ×
+                </button>
+              )}
               {searchKeyword.trim().length > 0 && (
               <div
                 style={{
