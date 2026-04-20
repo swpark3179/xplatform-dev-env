@@ -161,13 +161,38 @@ export const DeployListModal: React.FC<{
         >
           <div style={{ display: "flex", gap: "5px", position: "relative" }}>
             <div style={{ position: "relative", flex: 1 }}>
-              <input
-                type="text"
-                placeholder={"추가할 파일명 검색... (Java 및 Query)"}
-                value={searchKeyword}
-                onChange={(e) => setSearchKeyword(e.target.value)}
-                style={{ width: "100%" }}
-              />
+              <div style={{ position: "relative", width: "100%" }}>
+                <input
+                  type="text"
+                  placeholder={"추가할 파일명 검색... (Java 및 Query)"}
+                  value={searchKeyword}
+                  onChange={(e) => setSearchKeyword(e.target.value)}
+                  style={{ width: "100%", paddingRight: searchKeyword ? '24px' : undefined, boxSizing: 'border-box' }}
+                />
+                {searchKeyword && (
+                  <button
+                    type="button"
+                    onClick={() => { setSearchKeyword(""); actions.deploy.clearSearchResult(); }}
+                    aria-label="검색어 지우기"
+                    title="검색어 지우기"
+                    style={{
+                      position: 'absolute',
+                      right: '4px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--vscode-input-foreground, #ccc)',
+                      cursor: 'pointer',
+                      padding: '2px 6px',
+                      fontSize: '14px',
+                      opacity: 0.7
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
               {searchKeyword.trim().length > 0 && (
               <div
                 style={{
