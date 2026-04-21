@@ -49,7 +49,7 @@ jobs:
         run: npm run build:all
 
       - name: VS Code 패키지 생성 (.vsix)
-        run: npx vsce package
+        run: npx vsce package --allow-missing-repository
 
       - name: 업데이트된 변경사항 푸시
         run: |
