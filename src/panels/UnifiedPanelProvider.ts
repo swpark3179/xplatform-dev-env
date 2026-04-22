@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { WebviewProvider } from './WebviewProvider';
 import { SettingsService, ValidationService, TomcatService, GradleService, ProjectService } from '../services';
+import type { IDeployService, ITomcatService, IGradleService } from '../services/interfaces';
 import type { ChangedFiles, DeployFileList, MessageFromWebview, Settings, TomcatState, ValidationState } from '../types';
 import { handleWebviewMessage, type IWebviewActionEngine } from './WebviewActionEngine';
 import { TomcatStatusBar } from '../utils/TomcatStatusBar';
@@ -10,6 +11,7 @@ import { TomcatInitService } from '../services/TomcatInitService';
 import { DeployService } from '../services/DeployService';
 import { ReferenceAnalysisProvider } from './ReferenceAnalysisProvider';
 import { UxStudioService } from '../services/UxStudioService';
+import { createServices } from '../services/serviceFactory';
 
 // 콘솔 출력 채널
 const OUTPUT_CHANNEL_NAME = 'XPlatform 통합 개발환경';
@@ -19,10 +21,10 @@ export class UnifiedPanelProvider extends WebviewProvider {
     private _settingsService: SettingsService; // 설정 화면 서비스
     private _projectService: ProjectService; // 프로젝트 설정 화면 서비스
     private _validationService: ValidationService; // Tool 검증 서비스 (설정 화면)
-    private _gradleService: GradleService; // Gradle 패널 서비스 (메인 화면)
-    private _tomcatService: TomcatService;  // Tomcat 제어 서비스 (메인 화면)
+    private _gradleService: IGradleService; // Gradle 패널 서비스 (메인 화면)
+    private _tomcatService: ITomcatService;  // Tomcat 제어 서비스 (메인 화면)
     private _tomcatInitService: TomcatInitService; // Tomcat 초기화 서비스 (메인 화면)
-    private _deployService: DeployService; // 배포 서비스
+    private _deployService: IDeployService; // 배포 서비스
     private _tomcatStatusBar: TomcatStatusBar; // Tomcat 실행 시 하단 상태바 서비스 (메인 화면)
     private _uxStudioService: UxStudioService; // UX Studio 관리 서비스
     private _settings: Settings; // Tool Path 등 설정 상태값 관리
@@ -76,22 +78,29 @@ export class UnifiedPanelProvider extends WebviewProvider {
             isHotReloadMode: true,
         };
 
-        this._settingsService = new SettingsService(this._log, this._settings);
-        this._validationService = new ValidationService(this._log, this._validation);
-        this._tomcatService = new TomcatService(this._log, this._settings, this._tomcatState, this._extensionUri, () => {
-            this._tomcatState.starting = false;
-            this._updateTomcatStatusBar();
-            this._sendTomcatState();
-        });
-        this._tomcatInitService = new TomcatInitService(this._log, this._settings, this._tomcatState, this._extensionUri, this._deployFileList);
-        this._gradleService = new GradleService(this._log, this._settings, () => this._notifyGradleComplete());
-        this._projectService = new ProjectService(this._log, this._settings, this._extensionUri);
-        this._deployService = new DeployService(this._log, this._settings, this._deployFileList, this._changedFiles, this._fileWatchers, this._tomcatState, this._gradleService, this._tomcatService);
+        const services = createServices(
+            this._log,
+            this._extensionUri,
+            this._settings,
+            this._validation,
+            this._tomcatState,
+            this._deployFileList,
+            this._changedFiles,
+            this._fileWatchers
+        );
+
+        this._settingsService = services.settingsService;
+        this._validationService = services.validationService;
+        this._gradleService = services.gradleService;
+        this._tomcatService = services.tomcatService;
+        this._tomcatInitService = services.tomcatInitService;
+        this._projectService = services.projectService;
+        this._deployService = services.deployService;
+        this._uxStudioService = services.uxStudioService;
+
         this._deployFileListJavaSet = new Set(this._deployFileList.java);
         this._deployFileListQuerySet = new Set(this._deployFileList.query);
-        this._tomcatInitService.setDeployService(this._deployService);
         this._tomcatStatusBar = new TomcatStatusBar();
-        this._uxStudioService = new UxStudioService(this._log, this._settings.projectRoot);
         if (context) {
             context.subscriptions.push(this._tomcatStatusBar);
             context.subscriptions.push(new vscode.Disposable(() => this.dispose()));

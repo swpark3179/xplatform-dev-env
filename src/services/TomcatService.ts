@@ -5,7 +5,9 @@ import * as fs from 'fs-extra';
 import { spawn, execFileSync, type ChildProcess } from 'child_process';
 
 // Tomcat 제어 서비스
-export class TomcatService {
+import type { ITomcatService } from './interfaces';
+
+export class TomcatService implements ITomcatService {
     private _log: vscode.OutputChannel;
     private _tomcatPath: string;
     private _settings: Settings;

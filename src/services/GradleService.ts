@@ -5,7 +5,9 @@ import { spawn, execFileSync, ChildProcess } from 'child_process';
 import { Settings } from '../types';
 
 // Gradle 빌드 명령 실행 서비스
-export class GradleService {
+import type { IGradleService } from './interfaces';
+
+export class GradleService implements IGradleService {
     private _runningProcess?: ChildProcess;
     private _log: vscode.OutputChannel;
     private _settings: Settings;

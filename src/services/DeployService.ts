@@ -7,7 +7,9 @@ import type { GradleService } from './GradleService';
 import type { TomcatService } from './TomcatService';
 import { AnalyzeReferenceChain } from './AnalyzeReferenceChain';
 
-export class DeployService {
+import type { IDeployService } from './interfaces';
+
+export class DeployService implements IDeployService {
     private _log: vscode.OutputChannel;
     private _settings: Settings;
     private _deployFileList: DeployFileList;
