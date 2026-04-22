@@ -1,4 +1,5 @@
-import type { MessageFromWebview, ProjectSettingsOptions, TomcatDeployMode } from '../types';
+import type { ProjectSettingsOptions, TomcatDeployMode } from '../types';
+import type { WebviewMessage } from '../types/webviewMessage';
 
 /**
  * 내부 엔진이 UI 액션을 처리하기 위해 필요한 API.
@@ -47,7 +48,7 @@ export interface IWebviewActionEngine {
  * UI → 엔진 방향의 액션 전달용.
  */
 export async function handleWebviewMessage(
-    data: MessageFromWebview,
+    data: WebviewMessage,
     engine: IWebviewActionEngine
 ): Promise<void> {
     switch (data.type) {
@@ -102,6 +103,7 @@ export async function handleWebviewMessage(
             engine.updateDeployFiles(data.deployFileList, data.targetFile, data.fileType, data.changeType);
             break;
         case 'searchDeployFiles':
+            if (!data.keyword) return;
             await engine.searchDeployFiles(data.keyword);
             break;
         case 'getAllDeployableFiles':
@@ -111,6 +113,7 @@ export async function handleWebviewMessage(
             await engine.applyChangedFiles();
             break;
         case 'analyzeReferenceChain':
+            if (!Array.isArray(data.javaFiles)) return;
             await engine.analyzeReferenceChain(data.javaFiles);
             break;
         case 'clearDeployFiles':
@@ -120,12 +123,14 @@ export async function handleWebviewMessage(
             await engine.loadFavorites();
             break;
         case 'saveFavorite':
+            if (!data.name || !Array.isArray(data.java) || !Array.isArray(data.query)) return;
             await engine.saveFavorite(data.name, data.java, data.query);
             break;
         case 'overwriteFavorite':
             await engine.overwriteFavorite(data.id, data.java, data.query);
             break;
         case 'applyFavorite':
+            if (!data.id) return;
             engine.applyFavorite(data.id);
             break;
         case 'deleteFavorite':

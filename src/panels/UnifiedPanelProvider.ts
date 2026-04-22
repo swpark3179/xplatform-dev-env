@@ -104,6 +104,11 @@ export class UnifiedPanelProvider extends WebviewProvider {
         this._uxStudioService.stopMyChangesWatcher();
     }
 
+    // Safe accessor instead of reaching into private fields
+    public getJdkPath(): string | undefined {
+        return this._settings?.jdkPath;
+    }
+
     // UI 로딩이 완료되었을 때 최초 1회 수행
     public resolveWebviewView(
         webviewView: vscode.WebviewView,
@@ -123,8 +128,10 @@ export class UnifiedPanelProvider extends WebviewProvider {
         webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
         // 메시지 핸들러 등록
-        webviewView.webview.onDidReceiveMessage(async (data: MessageFromWebview) => {
-            await (data => handleWebviewMessage(data, this._getActionEngine()))(data);
+        webviewView.webview.onDidReceiveMessage(async (data: unknown) => {
+            // Narrow to WebviewMessage via runtime check on 'type'
+            if (!data || typeof data !== 'object' || !('type' in data)) return;
+            await handleWebviewMessage(data as import('../types/webviewMessage').WebviewMessage, this._getActionEngine());
         });
     }
 

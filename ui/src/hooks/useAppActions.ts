@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { postMessage } from '../vscode';
+import { WebviewMessage } from '../../../src/types/webviewMessage';
 import type { ProjectSettingsOptions, TomcatDeployMode } from '../types';
 
 export type PageKind = 'settings' | 'main' | 'project-settings' | 'ux-studio';
@@ -30,6 +31,10 @@ export function useAppActions(deps: UseAppActionsDeps) {
         setUxStudioStatus,
         setUxConfirmErrorFiles,
     } = deps;
+
+    function sendMessage(msg: WebviewMessage) {
+        postMessage(msg);
+    }
 
     const navigation = {
         goToSettings: useCallback(() => {
@@ -102,43 +107,43 @@ export function useAppActions(deps: UseAppActionsDeps) {
             postMessage({ type: 'updateDeployFiles', deployFileList: deployFileList, targetFile: targetFile, fileType: fileType, changeType: changeType });
         }, []),
         searchDeployFiles: useCallback((keyword: string) => {
-            postMessage({ type: 'searchDeployFiles', keyword } as any);
+            sendMessage({ type: 'searchDeployFiles', keyword });
         }, []),
         getAllDeployableFiles: useCallback(() => {
-            postMessage({ type: 'getAllDeployableFiles' } as any);
+            sendMessage({ type: 'getAllDeployableFiles' });
         }, []),
         clearSearchResult: useCallback(() => {
             setSearchResult([]);
         }, [setSearchResult]),
         applyChangedFiles: useCallback(() => {
             setChangedFiles({ java: [], query: [] });
-            postMessage({ type: 'applyChangedFiles' } as any);
+            sendMessage({ type: 'applyChangedFiles' });
         }, []),
         setStateSearchResult: useCallback((searchResult: string[]) => {
             setSearchResult(searchResult);
         }, [setSearchResult]),
         analyzeReferenceChain: useCallback((javaFiles: string[]) => {
-            postMessage({ type: 'analyzeReferenceChain', javaFiles } as any);
+            sendMessage({ type: 'analyzeReferenceChain', javaFiles });
         }, []),
         clearDeployFiles: useCallback(() => {
             setDeployFileList({ java: [], query: [] });
-            postMessage({ type: 'clearDeployFiles' } as any);
+            sendMessage({ type: 'clearDeployFiles' });
         }, [setDeployFileList]),
         // 즐겨찾기 관련 액션
         loadFavorites: useCallback(() => {
-            postMessage({ type: 'loadFavorites' } as any);
+            sendMessage({ type: 'loadFavorites' });
         }, []),
         saveFavorite: useCallback((name: string, java: string[], query: string[]) => {
-            postMessage({ type: 'saveFavorite', name, java, query } as any);
+            sendMessage({ type: 'saveFavorite', name, java, query });
         }, []),
         overwriteFavorite: useCallback((id: string, java: string[], query: string[]) => {
-            postMessage({ type: 'overwriteFavorite', id, java, query } as any);
+            sendMessage({ type: 'overwriteFavorite', id, java, query });
         }, []),
         applyFavorite: useCallback((id: string) => {
-            postMessage({ type: 'applyFavorite', id } as any);
+            sendMessage({ type: 'applyFavorite', id });
         }, []),
         deleteFavorite: useCallback((id: string) => {
-            postMessage({ type: 'deleteFavorite', id } as any);
+            sendMessage({ type: 'deleteFavorite', id });
         }, []),
     };
 
@@ -156,19 +161,19 @@ export function useAppActions(deps: UseAppActionsDeps) {
             postMessage({ type: 'uxStudioInit' });
         }, []),
         applySettings: useCallback((config: import('../types').UxStudioEnvConfig) => {
-            postMessage({ type: 'uxStudioApplySettings', config } as any);
+            sendMessage({ type: 'uxStudioApplySettings', config });
         }, []),
         searchXfdl: useCallback(() => {
             postMessage({ type: 'uxStudioSearchXfdl' });
         }, []),
         confirmFiles: useCallback((selectedFiles: string[]) => {
-            postMessage({ type: 'uxStudioConfirmFiles', selectedFiles } as any);
+            sendMessage({ type: 'uxStudioConfirmFiles', selectedFiles });
         }, []),
         clearConfirmError: useCallback(() => {
             setUxConfirmErrorFiles([]);
         }, [setUxConfirmErrorFiles]),
         launchXprj: useCallback((filePath: string) => {
-            postMessage({ type: 'uxStudioLaunchXprj', filePath } as any);
+            sendMessage({ type: 'uxStudioLaunchXprj', filePath });
         }, []),
         resetSetup: useCallback(() => {
             setUxStudioStatus(null); // 로칼 상태 먼저 전환

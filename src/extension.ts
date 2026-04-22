@@ -72,7 +72,7 @@ export function activate(context: vscode.ExtensionContext) {
         'dev-helper.openQueryExtract',
         (args: { filePath: string; queryId: string }) => {
             // jdkPath는 panelProvider가 관리하는 settings에서 동적으로 읽음
-            const jdkPath: string = (panelProvider as any)._settings?.jdkPath ?? '';
+            const jdkPath: string = panelProvider.getJdkPath?.() ?? '';
             QueryExtractPanel.show(
                 context.extensionUri,
                 args.filePath,
