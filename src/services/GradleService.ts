@@ -128,7 +128,7 @@ export class GradleService implements IGradleService {
     }
 
     // 빌드(classes) 실행 후 콜백 호출 (배포 적용 등에서 사용)
-    buildClassesWithCallback(onComplete: (success: boolean) => void): void {
+    async buildClassesWithCallback(onComplete: (success: boolean) => void): Promise<void> {
         if (!this._settings.gradlePath || !this._settings.jdkPath || !this._settings.projectRoot) {
             vscode.window.showErrorMessage('Gradle, JDK 경로 또는 프로젝트 루트가 설정되지 않았습니다.');
             onComplete(false);

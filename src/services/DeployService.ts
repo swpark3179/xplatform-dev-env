@@ -3,8 +3,7 @@ import { ChangedFiles, DeployFavorite, DeployFileList, Settings, TomcatState } f
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
-import type { GradleService } from './GradleService';
-import type { TomcatService } from './TomcatService';
+import type { IGradleService, ITomcatService } from './interfaces';
 import { AnalyzeReferenceChain } from './AnalyzeReferenceChain';
 
 import type { IDeployService } from './interfaces';
@@ -17,12 +16,12 @@ export class DeployService implements IDeployService {
     private _fileWatchers: vscode.FileSystemWatcher[];
     private _onDeployListChanged?: (uri: vscode.Uri) => void;
     private _tomcatState: TomcatState;
-    private _gradleService: GradleService;
-    private _tomcatService: TomcatService;
+    private _gradleService: IGradleService;
+    private _tomcatService: ITomcatService;
     /** 자동 탐지로 배포 목록에 추가된 Java 파일 (전체 경로). 재분석 시 스킵용 */
     private _autoDetectedJava: Set<string> = new Set();
 
-    constructor(log: vscode.OutputChannel, settings: Settings, deployFileList: DeployFileList, changedFiles: ChangedFiles, fileWatchers: vscode.FileSystemWatcher[], tomcatState: TomcatState, gradleService: GradleService, tomcatService: TomcatService) {
+    constructor(log: vscode.OutputChannel, settings: Settings, deployFileList: DeployFileList, changedFiles: ChangedFiles, fileWatchers: vscode.FileSystemWatcher[], tomcatState: TomcatState, gradleService: IGradleService, tomcatService: ITomcatService) {
         this._log = log;
         this._settings = settings;
         this._deployFileList = deployFileList;
