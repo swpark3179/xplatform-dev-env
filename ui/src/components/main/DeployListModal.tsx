@@ -13,6 +13,7 @@ export const DeployListModal: React.FC<{
   const [searchKeyword, setSearchKeyword] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const searchPaneRef = useRef<HTMLDivElement>(null);
+  const deployFileIndex = state.deploy.deployFileIndex;
 
   // 검색 도구 영역 밖 클릭 시 검색어·결과 초기화 (드롭다운 닫기)
   React.useEffect(() => {
@@ -30,18 +31,9 @@ export const DeployListModal: React.FC<{
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, searchKeyword, actions.deploy]);
 
-  // 팝업 오픈 시 전체 배포 대상 파일 조회
-  React.useEffect(() => {
-    if (isOpen) {
-      actions.deploy.getAllDeployableFiles();
-    }
-  }, [isOpen, actions.deploy]);
-
   // 새로고침 버튼 클릭 핸들러
   const handleRefreshDeployableFiles = () => {
-    actions.deploy.getAllDeployableFiles();
-    // 검색어가 있다면 검색 결과도 빈 배열로 초기화 후 다시 검색되도록 함
-    actions.deploy.clearSearchResult();
+    actions.deploy.refreshDeployFileIndex();
   };
 
   // 검색어 입력 변경 핸들러 (메모리에서 로컬 필터링)
@@ -52,12 +44,25 @@ export const DeployListModal: React.FC<{
     } else {
       // 대소문자 구분 없이 검색
       const lowerKeyword = searchKeyword.toLowerCase();
-      // state.deploy.allDeployableFiles를 필터링
+      const selectedFiles = new Set([
+        ...state.deploy.deployFileList.java,
+        ...state.deploy.deployFileList.query,
+      ]);
       const allFiles = state.deploy.allDeployableFiles || [];
-      const filtered = allFiles.filter(file => file.toLowerCase().includes(lowerKeyword));
+      const filtered = allFiles.filter(
+        (file) =>
+          !selectedFiles.has(file) && file.toLowerCase().includes(lowerKeyword),
+      );
       actions.deploy.setStateSearchResult(filtered);
     }
-  }, [searchKeyword, isOpen, state.deploy.allDeployableFiles, actions.deploy]);
+  }, [
+    searchKeyword,
+    isOpen,
+    state.deploy.allDeployableFiles,
+    state.deploy.deployFileList.java,
+    state.deploy.deployFileList.query,
+    actions.deploy,
+  ]);
 
   // 참조 체인 분석 완료 시 로딩 상태 해제
   React.useEffect(() => {
@@ -112,6 +117,30 @@ export const DeployListModal: React.FC<{
     return path;
   };
 
+  const getIndexStatusText = () => {
+    if (deployFileIndex.status === "indexing") {
+      const phaseLabel =
+        deployFileIndex.phase === "java"
+          ? "Java"
+          : deployFileIndex.phase === "query"
+            ? "Query"
+            : "파일";
+      return `인덱싱 중: ${phaseLabel} 수집 중 · Java ${deployFileIndex.javaCount} / Query ${deployFileIndex.queryCount} / 총 ${deployFileIndex.indexedCount}`;
+    }
+    if (deployFileIndex.status === "error") {
+      return deployFileIndex.errorMessage || "인덱싱에 실패했습니다.";
+    }
+    if (deployFileIndex.status === "ready") {
+      const completedAt = deployFileIndex.lastCompletedAt
+        ? new Date(deployFileIndex.lastCompletedAt).toLocaleTimeString()
+        : null;
+      return completedAt
+        ? `인덱싱 완료: Java ${deployFileIndex.javaCount} / Query ${deployFileIndex.queryCount} / 총 ${deployFileIndex.indexedCount} (${completedAt})`
+        : `인덱싱 완료: Java ${deployFileIndex.javaCount} / Query ${deployFileIndex.queryCount} / 총 ${deployFileIndex.indexedCount}`;
+    }
+    return "인덱싱 대기 중";
+  };
+
   // 배포 목록에서 대상 파일을 제거
   const handleRemove = (type: "java" | "query", fileToRemove: string) => {
     const currentList = state.deploy.deployFileList[type];
@@ -153,12 +182,23 @@ export const DeployListModal: React.FC<{
         style={{ display: "flex", flexDirection: "column", gap: "15px" }}
       >
         {/* 검색 도구 영역 */}
-        <div
-          ref={searchPaneRef}
-          className="search-pane"
-          style={{ display: "flex", flexDirection: "column", gap: "5px" }}
-        >
-          <div style={{ display: "flex", gap: "5px", position: "relative" }}>
+          <div
+            ref={searchPaneRef}
+            className="search-pane"
+            style={{ display: "flex", flexDirection: "column", gap: "5px" }}
+          >
+            <div
+              style={{
+                fontSize: "11px",
+                color:
+                  deployFileIndex.status === "error"
+                    ? "var(--vscode-errorForeground)"
+                    : "var(--vscode-descriptionForeground)",
+              }}
+            >
+              {getIndexStatusText()}
+            </div>
+            <div style={{ display: "flex", gap: "5px", position: "relative" }}>
             <div style={{ position: "relative", flex: 1 }}>
               <input
                 type="text"
@@ -259,10 +299,15 @@ export const DeployListModal: React.FC<{
               title="파일 목록 새로고침"
               aria-label="파일 목록 새로고침"
               onClick={handleRefreshDeployableFiles}
+              disabled={deployFileIndex.status === "indexing"}
               style={{
                 fontSize: "12px",
                 padding: "0 8px",
-                cursor: "pointer",
+                cursor:
+                  deployFileIndex.status === "indexing"
+                    ? "not-allowed"
+                    : "pointer",
+                opacity: deployFileIndex.status === "indexing" ? 0.6 : 1,
                 background: "var(--vscode-button-secondaryBackground, #3a3d41)",
                 color: "var(--vscode-button-secondaryForeground, #ccc)",
                 border: "1px solid var(--vscode-panel-border)",
@@ -270,7 +315,7 @@ export const DeployListModal: React.FC<{
                 whiteSpace: "nowrap",
               }}
             >
-              🔄
+              {deployFileIndex.status === "indexing" ? "⏳" : "🔄"}
             </button>
           </div>
         </div>

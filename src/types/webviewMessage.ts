@@ -1,5 +1,7 @@
 export type WebviewMessage =
   | { type: 'searchDeployFiles'; keyword: string }
+  | { type: 'ensureDeployFileIndex' }
+  | { type: 'refreshDeployFileIndex' }
   | { type: 'getAllDeployableFiles' }
   | { type: 'applyChangedFiles' }
   | { type: 'analyzeReferenceChain'; javaFiles: string[] }

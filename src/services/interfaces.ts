@@ -1,8 +1,10 @@
-import type { TomcatDeployMode } from '../types';
+import type { DeployFileIndexUpdate, TomcatDeployMode } from '../types';
 
 export interface IDeployService {
   startFileWatcher(cb: (msg: any) => void): void;
   stopFileWatcher(): void;
+  ensureDeployFileIndex(): void;
+  refreshDeployFileIndex(): void;
   searchDeployFiles(keyword: string): Promise<string[]>;
   getAllDeployableFiles(): Promise<string[]>;
   updateDeployList(deployFileList: any, targetFile: string, fileType: string, changeType: string): void;
@@ -17,6 +19,7 @@ export interface IDeployService {
   loadDeploySettings(): void;
   addDeployListFromEditor(filePath: string): void;
   setOnDeployListChanged(cb: (uri: any) => void): void;
+  setOnDeployFileIndexChanged(cb: (update: DeployFileIndexUpdate) => void): void;
 }
 
 export interface ITomcatService {

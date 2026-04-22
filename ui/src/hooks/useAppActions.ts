@@ -109,8 +109,14 @@ export function useAppActions(deps: UseAppActionsDeps) {
         searchDeployFiles: useCallback((keyword: string) => {
             sendMessage({ type: 'searchDeployFiles', keyword });
         }, []),
+        ensureDeployFileIndex: useCallback(() => {
+            sendMessage({ type: 'ensureDeployFileIndex' });
+        }, []),
+        refreshDeployFileIndex: useCallback(() => {
+            sendMessage({ type: 'refreshDeployFileIndex' });
+        }, []),
         getAllDeployableFiles: useCallback(() => {
-            sendMessage({ type: 'getAllDeployableFiles' });
+            sendMessage({ type: 'ensureDeployFileIndex' });
         }, []),
         clearSearchResult: useCallback(() => {
             setSearchResult([]);

@@ -98,6 +98,10 @@ export class UnifiedPanelProvider extends WebviewProvider {
         this._deployService = services.deployService;
         this._uxStudioService = services.uxStudioService;
 
+        this._deployService.setOnDeployFileIndexChanged((update) => {
+            this._postMessage({ type: 'deployFileIndexUpdate', ...update });
+        });
+
         this._deployFileListJavaSet = new Set(this._deployFileList.java);
         this._deployFileListQuerySet = new Set(this._deployFileList.query);
         this._tomcatStatusBar = new TomcatStatusBar();
@@ -288,9 +292,14 @@ export class UnifiedPanelProvider extends WebviewProvider {
                 const filtered = await this._deployService.searchDeployFiles(keyword);
                 this._postMessage({ type: 'deployFilesSearchResult', searchResult: filtered });
             },
+            ensureDeployFileIndex: () => {
+                this._deployService.ensureDeployFileIndex();
+            },
+            refreshDeployFileIndex: () => {
+                this._deployService.refreshDeployFileIndex();
+            },
             getAllDeployableFiles: async () => { // 배포목록관리 팝업에서 전체 배포 파일 검색
-                const allFiles = await this._deployService.getAllDeployableFiles();
-                this._postMessage({ type: 'allDeployableFilesResult', allFiles });
+                this._deployService.ensureDeployFileIndex();
             },
             updateDeployFiles: (deployFileList, targetFile, fileType, changeType) => { // 배포목록관리 팝업에서 배포목록 업데이트 핸들러
                 this._deployService.updateDeployList(deployFileList, targetFile, fileType, changeType);
@@ -422,6 +431,7 @@ export class UnifiedPanelProvider extends WebviewProvider {
     // 패널이 최초 열렸을 때 수행되는 핸들러 - 프로젝트 구조 검증 및 도구가 모두 준비되었으면 Main 페이지로 이동
     private async _handleInitProject(): Promise<void> {
         if (this._validation.isFirstLoaded) { // 최초 초기화 수행은 이미 했고, 다시 패널 로드할 때는 최초 초기화 수행하지 않음
+            this._deployService.ensureDeployFileIndex();
             if (this._validation.allValid) this._postMessage({ type: 'navigateTo', page: 'main', validation: this._validation });
             return;
         }
@@ -433,6 +443,7 @@ export class UnifiedPanelProvider extends WebviewProvider {
             this._syncContextRootFromWebXml();
         }
         this._deployService.loadDeploySettings(); // 배포 설정 파일에서 복원
+        this._deployService.ensureDeployFileIndex();
         if (!this._tomcatState.running && this._tomcatService.areTomcatPortsInUse()) this._tomcatState.portsBlocked = true; // 타 프로세스가 7001, 12001 포트를 사용 중이면 포트 블록 상태로 설정
         this._updateTomcatStatusBar();
         // 즐겨찾기 목록 최초 로드

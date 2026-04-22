@@ -26,6 +26,18 @@ export interface Settings {
 // ==================== Validation ====================
 export type ValidationStatus = 'pending' | 'validating' | 'valid' | 'warning' | 'invalid';
 export type TomcatDeployMode = 'default' | 'selected';
+export type DeployFileIndexStatus = 'idle' | 'indexing' | 'ready' | 'error';
+export type DeployFileIndexPhase = 'idle' | 'java' | 'query' | 'done';
+
+export interface DeployFileIndexState {
+    status: DeployFileIndexStatus;
+    phase: DeployFileIndexPhase;
+    indexedCount: number;
+    javaCount: number;
+    queryCount: number;
+    lastCompletedAt?: number;
+    errorMessage?: string;
+}
 
 // ==================== Deploy Favorite ====================
 export interface DeployFavorite {
@@ -87,8 +99,11 @@ export interface MessageFromExtension {
     page?: string;
     deployFileList?: { java: string[], query: string[] };
     searchResult?: string[];
+    deployFileIndex?: DeployFileIndexState;
     allDeployableFiles?: string[];
     allFiles?: string[];
+    filesBatch?: string[];
+    reset?: boolean;
     changedFiles?: { java: string[], query: string[] };
     // 즐겨찾기 관련
     favorites?: DeployFavorite[];

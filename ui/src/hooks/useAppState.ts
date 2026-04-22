@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { onMessage } from '../vscode';
-import type { DeployFavorite, Settings, ValidationState, TomcatCoreState, TomcatState, MessageFromExtension, TomcatRunningState, UxServiceEntry, UxStudioEnvConfig } from '../types';
+import type { DeployFavorite, DeployFileIndexState, Settings, ValidationState, TomcatCoreState, TomcatState, MessageFromExtension, TomcatRunningState, UxServiceEntry, UxStudioEnvConfig } from '../types';
 import { useAppActions } from './useAppActions';
 
 const initialSettings: Settings = {
@@ -36,6 +36,14 @@ const initialTomcatRunning: TomcatRunningState = {
     stopping: false,
 };
 
+const initialDeployFileIndex: DeployFileIndexState = {
+    status: 'idle',
+    phase: 'idle',
+    indexedCount: 0,
+    javaCount: 0,
+    queryCount: 0,
+};
+
 // 앱 전역 상태 관리 훅
 export function useAppState() {
     // 네비게이션
@@ -59,6 +67,7 @@ export function useAppState() {
     // 배포 파일
     const [deployFileList, setDeployFileList] = useState<{ java: string[], query: string[] }>({ java: [], query: [] });
     const [searchResult, setSearchResult] = useState<string[]>([]);
+    const [deployFileIndex, setDeployFileIndex] = useState<DeployFileIndexState>(initialDeployFileIndex);
     const [allDeployableFiles, setAllDeployableFiles] = useState<string[]>([]);
     const [changedFiles, setChangedFiles] = useState<{ java: string[], query: string[] }>({ java: [], query: [] });
 
@@ -123,6 +132,14 @@ export function useAppState() {
                     break;
                 case 'deployFilesSearchResult':
                     if (msg.searchResult) setSearchResult(msg.searchResult);
+                    break;
+                case 'deployFileIndexUpdate':
+                    if (msg.deployFileIndex) setDeployFileIndex(msg.deployFileIndex);
+                    if (msg.reset) {
+                        setAllDeployableFiles(msg.filesBatch ?? []);
+                    } else if (msg.filesBatch && msg.filesBatch.length > 0) {
+                        setAllDeployableFiles(prev => [...prev, ...msg.filesBatch!]);
+                    }
                     break;
                 case 'allDeployableFilesResult':
                     if (msg.allFiles) setAllDeployableFiles(msg.allFiles);
@@ -195,6 +212,7 @@ export function useAppState() {
         } as TomcatState,
         deploy: {
             searchResult: searchResult,
+            deployFileIndex: deployFileIndex,
             allDeployableFiles: allDeployableFiles,
             deployFileList: deployFileList,
             changedFiles: changedFiles,
@@ -223,6 +241,7 @@ export function useAppState() {
         tomcatIsHotReloading,
         deployFileList,
         searchResult,
+        deployFileIndex,
         allDeployableFiles,
         changedFiles,
         favorites,

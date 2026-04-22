@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ChangedFiles, DeployFavorite, DeployFileList, Settings, TomcatState } from '../types';
+import { ChangedFiles, DeployFavorite, DeployFileIndexState, DeployFileIndexUpdate, DeployFileList, Settings, TomcatState } from '../types';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
@@ -9,6 +9,7 @@ import { AnalyzeReferenceChain } from './AnalyzeReferenceChain';
 import type { IDeployService } from './interfaces';
 
 export class DeployService implements IDeployService {
+    private static readonly DEPLOY_INDEX_BATCH_SIZE = 200;
     private _log: vscode.OutputChannel;
     private _settings: Settings;
     private _deployFileList: DeployFileList;
@@ -18,6 +19,16 @@ export class DeployService implements IDeployService {
     private _tomcatState: TomcatState;
     private _gradleService: IGradleService;
     private _tomcatService: ITomcatService;
+    private _onDeployFileIndexChanged?: (update: DeployFileIndexUpdate) => void;
+    private _deployFileIndex: DeployFileIndexState = {
+        status: 'idle',
+        phase: 'idle',
+        indexedCount: 0,
+        javaCount: 0,
+        queryCount: 0,
+    };
+    private _deployFileIndexFiles: string[] = [];
+    private _deployFileIndexRunId = 0;
     /** 자동 탐지로 배포 목록에 추가된 Java 파일 (전체 경로). 재분석 시 스킵용 */
     private _autoDetectedJava: Set<string> = new Set();
 
@@ -37,47 +48,197 @@ export class DeployService implements IDeployService {
         this._onDeployListChanged = onDeployListChanged;
     }
 
+    public setOnDeployFileIndexChanged(onDeployFileIndexChanged: (update: DeployFileIndexUpdate) => void) {
+        this._onDeployFileIndexChanged = onDeployFileIndexChanged;
+    }
+
+    public ensureDeployFileIndex(): void {
+        this._emitDeployFileIndexUpdate({ reset: true, filesBatch: [...this._deployFileIndexFiles] });
+        if (this._deployFileIndex.status === 'idle') {
+            void this._rebuildDeployFileIndex();
+        }
+    }
+
+    public refreshDeployFileIndex(): void {
+        void this._rebuildDeployFileIndex();
+    }
+
     // 배포목록관리 팝업에서 파일검색 기능
     public async searchDeployFiles(keyword: string): Promise<string[]> {
-        const javaPattern = new vscode.RelativePattern(this._settings.projectRoot, `src/java/**/*${keyword}*.*`);
-        const queryPattern = new vscode.RelativePattern(this._settings.projectRoot, `src/query/**/*${keyword}*.*`);
-
-        const [javaUris, queryUris] = await Promise.all([
-            vscode.workspace.findFiles(javaPattern, null, 1000),
-            vscode.workspace.findFiles(queryPattern, null, 1000)
-        ]);
-
-        const result = [...javaUris, ...queryUris]
-            .map(u => u.fsPath.replace(/\\/g, '/'))
-            .filter(path => !path.endsWith('Config.java'));
-
-        const currentJavaSet = new Set(this._deployFileList.java);
-        const currentQuerySet = new Set(this._deployFileList.query);
-        const filtered = result.filter(r => !currentJavaSet.has(r) && !currentQuerySet.has(r));
-        return filtered;
+        const source = this._deployFileIndexFiles.length > 0
+            ? [...this._deployFileIndexFiles]
+            : await this._collectAllDeployableFiles();
+        const lowerKeyword = keyword.toLowerCase();
+        return this._filterSelectableDeployFiles(source)
+            .filter(filePath => filePath.toLowerCase().includes(lowerKeyword));
     }
 
     // 배포목록관리 팝업에서 전체 배포 가능 파일 목록(Java, Query) 반환 기능
     public async getAllDeployableFiles(): Promise<string[]> {
-        const javaPattern = new vscode.RelativePattern(this._settings.projectRoot, 'src/java/**/*.*');
-        const queryPattern = new vscode.RelativePattern(this._settings.projectRoot, 'src/query/**/*.*');
+        return this._filterSelectableDeployFiles(await this._collectAllDeployableFiles());
+    }
 
-        // 최대 검색 건수를 무제한으로 하려면 maxResults를 지정하지 않거나 크게 지정
-        const [javaUris, queryUris] = await Promise.all([
-            vscode.workspace.findFiles(javaPattern, null, 10000),
-            vscode.workspace.findFiles(queryPattern, null, 10000)
-        ]);
+    private async _rebuildDeployFileIndex(): Promise<void> {
+        const runId = ++this._deployFileIndexRunId;
 
-        const result = [...javaUris, ...queryUris]
-            .map(u => u.fsPath.replace(/\\/g, '/'))
-            .filter(path => !path.endsWith('Config.java'))
-            // 자바(.java) 및 쿼리(.xml) 확장자만 포함
-            .filter(path => path.endsWith('.java') || path.endsWith('.xml'));
+        this._deployFileIndexFiles = [];
+        this._deployFileIndex = {
+            status: 'indexing',
+            phase: 'java',
+            indexedCount: 0,
+            javaCount: 0,
+            queryCount: 0,
+            lastCompletedAt: this._deployFileIndex.lastCompletedAt,
+        };
+        this._emitDeployFileIndexUpdate({ reset: true, filesBatch: [] });
+        this._log.appendLine('[배포목록 인덱싱] 시작');
 
+        try {
+            await this._walkDeployableFiles('java', async (normalizedPath) => {
+                this._assertActiveDeployFileIndexRun(runId);
+                this._deployFileIndexFiles.push(normalizedPath);
+                this._deployFileIndex.javaCount += 1;
+                this._deployFileIndex.indexedCount = this._deployFileIndexFiles.length;
+            }, runId);
+
+            this._deployFileIndex.phase = 'query';
+            this._emitDeployFileIndexUpdate();
+
+            await this._walkDeployableFiles('query', async (normalizedPath) => {
+                this._assertActiveDeployFileIndexRun(runId);
+                this._deployFileIndexFiles.push(normalizedPath);
+                this._deployFileIndex.queryCount += 1;
+                this._deployFileIndex.indexedCount = this._deployFileIndexFiles.length;
+            }, runId);
+
+            this._assertActiveDeployFileIndexRun(runId);
+            this._deployFileIndex = {
+                ...this._deployFileIndex,
+                status: 'ready',
+                phase: 'done',
+                indexedCount: this._deployFileIndexFiles.length,
+                errorMessage: undefined,
+                lastCompletedAt: Date.now(),
+            };
+            this._emitDeployFileIndexUpdate();
+            this._log.appendLine(`[배포목록 인덱싱] 완료 (Java ${this._deployFileIndex.javaCount}건, Query ${this._deployFileIndex.queryCount}건, 총 ${this._deployFileIndex.indexedCount}건)`);
+        } catch (error) {
+            if (!this._isDeployFileIndexRunActive(runId)) return;
+            const message = error instanceof Error ? error.message : '배포 파일 인덱싱에 실패했습니다.';
+            this._deployFileIndex = {
+                ...this._deployFileIndex,
+                status: 'error',
+                phase: 'done',
+                errorMessage: message,
+            };
+            this._emitDeployFileIndexUpdate();
+            this._log.appendLine(`[배포목록 인덱싱] 실패: ${message}`);
+        }
+    }
+
+    private async _collectAllDeployableFiles(): Promise<string[]> {
+        const allFiles: string[] = [];
+
+        await this._walkDeployableFiles('java', (normalizedPath) => {
+            allFiles.push(normalizedPath);
+        });
+        await this._walkDeployableFiles('query', (normalizedPath) => {
+            allFiles.push(normalizedPath);
+        });
+
+        return allFiles;
+    }
+
+    private async _walkDeployableFiles(
+        category: 'java' | 'query',
+        onFile: (normalizedPath: string) => Promise<void> | void,
+        runId?: number,
+    ): Promise<void> {
+        const rootDir = path.join(this._settings.projectRoot, 'src', category);
+        if (!fs.existsSync(rootDir)) return;
+
+        const pendingDirs: string[] = [rootDir];
+        let batch: string[] = [];
+
+        while (pendingDirs.length > 0) {
+            if (runId !== undefined) this._assertActiveDeployFileIndexRun(runId);
+
+            const currentDir = pendingDirs.pop();
+            if (!currentDir) break;
+
+            const entries = await fs.promises.readdir(currentDir, { withFileTypes: true }) as Array<{
+                name: string;
+                isDirectory: () => boolean;
+                isFile: () => boolean;
+            }>;
+
+            for (const entry of entries) {
+                if (runId !== undefined) this._assertActiveDeployFileIndexRun(runId);
+
+                const fullPath = path.join(currentDir, entry.name);
+                if (entry.isDirectory()) {
+                    pendingDirs.push(fullPath);
+                    continue;
+                }
+                if (!entry.isFile()) continue;
+
+                const normalizedPath = this._normalizePath(fullPath);
+                if (!this._isDeployableFile(normalizedPath, category)) continue;
+
+                await onFile(normalizedPath);
+
+                if (runId === undefined) continue;
+
+                batch.push(normalizedPath);
+                if (batch.length >= DeployService.DEPLOY_INDEX_BATCH_SIZE) {
+                    this._emitDeployFileIndexUpdate({ filesBatch: batch });
+                    batch = [];
+                    await this._yieldToEventLoop();
+                }
+            }
+        }
+
+        if (runId !== undefined && batch.length > 0) {
+            this._emitDeployFileIndexUpdate({ filesBatch: batch });
+        }
+    }
+
+    private _emitDeployFileIndexUpdate(partial: Omit<DeployFileIndexUpdate, 'deployFileIndex'> = {}): void {
+        this._onDeployFileIndexChanged?.({
+            deployFileIndex: { ...this._deployFileIndex },
+            ...partial,
+        });
+    }
+
+    private _isDeployFileIndexRunActive(runId: number): boolean {
+        return runId === this._deployFileIndexRunId;
+    }
+
+    private _assertActiveDeployFileIndexRun(runId: number): void {
+        if (!this._isDeployFileIndexRunActive(runId)) {
+            throw new Error('Deploy file indexing cancelled');
+        }
+    }
+
+    private _normalizePath(filePath: string): string {
+        return filePath.replace(/\\/g, '/');
+    }
+
+    private _isDeployableFile(normalizedPath: string, category: 'java' | 'query'): boolean {
+        if (normalizedPath.endsWith('Config.java')) return false;
+        return category === 'java'
+            ? normalizedPath.endsWith('.java')
+            : normalizedPath.endsWith('.xml');
+    }
+
+    private _filterSelectableDeployFiles(files: string[]): string[] {
         const currentJavaSet = new Set(this._deployFileList.java);
         const currentQuerySet = new Set(this._deployFileList.query);
-        const filtered = result.filter(r => !currentJavaSet.has(r) && !currentQuerySet.has(r));
-        return filtered;
+        return files.filter(filePath => !currentJavaSet.has(filePath) && !currentQuerySet.has(filePath));
+    }
+
+    private async _yieldToEventLoop(): Promise<void> {
+        await new Promise(resolve => setTimeout(resolve, 0));
     }
 
     // 배포목록관리 팝업에서 배포대상 목록 업데이트 핸들러. autoDetectedAdded: 자동 탐지로 이번에 추가된 파일 목록(있으면 해당 목록을 자동탐지 완료로 기록 후 저장)

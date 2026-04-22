@@ -129,16 +129,25 @@ describe('DeployService', () => {
 
     describe('searchDeployFiles', () => {
         it('should return files that are not already in the deploy list', async () => {
-            const mockJavaFiles = [
-                { fsPath: '/test/project/src/java/Test1.java' },
-                { fsPath: '/test/project/src/java/Test2.java' },
-            ];
-            const mockQueryFiles = [
-                { fsPath: '/test/project/src/query/Test1Query.xml' },
-            ];
-            (vscode.workspace.findFiles as jest.Mock).mockImplementation((pattern: vscode.RelativePattern) => {
-                if (pattern.pattern?.includes('java')) return Promise.resolve(mockJavaFiles);
-                if (pattern.pattern?.includes('query')) return Promise.resolve(mockQueryFiles);
+            const dirent = (name: string, type: 'file' | 'dir') => ({
+                name,
+                isDirectory: () => type === 'dir',
+                isFile: () => type === 'file',
+            });
+            const normalize = (targetPath: string) => targetPath.replace(/\\/g, '/');
+            (fs.existsSync as jest.Mock).mockImplementation((targetPath: string) => (
+                normalize(targetPath) === '/test/project/src/java' || normalize(targetPath) === '/test/project/src/query'
+            ));
+            (fs.promises.readdir as jest.Mock).mockImplementation((targetPath: string) => {
+                if (normalize(targetPath) === '/test/project/src/java') {
+                    return Promise.resolve([
+                        dirent('Test1.java', 'file'),
+                        dirent('Test2.java', 'file'),
+                    ]);
+                }
+                if (normalize(targetPath) === '/test/project/src/query') {
+                    return Promise.resolve([dirent('Test1Query.xml', 'file')]);
+                }
                 return Promise.resolve([]);
             });
 
@@ -150,27 +159,32 @@ describe('DeployService', () => {
                 '/test/project/src/java/Test2.java',
                 '/test/project/src/query/Test1Query.xml'
             ]);
-            expect(vscode.workspace.findFiles).toHaveBeenCalledWith(
-                expect.objectContaining({ pattern: 'src/java/**/*Test*.*' }),
-                null,
-                1000
-            );
+            expect(fs.promises.readdir).toHaveBeenCalledWith(expect.stringMatching(/[\\/]src[\\/]java$/), { withFileTypes: true });
         });
     });
 
     describe('getAllDeployableFiles', () => {
         it('should return all java and xml files that are not already in the deploy list', async () => {
-            const mockJavaFiles = [
-                { fsPath: '/test/project/src/java/Test1.java' },
-                { fsPath: '/test/project/src/java/Test2.java' },
-                { fsPath: '/test/project/src/java/NotRelated.txt' },
-            ];
-            const mockQueryFiles = [
-                { fsPath: '/test/project/src/query/Test1Query.xml' },
-            ];
-            (vscode.workspace.findFiles as jest.Mock).mockImplementation((pattern: vscode.RelativePattern) => {
-                if (pattern.pattern?.includes('java')) return Promise.resolve(mockJavaFiles);
-                if (pattern.pattern?.includes('query')) return Promise.resolve(mockQueryFiles);
+            const dirent = (name: string, type: 'file' | 'dir') => ({
+                name,
+                isDirectory: () => type === 'dir',
+                isFile: () => type === 'file',
+            });
+            const normalize = (targetPath: string) => targetPath.replace(/\\/g, '/');
+            (fs.existsSync as jest.Mock).mockImplementation((targetPath: string) => (
+                normalize(targetPath) === '/test/project/src/java' || normalize(targetPath) === '/test/project/src/query'
+            ));
+            (fs.promises.readdir as jest.Mock).mockImplementation((targetPath: string) => {
+                if (normalize(targetPath) === '/test/project/src/java') {
+                    return Promise.resolve([
+                        dirent('Test1.java', 'file'),
+                        dirent('Test2.java', 'file'),
+                        dirent('NotRelated.txt', 'file'),
+                    ]);
+                }
+                if (normalize(targetPath) === '/test/project/src/query') {
+                    return Promise.resolve([dirent('Test1Query.xml', 'file')]);
+                }
                 return Promise.resolve([]);
             });
 
@@ -182,11 +196,7 @@ describe('DeployService', () => {
                 '/test/project/src/java/Test2.java',
                 '/test/project/src/query/Test1Query.xml'
             ]);
-            expect(vscode.workspace.findFiles).toHaveBeenCalledWith(
-                expect.objectContaining({ pattern: 'src/java/**/*.*' }),
-                null,
-                10000
-            );
+            expect(fs.promises.readdir).toHaveBeenCalledWith(expect.stringMatching(/[\\/]src[\\/]java$/), { withFileTypes: true });
         });
     });
 

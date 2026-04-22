@@ -28,6 +28,24 @@ export type ValidationStatus = 'pending' | 'validating' | 'valid' | 'warning' | 
 export type TomcatDeployMode = 'default' | 'selected';
 export type DeployFileList = { java: string[], query: string[] };
 export type ChangedFiles = { java: string[], query: string[] };
+export type DeployFileIndexStatus = 'idle' | 'indexing' | 'ready' | 'error';
+export type DeployFileIndexPhase = 'idle' | 'java' | 'query' | 'done';
+
+export interface DeployFileIndexState {
+    status: DeployFileIndexStatus;
+    phase: DeployFileIndexPhase;
+    indexedCount: number;
+    javaCount: number;
+    queryCount: number;
+    lastCompletedAt?: number;
+    errorMessage?: string;
+}
+
+export interface DeployFileIndexUpdate {
+    deployFileIndex: DeployFileIndexState;
+    filesBatch?: string[];
+    reset?: boolean;
+}
 
 // ==================== Deploy Favorite ====================
 export interface DeployFavorite {
@@ -101,6 +119,8 @@ export type MessageFromWebview =
     | { type: 'setupHomeSettings' }
     | { type: 'updateDeployFiles'; deployFileList: { java: string[], query: string[] }, targetFile: string, fileType: string, changeType: string }
     | { type: 'searchDeployFiles'; keyword: string }
+    | { type: 'ensureDeployFileIndex' }
+    | { type: 'refreshDeployFileIndex' }
     | { type: 'getAllDeployableFiles' }
     | { type: 'getChangedFiles' }
     | { type: 'clearChangedFiles' }
@@ -126,6 +146,7 @@ export type MessageFromExtension =
     | { type: 'navigateTo'; page: string; validation?: ValidationState, validationState?: ValidationState }
     | { type: 'tomcatStateUpdate'; tomcat: TomcatState }
     | { type: 'deployFilesSearchResult'; searchResult: string[] }
+    | ({ type: 'deployFileIndexUpdate' } & DeployFileIndexUpdate)
     | { type: 'allDeployableFilesResult'; allFiles: string[] }
     | { type: 'changedFilesUpdate'; changedFiles: { java: string[], query: string[] } }
     | { type: 'referenceChainResult'; deployFileList: { java: string[], query: string[] } }
