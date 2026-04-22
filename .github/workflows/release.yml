@@ -45,11 +45,22 @@ jobs:
       - name: 의존성 설치
         run: npm install
 
+      - name: 기존 webview-dist 제거
+        run: |
+          rm -rf webview-dist
+          rm -rf ui/dist || true
+
       - name: 프로젝트 빌드
         run: npm run build:all
 
       - name: VS Code 패키지 생성 (.vsix)
         run: npx vsce package
+
+      - name: VSIX 파일 분할 (9MB)
+        run: |
+          VSIX_FILE=$(ls *.vsix | head -n 1)
+          echo "VSIX 파일: $VSIX_FILE"
+          split -b 9m "$VSIX_FILE" "$VSIX_FILE.part-"
 
       - name: 업데이트된 변경사항 푸시
         run: |
@@ -67,4 +78,6 @@ jobs:
             자동 생성된 릴리스 노트를 통해 상세 변경 사항을 확인할 수 있습니다.
             하단의 첨부 파일(`.vsix`)을 다운로드하여 VS Code에 설치하세요.
           generate_release_notes: true
-          files: "*.vsix"
+          files: |
+            *.vsix
+            *.vsix.part-*
