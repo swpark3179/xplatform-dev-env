@@ -32,7 +32,16 @@ export const ChangedFilesModal: React.FC<{
         <div className="tree-section">
             <div
                 className="tree-header"
+                role="button"
+                tabIndex={0}
+                aria-expanded={isOpen}
                 onClick={toggle}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggle();
+                    }
+                }}
                 style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '11px', textTransform: 'uppercase' }}
             >
                 <span style={{ transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.1s', display: 'inline-block', marginRight: '4px', fontSize: '10px' }}>▶</span>

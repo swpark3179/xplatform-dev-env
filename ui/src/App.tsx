@@ -35,7 +35,14 @@ function App() {
         }
     };
 
-    return <div className="app">{renderPage()}</div>;
+    return (
+        <div className="app">
+            <div style={{ padding: '4px 8px', fontSize: '11px', background: 'rgba(255,255,0,0.2)', color: '#888', borderBottom: '1px solid #444', marginBottom: '8px' }}>
+                [DEBUG] page={state.navigation.currentPage}, loaded={String(state.validation.isFirstLoaded)}, allValid={String(state.validation.allValid)}, projectValid={String(state.validation.projectValid)}
+            </div>
+            {renderPage()}
+        </div>
+    );
 }
 
 export default App;

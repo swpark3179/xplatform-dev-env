@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import { postMessage } from '../vscode';
 import { WebviewMessage } from '../../../src/types/webviewMessage';
 import type { ProjectSettingsOptions, TomcatDeployMode } from '../types';
@@ -19,6 +19,10 @@ export interface UseAppActionsDeps {
 /**
  * Extension 메시지 전송 및 로컬 상태 업데이트 액션 훅.
  * actions는 도메인별로 계층화되어 있음 (navigation, settings, build, tomcat, deploy, project).
+ *
+ * 주의: useCallback 은 반드시 컴포넌트(훅) 최상위에서 호출해야 하며,
+ * useMemo 의 factory 내부에서 호출하면 Rules of Hooks 위반으로 훅 순서가
+ * 렌더 간에 달라져 내부 상태가 깨진다.
  */
 export function useAppActions(deps: UseAppActionsDeps) {
     const {
@@ -187,7 +191,7 @@ export function useAppActions(deps: UseAppActionsDeps) {
         }, [setUxStudioStatus]),
     };
 
-    return {
+    return useMemo(() => ({
         navigation,
         settings,
         build,
@@ -195,5 +199,5 @@ export function useAppActions(deps: UseAppActionsDeps) {
         deploy,
         project,
         uxStudio,
-    };
+    }), [navigation, settings, build, tomcat, deploy, project, uxStudio]);
 }

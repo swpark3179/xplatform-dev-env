@@ -143,7 +143,7 @@ export type MessageFromWebview =
 export type MessageFromExtension =
     | { type: 'stateUpdate'; settings: Settings }
     | { type: 'mainStateUpdate'; settings?: Settings; isGradleRunning?: boolean; tomcat?: TomcatState; validation?: ValidationState; deployFileList?: { java: string[], query: string[] }; changedFiles?: { java: string[], query: string[] } }
-    | { type: 'navigateTo'; page: string; validation?: ValidationState, validationState?: ValidationState }
+    | { type: 'navigateTo'; page: string; validation?: ValidationState }
     | { type: 'tomcatStateUpdate'; tomcat: TomcatState }
     | { type: 'deployFilesSearchResult'; searchResult: string[] }
     | ({ type: 'deployFileIndexUpdate' } & DeployFileIndexUpdate)

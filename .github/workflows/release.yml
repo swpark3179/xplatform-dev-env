@@ -76,7 +76,7 @@ jobs:
         run: npm run build:all
 
       - name: VS Code 패키지 생성 (.vsix)
-        run: npx vsce package
+        run: npx vsce package --allow-missing-repository
 
       - name: VSIX 파일 분할 (9MB)
         run: |

@@ -87,11 +87,12 @@ export const DeployListModal: React.FC<{
     const currentList = state.deploy.deployFileList[type];
     if (currentList.includes(fileToAdd)) return;
     const updatedList = [...currentList, fileToAdd];
+    const newDeployFileList = {
+      ...state.deploy.deployFileList,
+      [type]: updatedList,
+    };
     actions.deploy.updateDeployFiles(
-      {
-        ...state.deploy.deployFileList,
-        [type]: updatedList,
-      },
+      newDeployFileList,
       fileToAdd,
       type,
       "add",
@@ -200,13 +201,38 @@ export const DeployListModal: React.FC<{
             </div>
             <div style={{ display: "flex", gap: "5px", position: "relative" }}>
             <div style={{ position: "relative", flex: 1 }}>
-              <input
-                type="text"
-                placeholder={"추가할 파일명 검색... (Java 및 Query)"}
-                value={searchKeyword}
-                onChange={(e) => setSearchKeyword(e.target.value)}
-                style={{ width: "100%" }}
-              />
+              <div style={{ position: "relative", width: "100%" }}>
+                <input
+                  type="text"
+                  placeholder={"추가할 파일명 검색... (Java 및 Query)"}
+                  value={searchKeyword}
+                  onChange={(e) => setSearchKeyword(e.target.value)}
+                  style={{ width: "100%", paddingRight: searchKeyword ? '24px' : undefined, boxSizing: 'border-box' }}
+                />
+                {searchKeyword && (
+                  <button
+                    type="button"
+                    onClick={() => { setSearchKeyword(""); actions.deploy.clearSearchResult(); }}
+                    aria-label="검색어 지우기"
+                    title="검색어 지우기"
+                    style={{
+                      position: 'absolute',
+                      right: '4px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--vscode-input-foreground, #ccc)',
+                      cursor: 'pointer',
+                      padding: '2px 6px',
+                      fontSize: '14px',
+                      opacity: 0.7
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
               {searchKeyword.trim().length > 0 && (
               <div
                 style={{
@@ -275,7 +301,8 @@ export const DeployListModal: React.FC<{
                             </span>
                           </span>
                           <button
-                            aria-label="추가"
+                            title={`${getFileName(file)} 추가`}
+                            aria-label={`${getFileName(file)} 추가`}
                             className="icon-btn tree-item-action"
                             style={{
                               width: "20px",
@@ -338,6 +365,7 @@ export const DeployListModal: React.FC<{
               <div style={{ display: "flex", gap: "6px", marginLeft: "auto" }}>
                 <button
                   title="배포 목록의 Java 파일에서 참조하는 클래스를 재귀적으로 탐색해 목록에 추가합니다"
+                  aria-label="배포 목록의 Java 파일에서 참조하는 클래스를 재귀적으로 탐색해 목록에 추가합니다"
                   disabled={
                     state.deploy.deployFileList.java.length === 0 || isAnalyzing
                   }
@@ -366,6 +394,8 @@ export const DeployListModal: React.FC<{
                   {isAnalyzing ? "⏳ 분석 중..." : "🔗 참조 자동등록"}
                 </button>
                 <button
+                  title="배포 목록 초기화"
+                  aria-label="배포 목록 초기화"
                   style={{
                     fontSize: "11px",
                     padding: "3px 8px",
@@ -400,6 +430,7 @@ export const DeployListModal: React.FC<{
                 className="tree-header"
                 role="button"
                 tabIndex={0}
+                aria-expanded={isJavaOpen}
                 onClick={() => setIsJavaOpen(!isJavaOpen)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -468,7 +499,8 @@ export const DeployListModal: React.FC<{
                         </span>
                         {!state.tomcat.running && (
                           <button
-                            aria-label="제거"
+                            title={`${getFileName(file)} 제거`}
+                            aria-label={`${getFileName(file)} 제거`}
                             className="icon-btn tree-item-action"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -499,6 +531,7 @@ export const DeployListModal: React.FC<{
                 className="tree-header"
                 role="button"
                 tabIndex={0}
+                aria-expanded={isQueryOpen}
                 onClick={() => setIsQueryOpen(!isQueryOpen)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -567,7 +600,8 @@ export const DeployListModal: React.FC<{
                         </span>
                         {!state.tomcat.running && (
                           <button
-                            aria-label="제거"
+                            title={`${getFileName(file)} 제거`}
+                            aria-label={`${getFileName(file)} 제거`}
                             className="icon-btn tree-item-action"
                             onClick={(e) => {
                               e.stopPropagation();
