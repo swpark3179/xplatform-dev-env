@@ -1,5 +1,6 @@
 import { useMemo, useCallback } from 'react';
 import { postMessage } from '../vscode';
+import { WebviewMessage } from '../../../src/types/webviewMessage';
 import type { ProjectSettingsOptions, TomcatDeployMode } from '../types';
 
 export type PageKind = 'settings' | 'main' | 'project-settings' | 'ux-studio';
@@ -8,9 +9,9 @@ export interface UseAppActionsDeps {
     setCurrentPage: (page: PageKind) => void;
     setIsGradleRunning: (value: boolean) => void;
     setSearchResult: (value: string[] | ((prev: string[]) => string[])) => void;
-    setDeployFileList: (value: { java: string[], query: string[] }) => void;
+    setDeployFileList: (value: { java: string[], query: string[], batch: string[] }) => void;
     setTomcatIsHotReloading: (value: boolean) => void;
-    setChangedFiles: (value: { java: string[], query: string[] }) => void;
+    setChangedFiles: (value: { java: string[], query: string[], batch: string[] }) => void;
     setUxStudioStatus: (value: 'new' | 'configured' | null) => void;
     setUxConfirmErrorFiles: React.Dispatch<React.SetStateAction<string[]>>;
 }
@@ -35,190 +36,160 @@ export function useAppActions(deps: UseAppActionsDeps) {
         setUxConfirmErrorFiles,
     } = deps;
 
-    // navigation
-    const goToSettings = useCallback(() => { setCurrentPage('settings'); }, [setCurrentPage]);
-    const goToMain = useCallback(() => { setCurrentPage('main'); }, [setCurrentPage]);
-    const goToProjectSettings = useCallback(() => { setCurrentPage('project-settings'); }, [setCurrentPage]);
-    const goToUxStudio = useCallback(() => { setCurrentPage('ux-studio'); }, [setCurrentPage]);
+    function sendMessage(msg: WebviewMessage) {
+        postMessage(msg);
+    }
 
-    const navigation = useMemo(() => ({
-        goToSettings,
-        goToMain,
-        goToProjectSettings,
-        goToUxStudio,
-    }), [goToSettings, goToMain, goToProjectSettings, goToUxStudio]);
+    const navigation = {
+        goToSettings: useCallback(() => {
+            setCurrentPage('settings');
+        }, [setCurrentPage]),
+        goToMain: useCallback(() => {
+            setCurrentPage('main');
+        }, [setCurrentPage]),
+        goToProjectSettings: useCallback(() => {
+            setCurrentPage('project-settings');
+        }, [setCurrentPage]),
+        goToUxStudio: useCallback(() => {
+            setCurrentPage('ux-studio');
+        }, [setCurrentPage]),
+    };
 
-    // settings
-    const initProject = useCallback(() => { postMessage({ type: 'initProject' }); }, []);
-    const initGlobalSettings = useCallback(() => { postMessage({ type: 'initGlobalSettings' }); }, []);
-    const selectFolder = useCallback((target: string, currentPath?: string) => {
-        postMessage({ type: 'selectFolder', target, currentPath });
-    }, []);
-    const validateAll = useCallback(() => { postMessage({ type: 'validateAll' }); }, []);
+    const settings = {
+        initProject: useCallback(() => {
+            postMessage({ type: 'initProject' });
+        }, []),
+        initGlobalSettings: useCallback(() => {
+            postMessage({ type: 'initGlobalSettings' });
+        }, []),
+        selectFolder: useCallback((target: string, currentPath?: string) => {
+            postMessage({ type: 'selectFolder', target, currentPath });
+        }, []),
+        validateAll: useCallback(() => {
+            postMessage({ type: 'validateAll' });
+        }, []),
+    };
 
-    const settings = useMemo(() => ({
-        initProject,
-        initGlobalSettings,
-        selectFolder,
-        validateAll,
-    }), [initProject, initGlobalSettings, selectFolder, validateAll]);
+    const build = {
+        buildClasses: useCallback(() => {
+            setIsGradleRunning(true);
+            postMessage({ type: 'buildClasses' });
+        }, [setIsGradleRunning]),
+        cleanProject: useCallback(() => {
+            setIsGradleRunning(true);
+            postMessage({ type: 'cleanProject' });
+        }, [setIsGradleRunning]),
+        stopGradle: useCallback(() => {
+            postMessage({ type: 'stopGradle' });
+        }, []),
+    };
 
-    // build
-    const buildClasses = useCallback(() => {
-        setIsGradleRunning(true);
-        postMessage({ type: 'buildClasses' });
-    }, [setIsGradleRunning]);
-    const cleanProject = useCallback(() => {
-        setIsGradleRunning(true);
-        postMessage({ type: 'cleanProject' });
-    }, [setIsGradleRunning]);
-    const stopGradle = useCallback(() => { postMessage({ type: 'stopGradle' }); }, []);
+    const tomcat = {
+        initTomcat: useCallback((contextRoot: string, profile: string, isBatch: boolean, deployMode: TomcatDeployMode) => {
+            postMessage({ type: 'initTomcat', contextRoot, profile, isBatch, deployMode });
+        }, []),
+        startTomcat: useCallback((enableHotswap: boolean) => {
+            postMessage({ type: 'startTomcat', enableHotswap });
+        }, []),
+        debugTomcat: useCallback((enableHotswap: boolean) => {
+            postMessage({ type: 'debugTomcat', enableHotswap });
+        }, []),
+        stopTomcat: useCallback(() => {
+            postMessage({ type: 'stopTomcat' });
+        }, []),
+        killTomcatPorts: useCallback(() => {
+            postMessage({ type: 'killTomcatPorts' });
+        }, []),
+        setStateIsHotReloading: useCallback((value: boolean) => {
+            setTomcatIsHotReloading(value);
+        }, [setTomcatIsHotReloading]),
+    };
 
-    const build = useMemo(() => ({
-        buildClasses,
-        cleanProject,
-        stopGradle,
-    }), [buildClasses, cleanProject, stopGradle]);
+    const deploy = {
+        updateDeployFiles: useCallback((deployFileList: { java: string[], query: string[], batch: string[] }, targetFile: string, fileType: string, changeType: string) => {
+            setDeployFileList(deployFileList);
+            postMessage({ type: 'updateDeployFiles', deployFileList: deployFileList, targetFile: targetFile, fileType: fileType, changeType: changeType });
+        }, []),
+        searchDeployFiles: useCallback((keyword: string) => {
+            sendMessage({ type: 'searchDeployFiles', keyword });
+        }, []),
+        ensureDeployFileIndex: useCallback(() => {
+            sendMessage({ type: 'ensureDeployFileIndex' });
+        }, []),
+        refreshDeployFileIndex: useCallback(() => {
+            sendMessage({ type: 'refreshDeployFileIndex' });
+        }, []),
+        getAllDeployableFiles: useCallback(() => {
+            sendMessage({ type: 'ensureDeployFileIndex' });
+        }, []),
+        clearSearchResult: useCallback(() => {
+            setSearchResult([]);
+        }, [setSearchResult]),
+        applyChangedFiles: useCallback(() => {
+            setChangedFiles({ java: [], query: [], batch: [] });
+            sendMessage({ type: 'applyChangedFiles' });
+        }, []),
+        setStateSearchResult: useCallback((searchResult: string[]) => {
+            setSearchResult(searchResult);
+        }, [setSearchResult]),
+        analyzeReferenceChain: useCallback((javaFiles: string[]) => {
+            sendMessage({ type: 'analyzeReferenceChain', javaFiles });
+        }, []),
+        clearDeployFiles: useCallback(() => {
+            setDeployFileList({ java: [], query: [], batch: [] });
+            sendMessage({ type: 'clearDeployFiles' });
+        }, [setDeployFileList]),
+        // 즐겨찾기 관련 액션
+        loadFavorites: useCallback(() => {
+            sendMessage({ type: 'loadFavorites' });
+        }, []),
+        saveFavorite: useCallback((name: string, java: string[], query: string[], batch: string[]) => {
+            sendMessage({ type: 'saveFavorite', name, java, query, batch });
+        }, []),
+        overwriteFavorite: useCallback((id: string, java: string[], query: string[], batch: string[]) => {
+            sendMessage({ type: 'overwriteFavorite', id, java, query, batch });
+        }, []),
+        applyFavorite: useCallback((id: string) => {
+            sendMessage({ type: 'applyFavorite', id });
+        }, []),
+        deleteFavorite: useCallback((id: string) => {
+            sendMessage({ type: 'deleteFavorite', id });
+        }, []),
+    };
 
-    // tomcat
-    const initTomcat = useCallback((contextRoot: string, profile: string, isBatch: boolean, deployMode: TomcatDeployMode) => {
-        postMessage({ type: 'initTomcat', contextRoot, profile, isBatch, deployMode });
-    }, []);
-    const startTomcat = useCallback((enableHotswap: boolean) => {
-        postMessage({ type: 'startTomcat', enableHotswap });
-    }, []);
-    const debugTomcat = useCallback((enableHotswap: boolean) => {
-        postMessage({ type: 'debugTomcat', enableHotswap });
-    }, []);
-    const stopTomcat = useCallback(() => { postMessage({ type: 'stopTomcat' }); }, []);
-    const killTomcatPorts = useCallback(() => { postMessage({ type: 'killTomcatPorts' }); }, []);
-    const setStateIsHotReloading = useCallback((value: boolean) => {
-        setTomcatIsHotReloading(value);
-    }, [setTomcatIsHotReloading]);
+    const project = {
+        applyProjectSettings: useCallback((options: ProjectSettingsOptions) => {
+            postMessage({ type: 'applyProjectSettings', options });
+        }, []),
+        setupHomeSettings: useCallback(() => {
+            postMessage({ type: 'setupHomeSettings' });
+        }, []),
+    };
 
-    const tomcat = useMemo(() => ({
-        initTomcat,
-        startTomcat,
-        debugTomcat,
-        stopTomcat,
-        killTomcatPorts,
-        setStateIsHotReloading,
-    }), [initTomcat, startTomcat, debugTomcat, stopTomcat, killTomcatPorts, setStateIsHotReloading]);
-
-    // deploy
-    const updateDeployFiles = useCallback((deployFileList: { java: string[], query: string[] }, targetFile: string, fileType: string, changeType: string) => {
-        setDeployFileList(deployFileList);
-        postMessage({ type: 'updateDeployFiles', deployFileList, targetFile, fileType, changeType });
-    }, [setDeployFileList]);
-    const searchDeployFiles = useCallback((keyword: string) => {
-        postMessage({ type: 'searchDeployFiles', keyword } as any);
-    }, []);
-    const getAllDeployableFiles = useCallback(() => {
-        postMessage({ type: 'getAllDeployableFiles' } as any);
-    }, []);
-    const clearSearchResult = useCallback(() => { setSearchResult([]); }, [setSearchResult]);
-    const applyChangedFiles = useCallback(() => {
-        setChangedFiles({ java: [], query: [] });
-        postMessage({ type: 'applyChangedFiles' } as any);
-    }, [setChangedFiles]);
-    const setStateSearchResult = useCallback((searchResult: string[]) => {
-        setSearchResult(searchResult);
-    }, [setSearchResult]);
-    const analyzeReferenceChain = useCallback((javaFiles: string[]) => {
-        postMessage({ type: 'analyzeReferenceChain', javaFiles } as any);
-    }, []);
-    const clearDeployFiles = useCallback(() => {
-        setDeployFileList({ java: [], query: [] });
-        postMessage({ type: 'clearDeployFiles' } as any);
-    }, [setDeployFileList]);
-    const loadFavorites = useCallback(() => {
-        postMessage({ type: 'loadFavorites' } as any);
-    }, []);
-    const saveFavorite = useCallback((name: string, java: string[], query: string[]) => {
-        postMessage({ type: 'saveFavorite', name, java, query } as any);
-    }, []);
-    const overwriteFavorite = useCallback((id: string, java: string[], query: string[]) => {
-        postMessage({ type: 'overwriteFavorite', id, java, query } as any);
-    }, []);
-    const applyFavorite = useCallback((id: string) => {
-        postMessage({ type: 'applyFavorite', id } as any);
-    }, []);
-    const deleteFavorite = useCallback((id: string) => {
-        postMessage({ type: 'deleteFavorite', id } as any);
-    }, []);
-
-    const deploy = useMemo(() => ({
-        updateDeployFiles,
-        searchDeployFiles,
-        getAllDeployableFiles,
-        clearSearchResult,
-        applyChangedFiles,
-        setStateSearchResult,
-        analyzeReferenceChain,
-        clearDeployFiles,
-        loadFavorites,
-        saveFavorite,
-        overwriteFavorite,
-        applyFavorite,
-        deleteFavorite,
-    }), [
-        updateDeployFiles,
-        searchDeployFiles,
-        getAllDeployableFiles,
-        clearSearchResult,
-        applyChangedFiles,
-        setStateSearchResult,
-        analyzeReferenceChain,
-        clearDeployFiles,
-        loadFavorites,
-        saveFavorite,
-        overwriteFavorite,
-        applyFavorite,
-        deleteFavorite,
-    ]);
-
-    // project
-    const applyProjectSettings = useCallback((options: ProjectSettingsOptions) => {
-        postMessage({ type: 'applyProjectSettings', options });
-    }, []);
-    const setupHomeSettings = useCallback(() => {
-        postMessage({ type: 'setupHomeSettings' });
-    }, []);
-
-    const project = useMemo(() => ({
-        applyProjectSettings,
-        setupHomeSettings,
-    }), [applyProjectSettings, setupHomeSettings]);
-
-    // uxStudio
-    const uxInit = useCallback(() => { postMessage({ type: 'uxStudioInit' }); }, []);
-    const uxApplySettings = useCallback((config: import('../types').UxStudioEnvConfig) => {
-        postMessage({ type: 'uxStudioApplySettings', config } as any);
-    }, []);
-    const uxSearchXfdl = useCallback(() => { postMessage({ type: 'uxStudioSearchXfdl' }); }, []);
-    const uxConfirmFiles = useCallback((selectedFiles: string[]) => {
-        postMessage({ type: 'uxStudioConfirmFiles', selectedFiles } as any);
-    }, []);
-    const uxClearConfirmError = useCallback(() => {
-        setUxConfirmErrorFiles([]);
-    }, [setUxConfirmErrorFiles]);
-    const uxLaunchXprj = useCallback((filePath: string) => {
-        postMessage({ type: 'uxStudioLaunchXprj', filePath } as any);
-    }, []);
-    const uxResetSetup = useCallback(() => {
-        setUxStudioStatus(null);
-        postMessage({ type: 'uxStudioResetSetup' });
-    }, [setUxStudioStatus]);
-
-    const uxStudio = useMemo(() => ({
-        init: uxInit,
-        applySettings: uxApplySettings,
-        searchXfdl: uxSearchXfdl,
-        confirmFiles: uxConfirmFiles,
-        clearConfirmError: uxClearConfirmError,
-        launchXprj: uxLaunchXprj,
-        resetSetup: uxResetSetup,
-    }), [uxInit, uxApplySettings, uxSearchXfdl, uxConfirmFiles, uxClearConfirmError, uxLaunchXprj, uxResetSetup]);
+    const uxStudio = {
+        init: useCallback(() => {
+            postMessage({ type: 'uxStudioInit' });
+        }, []),
+        applySettings: useCallback((config: import('../types').UxStudioEnvConfig) => {
+            sendMessage({ type: 'uxStudioApplySettings', config });
+        }, []),
+        searchXfdl: useCallback(() => {
+            postMessage({ type: 'uxStudioSearchXfdl' });
+        }, []),
+        confirmFiles: useCallback((selectedFiles: string[]) => {
+            sendMessage({ type: 'uxStudioConfirmFiles', selectedFiles });
+        }, []),
+        clearConfirmError: useCallback(() => {
+            setUxConfirmErrorFiles([]);
+        }, [setUxConfirmErrorFiles]),
+        launchXprj: useCallback((filePath: string) => {
+            sendMessage({ type: 'uxStudioLaunchXprj', filePath });
+        }, []),
+        resetSetup: useCallback(() => {
+            setUxStudioStatus(null); // 로칼 상태 먼저 전환
+            postMessage({ type: 'uxStudioResetSetup' });
+        }, [setUxStudioStatus]),
+    };
 
     return useMemo(() => ({
         navigation,

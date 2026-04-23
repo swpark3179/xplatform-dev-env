@@ -10,9 +10,11 @@ export const DeployListModal: React.FC<{
 }> = ({ isOpen, onClose, state, actions }) => {
   const [isJavaOpen, setIsJavaOpen] = useState(true);
   const [isQueryOpen, setIsQueryOpen] = useState(true);
+  const [isBatchOpen, setIsBatchOpen] = useState(true);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const searchPaneRef = useRef<HTMLDivElement>(null);
+  const deployFileIndex = state.deploy.deployFileIndex;
 
   // 검색 도구 영역 밖 클릭 시 검색어·결과 초기화 (드롭다운 닫기)
   React.useEffect(() => {
@@ -30,18 +32,9 @@ export const DeployListModal: React.FC<{
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, searchKeyword, actions.deploy]);
 
-  // 팝업 오픈 시 전체 배포 대상 파일 조회
-  React.useEffect(() => {
-    if (isOpen) {
-      actions.deploy.getAllDeployableFiles();
-    }
-  }, [isOpen, actions.deploy]);
-
   // 새로고침 버튼 클릭 핸들러
   const handleRefreshDeployableFiles = () => {
-    actions.deploy.getAllDeployableFiles();
-    // 검색어가 있다면 검색 결과도 빈 배열로 초기화 후 다시 검색되도록 함
-    actions.deploy.clearSearchResult();
+    actions.deploy.refreshDeployFileIndex();
   };
 
   // 검색어 입력 변경 핸들러 (메모리에서 로컬 필터링)
@@ -52,12 +45,27 @@ export const DeployListModal: React.FC<{
     } else {
       // 대소문자 구분 없이 검색
       const lowerKeyword = searchKeyword.toLowerCase();
-      // state.deploy.allDeployableFiles를 필터링
+      const selectedFiles = new Set([
+        ...state.deploy.deployFileList.java,
+        ...state.deploy.deployFileList.query,
+        ...state.deploy.deployFileList.batch,
+      ]);
       const allFiles = state.deploy.allDeployableFiles || [];
-      const filtered = allFiles.filter(file => file.toLowerCase().includes(lowerKeyword));
+      const filtered = allFiles.filter(
+        (file) =>
+          !selectedFiles.has(file) && file.toLowerCase().includes(lowerKeyword),
+      );
       actions.deploy.setStateSearchResult(filtered);
     }
-  }, [searchKeyword, isOpen, state.deploy.allDeployableFiles, actions.deploy]);
+  }, [
+    searchKeyword,
+    isOpen,
+    state.deploy.allDeployableFiles,
+    state.deploy.deployFileList.java,
+    state.deploy.deployFileList.query,
+    state.deploy.deployFileList.batch,
+    actions.deploy,
+  ]);
 
   // 참조 체인 분석 완료 시 로딩 상태 해제
   React.useEffect(() => {
@@ -71,11 +79,13 @@ export const DeployListModal: React.FC<{
 
   // 검색 결과에서 파일을 배포 목록으로 추가
   const handleAdd = (fileToAdd: string) => {
-    let type: "java" | "query" | null = null;
+    let type: "java" | "query" | "batch" | null = null;
     if (fileToAdd.includes("/src/java/")) {
       type = "java";
     } else if (fileToAdd.includes("/src/query/")) {
       type = "query";
+    } else if (fileToAdd.includes("/src/config/batch/") && fileToAdd.toLowerCase().endsWith("job.xml")) {
+      type = "batch";
     }
     if (!type) return;
 
@@ -113,8 +123,34 @@ export const DeployListModal: React.FC<{
     return path;
   };
 
+  const getIndexStatusText = () => {
+    if (deployFileIndex.status === "indexing") {
+      const phaseLabel =
+        deployFileIndex.phase === "java"
+          ? "Java"
+          : deployFileIndex.phase === "query"
+            ? "Query"
+            : deployFileIndex.phase === "batch"
+              ? "Batch"
+              : "파일";
+      return `인덱싱 중: ${phaseLabel} 수집 중 · Java ${deployFileIndex.javaCount} / Query ${deployFileIndex.queryCount} / Batch ${deployFileIndex.batchCount} / 총 ${deployFileIndex.indexedCount}`;
+    }
+    if (deployFileIndex.status === "error") {
+      return deployFileIndex.errorMessage || "인덱싱에 실패했습니다.";
+    }
+    if (deployFileIndex.status === "ready") {
+      const completedAt = deployFileIndex.lastCompletedAt
+        ? new Date(deployFileIndex.lastCompletedAt).toLocaleTimeString()
+        : null;
+      return completedAt
+        ? `인덱싱 완료: Java ${deployFileIndex.javaCount} / Query ${deployFileIndex.queryCount} / Batch ${deployFileIndex.batchCount} / 총 ${deployFileIndex.indexedCount} (${completedAt})`
+        : `인덱싱 완료: Java ${deployFileIndex.javaCount} / Query ${deployFileIndex.queryCount} / Batch ${deployFileIndex.batchCount} / 총 ${deployFileIndex.indexedCount}`;
+    }
+    return "인덱싱 대기 중";
+  };
+
   // 배포 목록에서 대상 파일을 제거
-  const handleRemove = (type: "java" | "query", fileToRemove: string) => {
+  const handleRemove = (type: "java" | "query" | "batch", fileToRemove: string) => {
     const currentList = state.deploy.deployFileList[type];
     const updatedList = currentList.filter((f) => f !== fileToRemove);
     const newDeployFiles = {
@@ -154,17 +190,28 @@ export const DeployListModal: React.FC<{
         style={{ display: "flex", flexDirection: "column", gap: "15px" }}
       >
         {/* 검색 도구 영역 */}
-        <div
-          ref={searchPaneRef}
-          className="search-pane"
-          style={{ display: "flex", flexDirection: "column", gap: "5px" }}
-        >
-          <div style={{ display: "flex", gap: "5px", position: "relative" }}>
+          <div
+            ref={searchPaneRef}
+            className="search-pane"
+            style={{ display: "flex", flexDirection: "column", gap: "5px" }}
+          >
+            <div
+              style={{
+                fontSize: "11px",
+                color:
+                  deployFileIndex.status === "error"
+                    ? "var(--vscode-errorForeground)"
+                    : "var(--vscode-descriptionForeground)",
+              }}
+            >
+              {getIndexStatusText()}
+            </div>
+            <div style={{ display: "flex", gap: "5px", position: "relative" }}>
             <div style={{ position: "relative", flex: 1 }}>
               <div style={{ position: "relative", width: "100%" }}>
                 <input
                   type="text"
-                  placeholder={"추가할 파일명 검색... (Java 및 Query)"}
+                  placeholder={"추가할 파일명 검색... (Java, Query, Batch)"}
                   value={searchKeyword}
                   onChange={(e) => setSearchKeyword(e.target.value)}
                   style={{ width: "100%", paddingRight: searchKeyword ? '24px' : undefined, boxSizing: 'border-box' }}
@@ -257,7 +304,9 @@ export const DeployListModal: React.FC<{
                             >
                               {file.includes("/src/java/")
                                 ? "(Java)"
-                                : "(Query)"}
+                                : file.includes("/src/config/batch/")
+                                  ? "(Batch)"
+                                  : "(Query)"}
                             </span>
                           </span>
                           <button
@@ -286,10 +335,15 @@ export const DeployListModal: React.FC<{
               title="파일 목록 새로고침"
               aria-label="파일 목록 새로고침"
               onClick={handleRefreshDeployableFiles}
+              disabled={deployFileIndex.status === "indexing"}
               style={{
                 fontSize: "12px",
                 padding: "0 8px",
-                cursor: "pointer",
+                cursor:
+                  deployFileIndex.status === "indexing"
+                    ? "not-allowed"
+                    : "pointer",
+                opacity: deployFileIndex.status === "indexing" ? 0.6 : 1,
                 background: "var(--vscode-button-secondaryBackground, #3a3d41)",
                 color: "var(--vscode-button-secondaryForeground, #ccc)",
                 border: "1px solid var(--vscode-panel-border)",
@@ -297,7 +351,7 @@ export const DeployListModal: React.FC<{
                 whiteSpace: "nowrap",
               }}
             >
-              🔄
+              {deployFileIndex.status === "indexing" ? "⏳" : "🔄"}
             </button>
           </div>
         </div>
@@ -561,6 +615,107 @@ export const DeployListModal: React.FC<{
                             onClick={(e) => {
                               e.stopPropagation();
                               handleRemove("query", file);
+                            }}
+                            style={{
+                              width: "20px",
+                              height: "20px",
+                              border: "none",
+                              background: "transparent",
+                              color: "inherit",
+                              padding: 0,
+                            }}
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Batch Section */}
+            <div className="tree-section">
+              <div
+                className="tree-header"
+                role="button"
+                tabIndex={0}
+                aria-expanded={isBatchOpen}
+                onClick={() => setIsBatchOpen(!isBatchOpen)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setIsBatchOpen(!isBatchOpen);
+                  }
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "4px 8px",
+                  cursor: "pointer",
+                  fontWeight: "bold",
+                  fontSize: "11px",
+                  textTransform: "uppercase",
+                }}
+              >
+                <span
+                  style={{
+                    transform: isBatchOpen ? "rotate(90deg)" : "rotate(0deg)",
+                    transition: "transform 0.1s",
+                    display: "inline-block",
+                    marginRight: "4px",
+                    fontSize: "10px",
+                  }}
+                >
+                  ▶
+                </span>
+                Batch ({state.deploy.deployFileList.batch.length})
+              </div>
+              {isBatchOpen && (
+                <div className="tree-content">
+                  {state.deploy.deployFileList.batch.length === 0 ? (
+                    <div
+                      style={{
+                        padding: "4px 8px 4px 24px",
+                        fontStyle: "italic",
+                        color: "var(--vscode-descriptionForeground)",
+                      }}
+                    >
+                      선택된 파일이 없습니다.
+                    </div>
+                  ) : (
+                    state.deploy.deployFileList.batch.map((file, idx) => (
+                      <div
+                        key={idx}
+                        className="tree-item"
+                        title={getTooltip(file)}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "4px 8px 4px 24px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: "13px",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {getFileName(file)}
+                        </span>
+                        {!state.tomcat.running && (
+                          <button
+                            title={`${getFileName(file)} 제거`}
+                            aria-label={`${getFileName(file)} 제거`}
+                            className="icon-btn tree-item-action"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemove("batch", file);
                             }}
                             style={{
                               width: "20px",

@@ -4,7 +4,7 @@ import { Modal } from '../common';
 export const ChangedFilesModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
-    changedFiles: { java: string[], query: string[] };
+    changedFiles: { java: string[], query: string[], batch: string[] };
     onApply: () => void;
     isHotReloading: boolean;
 }> = ({ isOpen, onClose, changedFiles, onApply, isHotReloading }) => {

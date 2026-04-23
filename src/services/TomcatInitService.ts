@@ -166,13 +166,22 @@ export class TomcatInitService {
                 const idx = normalized.indexOf('/src/query/');
                 return idx !== -1 ? `**/${normalized.substring(idx + '/src/query/'.length)}` : `**/${normalized}`;
             });
+            // 배포대상 목록에서 batch(*Job.xml) 복사대상 패턴 생성 (cwd가 srcConfigPath 이므로 batch/... 상대경로)
+            const batchPatterns = this._deployFileList.batch.map(batchFile => {
+                const normalized = batchFile.replace(/\\/g, '/');
+                const idx = normalized.indexOf('/src/config/');
+                return idx !== -1 ? `**/${normalized.substring(idx + '/src/config/'.length)}` : `**/${normalized}`;
+            });
             await Promise.all([
                 isDeveloperMode
                     ? this._createStaticSymlinks(webappPath, _deployPath)
                     : this.copyWithProgress('정적 파일', webappPath, _deployPath, ['**/*', '!**/WEB-INF/lib', '!**/XPLATFORM_Client_License.xml']),
                 (javaClassPatterns.length > 0) ? this.copyWithProgress('Java', srcClassesPath, targetClassesPath, javaClassPatterns) : Promise.resolve(),
                 (queryPatterns.length > 0) ? this.copyWithProgress('Query', srcQueryPath, targetClassesPath, queryPatterns) : Promise.resolve(),
-                this.copyWithProgress('Config', srcConfigPath, targetClassesPath, '**/*'),
+                // 선택 모드: src/config 전체 복사 시 batch/**/*Job.xml(대소문자 무시)은 항상 제외
+                this.copyWithProgress('Config', srcConfigPath, targetClassesPath, ['**/*', '!**/batch/**/*Job.xml', '!**/batch/**/*job.xml']),
+                // 사용자가 선택한 batch *Job.xml 파일만 추가 복사
+                (batchPatterns.length > 0) ? this.copyWithProgress('Batch', srcConfigPath, targetClassesPath, batchPatterns) : Promise.resolve(),
                 this.copyWithProgress('Lib', projectLibPath, tomcatLibPath, '**/*'),
             ]);
             //this._commentOutWsdlProperties(targetClassesPath); // wsdl properties 파일 내용 수정 (전체 주석 처리) -> 주석 처리 필요 없음

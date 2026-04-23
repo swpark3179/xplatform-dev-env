@@ -97,13 +97,14 @@ export class QueryExecutionService {
             if (config.instantClientPath) {
                 try {
                     oracledb.initOracleClient({ libDir: config.instantClientPath });
-                } catch (e: any) {
+                } catch (e) {
                     // 이미 초기화된 경우 무시
-                    if (!e.message?.includes('already initialized')) {
+                    const err = e instanceof Error ? e : new Error(String(e));
+                    if (!err.message?.includes('already initialized')) {
                         return {
                             columns: [], rows: [], rowCount: 0,
                             executionTime: Date.now() - startTime,
-                            error: `Oracle Instant Client 초기화 실패: ${e.message}`,
+                            error: `Oracle Instant Client 초기화 실패: ${err.message}`,
                             type: 'select'
                         };
                     }
@@ -125,8 +126,10 @@ export class QueryExecutionService {
                         maxRows: 1000
                     });
 
-                    const columns = result.metaData?.map((m: any) => m.name) || [];
-                    const rows = result.rows || [];
+                    const columns = Array.isArray(result.metaData)
+                        ? result.metaData.map((m: any) => m.name)
+                        : [];
+                    const rows = result.rows ?? [];
 
                     return {
                         columns,
@@ -148,11 +151,12 @@ export class QueryExecutionService {
             } finally {
                 await connection.close();
             }
-        } catch (e: any) {
+        } catch (e) {
+            const err = e instanceof Error ? e : new Error(String(e));
             return {
                 columns: [], rows: [], rowCount: 0,
                 executionTime: Date.now() - startTime,
-                error: `Oracle 실행 오류: ${e.message}`,
+                error: `Oracle 실행 오류: ${err.message}`,
                 type: 'select'
             };
         }

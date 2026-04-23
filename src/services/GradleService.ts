@@ -5,7 +5,9 @@ import { spawn, execFileSync, ChildProcess } from 'child_process';
 import { Settings } from '../types';
 
 // Gradle 빌드 명령 실행 서비스
-export class GradleService {
+import type { IGradleService } from './interfaces';
+
+export class GradleService implements IGradleService {
     private _runningProcess?: ChildProcess;
     private _log: vscode.OutputChannel;
     private _settings: Settings;
@@ -15,6 +17,11 @@ export class GradleService {
         this._log = log;
         this._settings = settings;
         this._onProcessComplete = onProcessComplete;
+    }
+
+    // 프로세스 완료(성공/실패/중지) 시 호출될 콜백 등록 (UI에 빌드 종료 상태 전파용)
+    setOnProcessComplete(cb: () => void): void {
+        this._onProcessComplete = cb;
     }
 
     // Gradle 명령 실행
@@ -126,7 +133,7 @@ export class GradleService {
     }
 
     // 빌드(classes) 실행 후 콜백 호출 (배포 적용 등에서 사용)
-    buildClassesWithCallback(onComplete: (success: boolean) => void): void {
+    async buildClassesWithCallback(onComplete: (success: boolean) => void): Promise<void> {
         if (!this._settings.gradlePath || !this._settings.jdkPath || !this._settings.projectRoot) {
             vscode.window.showErrorMessage('Gradle, JDK 경로 또는 프로젝트 루트가 설정되지 않았습니다.');
             onComplete(false);

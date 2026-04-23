@@ -1,4 +1,5 @@
-import type { MessageFromWebview, ProjectSettingsOptions, TomcatDeployMode } from '../types';
+import type { ProjectSettingsOptions, TomcatDeployMode } from '../types';
+import type { WebviewMessage } from '../types/webviewMessage';
 
 /**
  * 내부 엔진이 UI 액션을 처리하기 위해 필요한 API.
@@ -21,15 +22,17 @@ export interface IWebviewActionEngine {
     killTomcatPorts(): Promise<void>;
     handleApplyProjectSettings(options: ProjectSettingsOptions): Promise<void>;
     handleSetupHomeSettings(): Promise<void>;
-    updateDeployFiles(deployFileList: { java: string[], query: string[] }, targetFile: string, fileType: string, changeType: string): void;
+    updateDeployFiles(deployFileList: { java: string[], query: string[], batch: string[] }, targetFile: string, fileType: string, changeType: string): void;
     searchDeployFiles(keyword: string): Promise<void>;
+    ensureDeployFileIndex(): void;
+    refreshDeployFileIndex(): void;
     getAllDeployableFiles(): Promise<void>;
     applyChangedFiles(): Promise<void>;
     analyzeReferenceChain(javaFiles: string[]): Promise<void>;
     clearDeployFiles(): void;
     loadFavorites(): Promise<void> | void;
-    saveFavorite(name: string, java: string[], query: string[]): Promise<void> | void;
-    overwriteFavorite(id: string, java: string[], query: string[]): Promise<void> | void;
+    saveFavorite(name: string, java: string[], query: string[], batch: string[]): Promise<void> | void;
+    overwriteFavorite(id: string, java: string[], query: string[], batch: string[]): Promise<void> | void;
     applyFavorite(id: string): void;
     deleteFavorite(id: string): Promise<void> | void;
     log?(message: string): void;
@@ -47,7 +50,7 @@ export interface IWebviewActionEngine {
  * UI → 엔진 방향의 액션 전달용.
  */
 export async function handleWebviewMessage(
-    data: MessageFromWebview,
+    data: WebviewMessage,
     engine: IWebviewActionEngine
 ): Promise<void> {
     switch (data.type) {
@@ -102,7 +105,14 @@ export async function handleWebviewMessage(
             engine.updateDeployFiles(data.deployFileList, data.targetFile, data.fileType, data.changeType);
             break;
         case 'searchDeployFiles':
+            if (!data.keyword) return;
             await engine.searchDeployFiles(data.keyword);
+            break;
+        case 'ensureDeployFileIndex':
+            engine.ensureDeployFileIndex();
+            break;
+        case 'refreshDeployFileIndex':
+            engine.refreshDeployFileIndex();
             break;
         case 'getAllDeployableFiles':
             await engine.getAllDeployableFiles();
@@ -111,6 +121,7 @@ export async function handleWebviewMessage(
             await engine.applyChangedFiles();
             break;
         case 'analyzeReferenceChain':
+            if (!Array.isArray(data.javaFiles)) return;
             await engine.analyzeReferenceChain(data.javaFiles);
             break;
         case 'clearDeployFiles':
@@ -120,12 +131,14 @@ export async function handleWebviewMessage(
             await engine.loadFavorites();
             break;
         case 'saveFavorite':
-            await engine.saveFavorite(data.name, data.java, data.query);
+            if (!data.name || !Array.isArray(data.java) || !Array.isArray(data.query)) return;
+            await engine.saveFavorite(data.name, data.java, data.query, Array.isArray(data.batch) ? data.batch : []);
             break;
         case 'overwriteFavorite':
-            await engine.overwriteFavorite(data.id, data.java, data.query);
+            await engine.overwriteFavorite(data.id, data.java, data.query, Array.isArray(data.batch) ? data.batch : []);
             break;
         case 'applyFavorite':
+            if (!data.id) return;
             engine.applyFavorite(data.id);
             break;
         case 'deleteFavorite':

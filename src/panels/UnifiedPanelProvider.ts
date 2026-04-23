@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { WebviewProvider } from './WebviewProvider';
 import { SettingsService, ValidationService, TomcatService, GradleService, ProjectService } from '../services';
+import type { IDeployService, ITomcatService, IGradleService } from '../services/interfaces';
 import type { ChangedFiles, DeployFileList, MessageFromWebview, Settings, TomcatState, ValidationState } from '../types';
 import { handleWebviewMessage, type IWebviewActionEngine } from './WebviewActionEngine';
 import { TomcatStatusBar } from '../utils/TomcatStatusBar';
@@ -10,6 +11,7 @@ import { TomcatInitService } from '../services/TomcatInitService';
 import { DeployService } from '../services/DeployService';
 import { ReferenceAnalysisProvider } from './ReferenceAnalysisProvider';
 import { UxStudioService } from '../services/UxStudioService';
+import { createServices } from '../services/serviceFactory';
 
 // 콘솔 출력 채널
 const OUTPUT_CHANNEL_NAME = 'XPlatform 통합 개발환경';
@@ -19,10 +21,10 @@ export class UnifiedPanelProvider extends WebviewProvider {
     private _settingsService: SettingsService; // 설정 화면 서비스
     private _projectService: ProjectService; // 프로젝트 설정 화면 서비스
     private _validationService: ValidationService; // Tool 검증 서비스 (설정 화면)
-    private _gradleService: GradleService; // Gradle 패널 서비스 (메인 화면)
-    private _tomcatService: TomcatService;  // Tomcat 제어 서비스 (메인 화면)
+    private _gradleService: IGradleService; // Gradle 패널 서비스 (메인 화면)
+    private _tomcatService: ITomcatService;  // Tomcat 제어 서비스 (메인 화면)
     private _tomcatInitService: TomcatInitService; // Tomcat 초기화 서비스 (메인 화면)
-    private _deployService: DeployService; // 배포 서비스
+    private _deployService: IDeployService; // 배포 서비스
     private _tomcatStatusBar: TomcatStatusBar; // Tomcat 실행 시 하단 상태바 서비스 (메인 화면)
     private _uxStudioService: UxStudioService; // UX Studio 관리 서비스
     private _settings: Settings; // Tool Path 등 설정 상태값 관리
@@ -33,11 +35,12 @@ export class UnifiedPanelProvider extends WebviewProvider {
     private _stoppingTimeout?: NodeJS.Timeout;
 
     // 배포 관련 상태값 관리
-    private _deployFileList: DeployFileList = { java: [], query: [] }; // 선택모드에서의 배포대상 목록
+    private _deployFileList: DeployFileList = { java: [], query: [], batch: [] }; // 선택모드에서의 배포대상 목록
     private _deployFileListJavaSet: Set<string> = new Set();
     private _deployFileListQuerySet: Set<string> = new Set();
+    private _deployFileListBatchSet: Set<string> = new Set();
     private _fileWatchers: vscode.FileSystemWatcher[] = [];
-    private _changedFiles: ChangedFiles = { java: [], query: [] }; // Tomcat 기동 중 변경된 파일 목록
+    private _changedFiles: ChangedFiles = { java: [], query: [], batch: [] }; // Tomcat 기동 중 변경된 파일 목록
 
     constructor(extensionUri: vscode.Uri, context?: vscode.ExtensionContext) {
         super(extensionUri);
@@ -76,22 +79,37 @@ export class UnifiedPanelProvider extends WebviewProvider {
             isHotReloadMode: true,
         };
 
-        this._settingsService = new SettingsService(this._log, this._settings);
-        this._validationService = new ValidationService(this._log, this._validation);
-        this._tomcatService = new TomcatService(this._log, this._settings, this._tomcatState, this._extensionUri, () => {
-            this._tomcatState.starting = false;
-            this._updateTomcatStatusBar();
-            this._sendTomcatState();
+        const services = createServices(
+            this._log,
+            this._extensionUri,
+            this._settings,
+            this._validation,
+            this._tomcatState,
+            this._deployFileList,
+            this._changedFiles,
+            this._fileWatchers
+        );
+
+        this._settingsService = services.settingsService;
+        this._validationService = services.validationService;
+        this._gradleService = services.gradleService;
+        this._tomcatService = services.tomcatService;
+        this._tomcatInitService = services.tomcatInitService;
+        this._projectService = services.projectService;
+        this._deployService = services.deployService;
+        this._uxStudioService = services.uxStudioService;
+
+        // Gradle 작업 종료 시 UI에 isGradleRunning=false 알림 (빌드 완료 후 중지 버튼 비활성화 처리)
+        this._gradleService.setOnProcessComplete(() => this._notifyGradleComplete());
+
+        this._deployService.setOnDeployFileIndexChanged((update) => {
+            this._postMessage({ type: 'deployFileIndexUpdate', ...update });
         });
-        this._tomcatInitService = new TomcatInitService(this._log, this._settings, this._tomcatState, this._extensionUri, this._deployFileList);
-        this._gradleService = new GradleService(this._log, this._settings, () => this._notifyGradleComplete());
-        this._projectService = new ProjectService(this._log, this._settings, this._extensionUri);
-        this._deployService = new DeployService(this._log, this._settings, this._deployFileList, this._changedFiles, this._fileWatchers, this._tomcatState, this._gradleService, this._tomcatService);
+
         this._deployFileListJavaSet = new Set(this._deployFileList.java);
         this._deployFileListQuerySet = new Set(this._deployFileList.query);
-        this._tomcatInitService.setDeployService(this._deployService);
+        this._deployFileListBatchSet = new Set(this._deployFileList.batch);
         this._tomcatStatusBar = new TomcatStatusBar();
-        this._uxStudioService = new UxStudioService(this._log, this._settings.projectRoot);
         if (context) {
             context.subscriptions.push(this._tomcatStatusBar);
             context.subscriptions.push(new vscode.Disposable(() => this.dispose()));
@@ -102,6 +120,11 @@ export class UnifiedPanelProvider extends WebviewProvider {
     public dispose(): void {
         this._deployService.stopFileWatcher();
         this._uxStudioService.stopMyChangesWatcher();
+    }
+
+    // Safe accessor instead of reaching into private fields
+    public getJdkPath(): string | undefined {
+        return this._settings?.jdkPath;
     }
 
     // UI 로딩이 완료되었을 때 최초 1회 수행
@@ -123,14 +146,10 @@ export class UnifiedPanelProvider extends WebviewProvider {
         webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
         // 메시지 핸들러 등록
-        webviewView.webview.onDidReceiveMessage(async (data: MessageFromWebview) => {
-            try {
-                await handleWebviewMessage(data, this._getActionEngine());
-            } catch (err) {
-                this._log.appendLine(`[메시지 처리 오류] ${data?.type}: ${err}`);
-                // 에러가 발생해도 현재 상태를 UI로 전송하여 빈 화면 방지
-                this._sendState();
-            }
+        webviewView.webview.onDidReceiveMessage(async (data: unknown) => {
+            // Narrow to WebviewMessage via runtime check on 'type'
+            if (!data || typeof data !== 'object' || !('type' in data)) return;
+            await handleWebviewMessage(data as import('../types/webviewMessage').WebviewMessage, this._getActionEngine());
         });
     }
 
@@ -278,9 +297,14 @@ export class UnifiedPanelProvider extends WebviewProvider {
                 const filtered = await this._deployService.searchDeployFiles(keyword);
                 this._postMessage({ type: 'deployFilesSearchResult', searchResult: filtered });
             },
+            ensureDeployFileIndex: () => {
+                this._deployService.ensureDeployFileIndex();
+            },
+            refreshDeployFileIndex: () => {
+                this._deployService.refreshDeployFileIndex();
+            },
             getAllDeployableFiles: async () => { // 배포목록관리 팝업에서 전체 배포 파일 검색
-                const allFiles = await this._deployService.getAllDeployableFiles();
-                this._postMessage({ type: 'allDeployableFilesResult', allFiles });
+                this._deployService.ensureDeployFileIndex();
             },
             updateDeployFiles: (deployFileList, targetFile, fileType, changeType) => { // 배포목록관리 팝업에서 배포목록 업데이트 핸들러
                 this._deployService.updateDeployList(deployFileList, targetFile, fileType, changeType);
@@ -304,14 +328,14 @@ export class UnifiedPanelProvider extends WebviewProvider {
                 const favorites = await this._deployService.loadFavorites();
                 this._postMessage({ type: 'favoritesListResult', favorites });
             },
-            saveFavorite: async (name, java, query) => { // 새 즐겨찾기 저장
-                const saved = this._deployService.saveFavorite(name, java, query);
+            saveFavorite: async (name, java, query, batch) => { // 새 즐겨찾기 저장
+                const saved = this._deployService.saveFavorite(name, java, query, batch);
                 const favorites = await this._deployService.loadFavorites();
                 this._postMessage({ type: 'favoriteApplied', deployFileList: this._deployFileList, favoriteId: saved.id, favoriteName: saved.name });
                 this._postMessage({ type: 'favoritesListResult', favorites });
             },
-            overwriteFavorite: async (id, java, query) => { // 즐겨찾기 덮어쓰기
-                const updated = this._deployService.overwriteFavorite(id, java, query);
+            overwriteFavorite: async (id, java, query, batch) => { // 즐겨찾기 덮어쓰기
+                const updated = this._deployService.overwriteFavorite(id, java, query, batch);
                 if (updated) {
                     const favorites = await this._deployService.loadFavorites();
                     this._postMessage({ type: 'favoriteApplied', deployFileList: this._deployFileList, favoriteId: updated.id, favoriteName: updated.name });
@@ -414,26 +438,24 @@ export class UnifiedPanelProvider extends WebviewProvider {
     // 패널이 최초 열렸을 때 수행되는 핸들러 - 프로젝트 구조 검증 및 도구가 모두 준비되었으면 Main 페이지로 이동
     private async _handleInitProject(): Promise<void> {
         if (this._validation.isFirstLoaded) { // 최초 초기화 수행은 이미 했고, 다시 패널 로드할 때는 최초 초기화 수행하지 않음
+            this._deployService.ensureDeployFileIndex();
             if (this._validation.allValid) this._postMessage({ type: 'navigateTo', page: 'main', validation: this._validation });
             return;
         }
         this._validation.isFirstLoaded = true;
-        try {
-            this._validationService.validateProjectStructure(this._settingsService.projectRoot); // 프로젝트 구조 검증
-            if (this._settingsService.loadSavedSettings()) this._validationService.setAsValidated(this._settingsService.settings);
-            this._syncContextRootFromServerXml();
-            if (!this._tomcatState.initialized || !this._tomcatState.contextRoot) {
-                this._syncContextRootFromWebXml();
-            }
-            this._deployService.loadDeploySettings(); // 배포 설정 파일에서 복원
-            if (!this._tomcatState.running && this._tomcatService.areTomcatPortsInUse()) this._tomcatState.portsBlocked = true; // 타 프로세스가 7001, 12001 포트를 사용 중이면 포트 블록 상태로 설정
-            this._updateTomcatStatusBar();
-            // 즐겨찾기 목록 최초 로드
-            const favorites = await this._deployService.loadFavorites();
-            this._postMessage({ type: 'favoritesListResult', favorites });
-        } catch (err) {
-            this._log.appendLine(`[초기화 오류] ${err}`);
+        this._validationService.validateProjectStructure(this._settingsService.projectRoot); // 프로젝트 구조 검증
+        if (this._settingsService.loadSavedSettings()) this._validationService.setAsValidated(this._settingsService.settings);
+        this._syncContextRootFromServerXml();
+        if (!this._tomcatState.initialized || !this._tomcatState.contextRoot) {
+            this._syncContextRootFromWebXml();
         }
+        this._deployService.loadDeploySettings(); // 배포 설정 파일에서 복원
+        this._deployService.ensureDeployFileIndex();
+        if (!this._tomcatState.running && this._tomcatService.areTomcatPortsInUse()) this._tomcatState.portsBlocked = true; // 타 프로세스가 7001, 12001 포트를 사용 중이면 포트 블록 상태로 설정
+        this._updateTomcatStatusBar();
+        // 즐겨찾기 목록 최초 로드
+        const favorites = await this._deployService.loadFavorites();
+        this._postMessage({ type: 'favoritesListResult', favorites });
         if (this._validation.allValid) this._postMessage({ type: 'navigateTo', page: 'main', validation: this._validation });
     }
 
@@ -508,7 +530,9 @@ export class UnifiedPanelProvider extends WebviewProvider {
     // 배포대상 여부를 판단하는 함수 (데코레이션 프로바이더에서 사용)
     public hasDeployTargetFile(filePath: string): boolean {
         const normalized = filePath.replace(/\\/g, '/');
-        return this._deployFileListJavaSet.has(normalized) || this._deployFileListQuerySet.has(normalized);
+        return this._deployFileListJavaSet.has(normalized)
+            || this._deployFileListQuerySet.has(normalized)
+            || this._deployFileListBatchSet.has(normalized);
     }
 
     // 데코레이션 프로바이더 업데이트를 위한 콜백함수 등록
@@ -516,6 +540,7 @@ export class UnifiedPanelProvider extends WebviewProvider {
         this._deployService.setOnDeployListChanged((uri) => {
             this._deployFileListJavaSet = new Set(this._deployFileList.java);
             this._deployFileListQuerySet = new Set(this._deployFileList.query);
+            this._deployFileListBatchSet = new Set(this._deployFileList.batch);
             refresh(uri);
         });
     }
