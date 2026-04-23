@@ -657,6 +657,7 @@ export class DeployService implements IDeployService {
     public clearDeployFiles(): void {
         this._deployFileList.java.length = 0;
         this._deployFileList.query.length = 0;
+        this._autoDetectedJava.clear();
         this.saveDeploySettings();
     }
 

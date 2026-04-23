@@ -359,6 +359,40 @@ describe('DeployService', () => {
             }).not.toThrow();
         });
     });
+
+    describe('clearDeployFiles', () => {
+        beforeEach(() => {
+            (fs.existsSync as jest.Mock).mockReturnValue(true);
+            (fs.writeFileSync as jest.Mock).mockImplementation(() => {});
+        });
+
+        it('should reset autoDetectedJava in saved settings when clearing deploy files', () => {
+            mockDeployFileList.java = ['/test/project/src/java/Test.java'];
+            mockDeployFileList.query = ['/test/project/src/query/TestQuery.xml'];
+
+            // 자동 탐지 항목을 내부 Set에 적재 (saveDeploySettings(mergeAutoDetected) 경유)
+            deployService.saveDeploySettings(['/test/project/src/java/Auto.java']);
+
+            const initialWriteCall = (fs.writeFileSync as jest.Mock).mock.calls[0];
+            const initialSavedData = JSON.parse(initialWriteCall[1]);
+            expect(initialSavedData.autoDetectedJava).toContain('java/Auto.java');
+
+            // 초기화 수행
+            deployService.clearDeployFiles();
+
+            const lastWriteCall = (fs.writeFileSync as jest.Mock).mock.calls[
+                (fs.writeFileSync as jest.Mock).mock.calls.length - 1
+            ];
+            const savedData = JSON.parse(lastWriteCall[1]);
+
+            expect(mockDeployFileList.java).toEqual([]);
+            expect(mockDeployFileList.query).toEqual([]);
+            expect(savedData.deployFileList.java).toEqual([]);
+            expect(savedData.deployFileList.query).toEqual([]);
+            expect(savedData.autoDetectedJava).toEqual([]);
+        });
+    });
+
     describe('startFileWatcher and stopFileWatcher', () => {
         it('should create file watchers based on mode and clean them up', () => {
             const mockWatcher = {
