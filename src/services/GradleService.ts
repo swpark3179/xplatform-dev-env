@@ -19,6 +19,11 @@ export class GradleService implements IGradleService {
         this._onProcessComplete = onProcessComplete;
     }
 
+    // 프로세스 완료(성공/실패/중지) 시 호출될 콜백 등록 (UI에 빌드 종료 상태 전파용)
+    setOnProcessComplete(cb: () => void): void {
+        this._onProcessComplete = cb;
+    }
+
     // Gradle 명령 실행
     runCommand(command: string, taskName: string): void {
         if (!this._settings.gradlePath || !this._settings.jdkPath || !this._settings.projectRoot) {

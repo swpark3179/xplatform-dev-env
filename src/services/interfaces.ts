@@ -37,4 +37,5 @@ export interface IGradleService {
   cleanProject(): void;
   stopGradle(): void;
   buildClassesWithCallback(cb: (success: boolean) => void): Promise<void>;
+  setOnProcessComplete(cb: () => void): void;
 }

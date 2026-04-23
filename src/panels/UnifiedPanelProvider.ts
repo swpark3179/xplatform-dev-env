@@ -98,6 +98,9 @@ export class UnifiedPanelProvider extends WebviewProvider {
         this._deployService = services.deployService;
         this._uxStudioService = services.uxStudioService;
 
+        // Gradle 작업 종료 시 UI에 isGradleRunning=false 알림 (빌드 완료 후 중지 버튼 비활성화 처리)
+        this._gradleService.setOnProcessComplete(() => this._notifyGradleComplete());
+
         this._deployService.setOnDeployFileIndexChanged((update) => {
             this._postMessage({ type: 'deployFileIndexUpdate', ...update });
         });
