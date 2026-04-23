@@ -27,7 +27,7 @@ export interface Settings {
 export type ValidationStatus = 'pending' | 'validating' | 'valid' | 'warning' | 'invalid';
 export type TomcatDeployMode = 'default' | 'selected';
 export type DeployFileIndexStatus = 'idle' | 'indexing' | 'ready' | 'error';
-export type DeployFileIndexPhase = 'idle' | 'java' | 'query' | 'done';
+export type DeployFileIndexPhase = 'idle' | 'java' | 'query' | 'batch' | 'done';
 
 export interface DeployFileIndexState {
     status: DeployFileIndexStatus;
@@ -35,6 +35,7 @@ export interface DeployFileIndexState {
     indexedCount: number;
     javaCount: number;
     queryCount: number;
+    batchCount: number;
     lastCompletedAt?: number;
     errorMessage?: string;
 }
@@ -45,6 +46,7 @@ export interface DeployFavorite {
     name: string;
     java: string[];
     query: string[];
+    batch: string[];
 }
 
 export interface ValidationItem {
@@ -97,14 +99,14 @@ export interface MessageFromExtension {
     tomcat?: TomcatState;
     isGradleRunning?: boolean;
     page?: string;
-    deployFileList?: { java: string[], query: string[] };
+    deployFileList?: { java: string[], query: string[], batch: string[] };
     searchResult?: string[];
     deployFileIndex?: DeployFileIndexState;
     allDeployableFiles?: string[];
     allFiles?: string[];
     filesBatch?: string[];
     reset?: boolean;
-    changedFiles?: { java: string[], query: string[] };
+    changedFiles?: { java: string[], query: string[], batch: string[] };
     // 즐겨찾기 관련
     favorites?: DeployFavorite[];
     favoriteId?: string;

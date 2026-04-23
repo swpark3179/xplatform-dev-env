@@ -26,6 +26,7 @@ export class DeployService implements IDeployService {
         indexedCount: 0,
         javaCount: 0,
         queryCount: 0,
+        batchCount: 0,
     };
     private _deployFileIndexFiles: string[] = [];
     private _deployFileIndexRunId = 0;
@@ -35,8 +36,10 @@ export class DeployService implements IDeployService {
     // O(1) 조회를 위한 내부 Set 캐시
     private _deployJavaSet: Set<string>;
     private _deployQuerySet: Set<string>;
+    private _deployBatchSet: Set<string>;
     private _changedJavaSet: Set<string>;
     private _changedQuerySet: Set<string>;
+    private _changedBatchSet: Set<string>;
 
     constructor(log: vscode.OutputChannel, settings: Settings, deployFileList: DeployFileList, changedFiles: ChangedFiles, fileWatchers: vscode.FileSystemWatcher[], tomcatState: TomcatState, gradleService: IGradleService, tomcatService: ITomcatService) {
         this._log = log;
@@ -51,8 +54,10 @@ export class DeployService implements IDeployService {
         // 내부 캐시 초기화
         this._deployJavaSet = new Set(this._deployFileList.java);
         this._deployQuerySet = new Set(this._deployFileList.query);
+        this._deployBatchSet = new Set(this._deployFileList.batch);
         this._changedJavaSet = new Set(this._changedFiles.java);
         this._changedQuerySet = new Set(this._changedFiles.query);
+        this._changedBatchSet = new Set(this._changedFiles.batch);
     }
 
     // 데코레이션 프로바이더 업데이트를 위한 콜백함수 등록
@@ -100,6 +105,7 @@ export class DeployService implements IDeployService {
             indexedCount: 0,
             javaCount: 0,
             queryCount: 0,
+            batchCount: 0,
             lastCompletedAt: this._deployFileIndex.lastCompletedAt,
         };
         this._emitDeployFileIndexUpdate({ reset: true, filesBatch: [] });
@@ -123,6 +129,16 @@ export class DeployService implements IDeployService {
                 this._deployFileIndex.indexedCount = this._deployFileIndexFiles.length;
             }, runId);
 
+            this._deployFileIndex.phase = 'batch';
+            this._emitDeployFileIndexUpdate();
+
+            await this._walkDeployableFiles('batch', async (normalizedPath) => {
+                this._assertActiveDeployFileIndexRun(runId);
+                this._deployFileIndexFiles.push(normalizedPath);
+                this._deployFileIndex.batchCount += 1;
+                this._deployFileIndex.indexedCount = this._deployFileIndexFiles.length;
+            }, runId);
+
             this._assertActiveDeployFileIndexRun(runId);
             this._deployFileIndex = {
                 ...this._deployFileIndex,
@@ -133,7 +149,7 @@ export class DeployService implements IDeployService {
                 lastCompletedAt: Date.now(),
             };
             this._emitDeployFileIndexUpdate();
-            this._log.appendLine(`[배포목록 인덱싱] 완료 (Java ${this._deployFileIndex.javaCount}건, Query ${this._deployFileIndex.queryCount}건, 총 ${this._deployFileIndex.indexedCount}건)`);
+            this._log.appendLine(`[배포목록 인덱싱] 완료 (Java ${this._deployFileIndex.javaCount}건, Query ${this._deployFileIndex.queryCount}건, Batch ${this._deployFileIndex.batchCount}건, 총 ${this._deployFileIndex.indexedCount}건)`);
         } catch (error) {
             if (!this._isDeployFileIndexRunActive(runId)) return;
             const message = error instanceof Error ? error.message : '배포 파일 인덱싱에 실패했습니다.';
@@ -157,16 +173,21 @@ export class DeployService implements IDeployService {
         await this._walkDeployableFiles('query', (normalizedPath) => {
             allFiles.push(normalizedPath);
         });
+        await this._walkDeployableFiles('batch', (normalizedPath) => {
+            allFiles.push(normalizedPath);
+        });
 
         return allFiles;
     }
 
     private async _walkDeployableFiles(
-        category: 'java' | 'query',
+        category: 'java' | 'query' | 'batch',
         onFile: (normalizedPath: string) => Promise<void> | void,
         runId?: number,
     ): Promise<void> {
-        const rootDir = path.join(this._settings.projectRoot, 'src', category);
+        const rootDir = category === 'batch'
+            ? path.join(this._settings.projectRoot, 'src', 'config', 'batch')
+            : path.join(this._settings.projectRoot, 'src', category);
         if (!fs.existsSync(rootDir)) return;
 
         const pendingDirs: string[] = [rootDir];
@@ -236,7 +257,10 @@ export class DeployService implements IDeployService {
         return filePath.replace(/\\/g, '/');
     }
 
-    private _isDeployableFile(normalizedPath: string, category: 'java' | 'query'): boolean {
+    private _isDeployableFile(normalizedPath: string, category: 'java' | 'query' | 'batch'): boolean {
+        if (category === 'batch') {
+            return normalizedPath.toLowerCase().endsWith('job.xml');
+        }
         if (normalizedPath.endsWith('Config.java')) return false;
         return category === 'java'
             ? normalizedPath.endsWith('.java')
@@ -246,7 +270,8 @@ export class DeployService implements IDeployService {
     private _filterSelectableDeployFiles(files: string[]): string[] {
         const currentJavaSet = new Set(this._deployFileList.java);
         const currentQuerySet = new Set(this._deployFileList.query);
-        return files.filter(filePath => !currentJavaSet.has(filePath) && !currentQuerySet.has(filePath));
+        const currentBatchSet = new Set(this._deployFileList.batch);
+        return files.filter(filePath => !currentJavaSet.has(filePath) && !currentQuerySet.has(filePath) && !currentBatchSet.has(filePath));
     }
 
     private async _yieldToEventLoop(): Promise<void> {
@@ -261,8 +286,10 @@ export class DeployService implements IDeployService {
         }
         this._deployFileList.java = deployFileList.java;
         this._deployFileList.query = deployFileList.query;
+        this._deployFileList.batch = deployFileList.batch ?? [];
         this._deployJavaSet = new Set(this._deployFileList.java);
         this._deployQuerySet = new Set(this._deployFileList.query);
+        this._deployBatchSet = new Set(this._deployFileList.batch);
         this._onDeployListChanged?.(vscode.Uri.file(targetFile));
         if (autoDetectedAdded && autoDetectedAdded.length > 0) {
             this.saveDeploySettings(autoDetectedAdded);
@@ -282,6 +309,8 @@ export class DeployService implements IDeployService {
             this.toggleInList(this._deployFileList.java, normalizedPath, 'java');
         } else if (normalizedPath.includes('/src/query/')) {
             this.toggleInList(this._deployFileList.query, normalizedPath, 'query');
+        } else if (normalizedPath.includes('/src/config/batch/') && normalizedPath.toLowerCase().endsWith('job.xml')) {
+            this.toggleInList(this._deployFileList.batch, normalizedPath, 'batch');
         }
         this._onDeployListChanged?.(vscode.Uri.file(normalizedPath));
     }
@@ -291,6 +320,8 @@ export class DeployService implements IDeployService {
         let setCache: Set<string>;
         if (category === 'java') {
             setCache = this._deployJavaSet;
+        } else if (category === 'batch') {
+            setCache = this._deployBatchSet;
         } else {
             setCache = this._deployQuerySet;
         }
@@ -328,6 +359,7 @@ export class DeployService implements IDeployService {
                 deployFileList: {
                     java: stripPrefix(this._deployFileList.java),
                     query: stripPrefix(this._deployFileList.query),
+                    batch: stripPrefix(this._deployFileList.batch),
                 },
                 profile: this._tomcatState.profile,
                 isBatch: this._tomcatState.isBatch,
@@ -358,6 +390,14 @@ export class DeployService implements IDeployService {
                     this._deployFileList.query = addPrefix(data.deployFileList.query);
                     this._deployQuerySet = new Set(this._deployFileList.query);
                 }
+                if (Array.isArray(data.deployFileList.batch)) {
+                    this._deployFileList.batch = addPrefix(data.deployFileList.batch);
+                    this._deployBatchSet = new Set(this._deployFileList.batch);
+                } else {
+                    // 기존 shi-deploy.json 호환: batch 필드가 없으면 빈 배열로 초기화
+                    this._deployFileList.batch = [];
+                    this._deployBatchSet = new Set();
+                }
             }
             if (Array.isArray(data.autoDetectedJava)) {
                 this._autoDetectedJava = new Set(addPrefix(data.autoDetectedJava));
@@ -376,9 +416,11 @@ export class DeployService implements IDeployService {
     public startFileWatcher(_postMessage: (message: unknown) => void): void {
         this.stopFileWatcher(); // 기존 watcher 정리
         this._changedFiles.java.length = 0;
-        this._changedFiles.query.length = 0; // 변경 목록 초기화
+        this._changedFiles.query.length = 0;
+        this._changedFiles.batch.length = 0; // 변경 목록 초기화
         this._changedJavaSet.clear();
         this._changedQuerySet.clear();
+        this._changedBatchSet.clear();
 
         const projectRoot = this._settings.projectRoot;
         const dirs = [
@@ -531,8 +573,10 @@ export class DeployService implements IDeployService {
         this._log.appendLine('[배포 적용] 변경 파일 Tomcat 반영 완료.');
         this._changedFiles.java.length = 0;
         this._changedFiles.query.length = 0;
+        this._changedFiles.batch.length = 0;
         this._changedJavaSet.clear();
         this._changedQuerySet.clear();
+        this._changedBatchSet.clear();
     }
 
     // 배포목록관리 팝업에서 참조 파일 자동 추가 기능
@@ -694,8 +738,10 @@ export class DeployService implements IDeployService {
     public clearDeployFiles(): void {
         this._deployFileList.java.length = 0;
         this._deployFileList.query.length = 0;
+        this._deployFileList.batch.length = 0;
         this._deployJavaSet.clear();
         this._deployQuerySet.clear();
+        this._deployBatchSet.clear();
         this._autoDetectedJava.clear();
         this.saveDeploySettings();
     }
@@ -732,7 +778,15 @@ export class DeployService implements IDeployService {
             const favoritesPromises = jsonFiles.map(async (file) => {
                 try {
                     const raw = await fs.promises.readFile(path.join(folderPath, file), 'utf8');
-                    return JSON.parse(raw) as DeployFavorite;
+                    const parsed = JSON.parse(raw) as Partial<DeployFavorite>;
+                    // 기존 즐겨찾기 호환: batch 필드 미존재 시 빈 배열로 보정
+                    return {
+                        id: parsed.id ?? '',
+                        name: parsed.name ?? '',
+                        java: Array.isArray(parsed.java) ? parsed.java : [],
+                        query: Array.isArray(parsed.query) ? parsed.query : [],
+                        batch: Array.isArray(parsed.batch) ? parsed.batch : [],
+                    } as DeployFavorite;
                 } catch {
                     // 개별 파일 파싱 실패 시 스킵
                     return null;
@@ -747,7 +801,7 @@ export class DeployService implements IDeployService {
     }
 
     /** 새 즐겨찾기 저장. 저장 후 활성 즐겨찾기(id, name)를 반환 */
-    public saveFavorite(name: string, java: string[], query: string[]): DeployFavorite {
+    public saveFavorite(name: string, java: string[], query: string[], batch: string[] = []): DeployFavorite {
         const id = crypto.randomUUID();
         const folderPath = this._getFavoriteFolderPath();
         if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
@@ -756,13 +810,14 @@ export class DeployService implements IDeployService {
             name,
             java: this._stripSrcPrefix(java),
             query: this._stripSrcPrefix(query),
+            batch: this._stripSrcPrefix(batch),
         };
         fs.writeFileSync(path.join(folderPath, `${id}.json`), JSON.stringify(favorite, null, 4), 'utf8');
         return favorite;
     }
 
-    /** 기존 즐겨찾기 덮어쓰기 (id는 유지, java/query 목록만 교체) */
-    public overwriteFavorite(id: string, java: string[], query: string[]): DeployFavorite | null {
+    /** 기존 즐겨찾기 덮어쓰기 (id는 유지, java/query/batch 목록만 교체) */
+    public overwriteFavorite(id: string, java: string[], query: string[], batch: string[] = []): DeployFavorite | null {
         const folderPath = this._getFavoriteFolderPath();
         const filePath = path.join(folderPath, `${id}.json`);
         if (!fs.existsSync(filePath)) return null;
@@ -773,6 +828,7 @@ export class DeployService implements IDeployService {
                 ...existing,
                 java: this._stripSrcPrefix(java),
                 query: this._stripSrcPrefix(query),
+                batch: this._stripSrcPrefix(batch),
             };
             fs.writeFileSync(filePath, JSON.stringify(updated, null, 4), 'utf8');
             return updated;
@@ -788,14 +844,25 @@ export class DeployService implements IDeployService {
         if (!fs.existsSync(filePath)) return null;
         try {
             const raw = fs.readFileSync(filePath, 'utf8');
-            const data = JSON.parse(raw) as DeployFavorite;
+            const parsed = JSON.parse(raw) as Partial<DeployFavorite>;
+            // 기존 즐겨찾기 호환: batch 필드 미존재 시 빈 배열
+            const data: DeployFavorite = {
+                id: parsed.id ?? id,
+                name: parsed.name ?? '',
+                java: Array.isArray(parsed.java) ? parsed.java : [],
+                query: Array.isArray(parsed.query) ? parsed.query : [],
+                batch: Array.isArray(parsed.batch) ? parsed.batch : [],
+            };
             const java = this._addSrcPrefix(data.java);
             const query = this._addSrcPrefix(data.query);
+            const batch = this._addSrcPrefix(data.batch);
             // 배포목록 교체 및 shi-deploy.json 저장
             this._deployFileList.java = java;
             this._deployFileList.query = query;
+            this._deployFileList.batch = batch;
             this._deployJavaSet = new Set(this._deployFileList.java);
             this._deployQuerySet = new Set(this._deployFileList.query);
+            this._deployBatchSet = new Set(this._deployFileList.batch);
             this.saveDeploySettings();
             this._onDeployListChanged?.(vscode.Uri.parse('deploy://refresh-all'));
             return data;

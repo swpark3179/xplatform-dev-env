@@ -83,11 +83,13 @@ describe('DeployService', () => {
         mockDeployFileList = {
             java: [],
             query: [],
+            batch: [],
         };
 
         mockChangedFiles = {
             java: [],
             query: [],
+            batch: [],
         };
 
         mockFileWatchers = [];
@@ -204,7 +206,7 @@ describe('DeployService', () => {
         it('should show warning and return if tomcat is running', () => {
             mockTomcatState.running = true;
 
-            deployService.updateDeployList({ java: [], query: [] }, '', 'java', 'add');
+            deployService.updateDeployList({ java: [], query: [], batch: [] }, '', 'java', 'add');
 
             expect(vscode.window.showWarningMessage).toHaveBeenCalledWith('톰캣 실행 중에는 배포대상에 추가/제거할 수 없습니다.');
             expect(mockDeployFileList.java).toEqual([]);
@@ -216,7 +218,8 @@ describe('DeployService', () => {
 
             const newDeployList = {
                 java: ['/test/project/src/java/Test.java'],
-                query: []
+                query: [],
+                batch: []
             };
 
             deployService.updateDeployList(newDeployList, '/test/project/src/java/Test.java', 'java', 'add');
@@ -228,7 +231,7 @@ describe('DeployService', () => {
         it('should save settings and handle autoDetectedAdded', () => {
             deployService.saveDeploySettings = jest.fn();
 
-            deployService.updateDeployList({ java: [], query: [] }, '', 'java', 'add', ['/test/auto.java']);
+            deployService.updateDeployList({ java: [], query: [], batch: [] }, '', 'java', 'add', ['/test/auto.java']);
 
             expect(deployService.saveDeploySettings).toHaveBeenCalledWith(['/test/auto.java']);
         });
@@ -271,6 +274,25 @@ describe('DeployService', () => {
             deployService.addDeployListFromEditor('/test/project/src/query/TestQuery.xml');
             expect(mockDeployFileList.query).not.toContain('/test/project/src/query/TestQuery.xml');
         });
+
+        it('should toggle batch *Job.xml file correctly', () => {
+            deployService.saveDeploySettings = jest.fn();
+
+            // Add
+            deployService.addDeployListFromEditor('/test/project/src/config/batch/sample/SampleJob.xml');
+            expect(mockDeployFileList.batch).toContain('/test/project/src/config/batch/sample/SampleJob.xml');
+
+            // Remove
+            deployService.addDeployListFromEditor('/test/project/src/config/batch/sample/SampleJob.xml');
+            expect(mockDeployFileList.batch).not.toContain('/test/project/src/config/batch/sample/SampleJob.xml');
+        });
+
+        it('should NOT add non-Job.xml file under src/config/batch to batch list', () => {
+            deployService.saveDeploySettings = jest.fn();
+
+            deployService.addDeployListFromEditor('/test/project/src/config/batch/sample/context.xml');
+            expect(mockDeployFileList.batch).not.toContain('/test/project/src/config/batch/sample/context.xml');
+        });
     });
     describe('saveDeploySettings and loadDeploySettings', () => {
         beforeEach(() => {
@@ -282,6 +304,7 @@ describe('DeployService', () => {
         it('should save deploy settings correctly with merged autoDetectedAdded', () => {
             mockDeployFileList.java = ['/test/project/src/java/Test.java'];
             mockDeployFileList.query = ['/test/project/src/query/TestQuery.xml'];
+            mockDeployFileList.batch = ['/test/project/src/config/batch/sample/SampleJob.xml'];
             mockTomcatState.profile = 'prod';
             mockTomcatState.isBatch = true;
             mockTomcatState.deployMode = 'selected';
@@ -299,6 +322,7 @@ describe('DeployService', () => {
 
             expect(savedData.deployFileList.java).toEqual(['java/Test.java']);
             expect(savedData.deployFileList.query).toEqual(['query/TestQuery.xml']);
+            expect(savedData.deployFileList.batch).toEqual(['config/batch/sample/SampleJob.xml']);
             expect(savedData.autoDetectedJava).toContain('java/Auto.java');
             expect(savedData.profile).toBe('prod');
             expect(savedData.isBatch).toBe(true);
@@ -320,7 +344,8 @@ describe('DeployService', () => {
             const mockData = {
                 deployFileList: {
                     java: ['java/Test.java'],
-                    query: ['query/TestQuery.xml']
+                    query: ['query/TestQuery.xml'],
+                    batch: ['config/batch/sample/SampleJob.xml']
                 },
                 autoDetectedJava: ['java/Auto.java'],
                 profile: 'dev',
@@ -334,10 +359,30 @@ describe('DeployService', () => {
 
             expect(mockDeployFileList.java).toEqual(['/test/project/src/java/Test.java']);
             expect(mockDeployFileList.query).toEqual(['/test/project/src/query/TestQuery.xml']);
+            expect(mockDeployFileList.batch).toEqual(['/test/project/src/config/batch/sample/SampleJob.xml']);
             expect(mockTomcatState.profile).toBe('dev');
             expect(mockTomcatState.isBatch).toBe(false);
             expect(mockTomcatState.deployMode).toBe('selected');
             // Testing internal set is difficult, but we know it parsed autoDetectedJava
+        });
+
+        it('should default deployFileList.batch to empty array when missing (backward compat)', () => {
+            const mockData = {
+                deployFileList: {
+                    java: ['java/Test.java'],
+                    query: ['query/TestQuery.xml']
+                    // batch field intentionally omitted
+                },
+                profile: 'dev',
+                isBatch: false,
+                deployMode: 'selected'
+            };
+
+            (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockData));
+
+            deployService.loadDeploySettings();
+
+            expect(mockDeployFileList.batch).toEqual([]);
         });
 
         it('should do nothing if settings file does not exist when loading', () => {
@@ -369,6 +414,7 @@ describe('DeployService', () => {
         it('should reset autoDetectedJava in saved settings when clearing deploy files', () => {
             mockDeployFileList.java = ['/test/project/src/java/Test.java'];
             mockDeployFileList.query = ['/test/project/src/query/TestQuery.xml'];
+            mockDeployFileList.batch = ['/test/project/src/config/batch/sample/SampleJob.xml'];
 
             // 자동 탐지 항목을 내부 Set에 적재 (saveDeploySettings(mergeAutoDetected) 경유)
             deployService.saveDeploySettings(['/test/project/src/java/Auto.java']);
@@ -387,8 +433,10 @@ describe('DeployService', () => {
 
             expect(mockDeployFileList.java).toEqual([]);
             expect(mockDeployFileList.query).toEqual([]);
+            expect(mockDeployFileList.batch).toEqual([]);
             expect(savedData.deployFileList.java).toEqual([]);
             expect(savedData.deployFileList.query).toEqual([]);
+            expect(savedData.deployFileList.batch).toEqual([]);
             expect(savedData.autoDetectedJava).toEqual([]);
         });
     });
@@ -508,16 +556,18 @@ describe('DeployService', () => {
             (crypto.randomUUID as jest.Mock).mockReturnValue('mocked-uuid');
         });
 
-        it('should save favorite successfully', () => {
+        it('should save favorite successfully (with batch)', () => {
             const java = ['/test/project/src/java/Test.java'];
             const query = ['/test/project/src/query/TestQuery.xml'];
+            const batch = ['/test/project/src/config/batch/sample/SampleJob.xml'];
 
-            const result = deployService.saveFavorite('My Favorite', java, query);
+            const result = deployService.saveFavorite('My Favorite', java, query, batch);
 
             expect(result.id).toBe('mocked-uuid');
             expect(result.name).toBe('My Favorite');
             expect(result.java).toEqual(['java/Test.java']);
             expect(result.query).toEqual(['query/TestQuery.xml']);
+            expect(result.batch).toEqual(['config/batch/sample/SampleJob.xml']);
 
             expect(fs.writeFileSync).toHaveBeenCalledWith(
                 expect.stringContaining('mocked-uuid.json'),
@@ -526,40 +576,44 @@ describe('DeployService', () => {
             );
         });
 
-        it('should overwrite favorite successfully', () => {
+        it('should overwrite favorite successfully (with batch)', () => {
             const existingFav = {
                 id: 'mocked-uuid',
                 name: 'Existing',
                 java: ['old.java'],
-                query: ['old.xml']
+                query: ['old.xml'],
+                batch: []
             };
             (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(existingFav));
 
             const java = ['/test/project/src/java/New.java'];
             const query = ['/test/project/src/query/New.xml'];
+            const batch = ['/test/project/src/config/batch/NewJob.xml'];
 
-            const result = deployService.overwriteFavorite('mocked-uuid', java, query);
+            const result = deployService.overwriteFavorite('mocked-uuid', java, query, batch);
 
             expect(result?.id).toBe('mocked-uuid');
             expect(result?.name).toBe('Existing'); // Name remains
             expect(result?.java).toEqual(['java/New.java']);
             expect(result?.query).toEqual(['query/New.xml']);
+            expect(result?.batch).toEqual(['config/batch/NewJob.xml']);
         });
 
         it('should return null when overwriting non-existent favorite', () => {
             (fs.existsSync as jest.Mock).mockReturnValue(false);
 
-            const result = deployService.overwriteFavorite('mocked-uuid', [], []);
+            const result = deployService.overwriteFavorite('mocked-uuid', [], [], []);
 
             expect(result).toBeNull();
         });
 
-        it('should apply favorite and update deploy list', () => {
+        it('should apply favorite and update deploy list (with batch)', () => {
             const favToApply = {
                 id: 'mocked-uuid',
                 name: 'Existing',
                 java: ['java/Test.java'],
-                query: ['query/TestQuery.xml']
+                query: ['query/TestQuery.xml'],
+                batch: ['config/batch/sample/SampleJob.xml']
             };
             (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(favToApply));
             deployService.saveDeploySettings = jest.fn();
@@ -569,7 +623,26 @@ describe('DeployService', () => {
             expect(result).toEqual(favToApply);
             expect(mockDeployFileList.java).toEqual(['/test/project/src/java/Test.java']);
             expect(mockDeployFileList.query).toEqual(['/test/project/src/query/TestQuery.xml']);
+            expect(mockDeployFileList.batch).toEqual(['/test/project/src/config/batch/sample/SampleJob.xml']);
             expect(deployService.saveDeploySettings).toHaveBeenCalled();
+        });
+
+        it('should apply legacy favorite without batch field (backward compat)', () => {
+            const legacyFav = {
+                id: 'mocked-uuid',
+                name: 'Legacy',
+                java: ['java/Test.java'],
+                query: ['query/TestQuery.xml']
+                // batch field intentionally missing
+            };
+            (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(legacyFav));
+            deployService.saveDeploySettings = jest.fn();
+
+            const result = deployService.applyFavorite('mocked-uuid');
+
+            expect(result).not.toBeNull();
+            expect(result?.batch).toEqual([]);
+            expect(mockDeployFileList.batch).toEqual([]);
         });
 
         it('should return null when applying non-existent favorite', () => {
@@ -607,6 +680,9 @@ describe('DeployService', () => {
             expect(results.length).toBe(2);
             expect(results[0].name).toBe('A Fav');
             expect(results[1].name).toBe('B Fav');
+            // 기존 즐겨찾기에 batch 필드가 없어도 빈 배열로 보정되어야 함
+            expect(results[0].batch).toEqual([]);
+            expect(results[1].batch).toEqual([]);
         });
 
         it('should return empty array if favorites folder does not exist when loading', async () => {

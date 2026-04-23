@@ -42,6 +42,7 @@ const initialDeployFileIndex: DeployFileIndexState = {
     indexedCount: 0,
     javaCount: 0,
     queryCount: 0,
+    batchCount: 0,
 };
 
 // 앱 전역 상태 관리 훅
@@ -65,11 +66,11 @@ export function useAppState() {
     const [isGradleRunning, setIsGradleRunning] = useState(false);
 
     // 배포 파일
-    const [deployFileList, setDeployFileList] = useState<{ java: string[], query: string[] }>({ java: [], query: [] });
+    const [deployFileList, setDeployFileList] = useState<{ java: string[], query: string[], batch: string[] }>({ java: [], query: [], batch: [] });
     const [searchResult, setSearchResult] = useState<string[]>([]);
     const [deployFileIndex, setDeployFileIndex] = useState<DeployFileIndexState>(initialDeployFileIndex);
     const [allDeployableFiles, setAllDeployableFiles] = useState<string[]>([]);
-    const [changedFiles, setChangedFiles] = useState<{ java: string[], query: string[] }>({ java: [], query: [] });
+    const [changedFiles, setChangedFiles] = useState<{ java: string[], query: string[], batch: string[] }>({ java: [], query: [], batch: [] });
 
     // 즐겨찾기
     const [favorites, setFavorites] = useState<DeployFavorite[]>([]);

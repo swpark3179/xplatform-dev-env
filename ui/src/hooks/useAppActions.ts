@@ -9,9 +9,9 @@ export interface UseAppActionsDeps {
     setCurrentPage: (page: PageKind) => void;
     setIsGradleRunning: (value: boolean) => void;
     setSearchResult: (value: string[] | ((prev: string[]) => string[])) => void;
-    setDeployFileList: (value: { java: string[], query: string[] }) => void;
+    setDeployFileList: (value: { java: string[], query: string[], batch: string[] }) => void;
     setTomcatIsHotReloading: (value: boolean) => void;
-    setChangedFiles: (value: { java: string[], query: string[] }) => void;
+    setChangedFiles: (value: { java: string[], query: string[], batch: string[] }) => void;
     setUxStudioStatus: (value: 'new' | 'configured' | null) => void;
     setUxConfirmErrorFiles: React.Dispatch<React.SetStateAction<string[]>>;
 }
@@ -106,7 +106,7 @@ export function useAppActions(deps: UseAppActionsDeps) {
     };
 
     const deploy = {
-        updateDeployFiles: useCallback((deployFileList: { java: string[], query: string[] }, targetFile: string, fileType: string, changeType: string) => {
+        updateDeployFiles: useCallback((deployFileList: { java: string[], query: string[], batch: string[] }, targetFile: string, fileType: string, changeType: string) => {
             setDeployFileList(deployFileList);
             postMessage({ type: 'updateDeployFiles', deployFileList: deployFileList, targetFile: targetFile, fileType: fileType, changeType: changeType });
         }, []),
@@ -126,7 +126,7 @@ export function useAppActions(deps: UseAppActionsDeps) {
             setSearchResult([]);
         }, [setSearchResult]),
         applyChangedFiles: useCallback(() => {
-            setChangedFiles({ java: [], query: [] });
+            setChangedFiles({ java: [], query: [], batch: [] });
             sendMessage({ type: 'applyChangedFiles' });
         }, []),
         setStateSearchResult: useCallback((searchResult: string[]) => {
@@ -136,18 +136,18 @@ export function useAppActions(deps: UseAppActionsDeps) {
             sendMessage({ type: 'analyzeReferenceChain', javaFiles });
         }, []),
         clearDeployFiles: useCallback(() => {
-            setDeployFileList({ java: [], query: [] });
+            setDeployFileList({ java: [], query: [], batch: [] });
             sendMessage({ type: 'clearDeployFiles' });
         }, [setDeployFileList]),
         // 즐겨찾기 관련 액션
         loadFavorites: useCallback(() => {
             sendMessage({ type: 'loadFavorites' });
         }, []),
-        saveFavorite: useCallback((name: string, java: string[], query: string[]) => {
-            sendMessage({ type: 'saveFavorite', name, java, query });
+        saveFavorite: useCallback((name: string, java: string[], query: string[], batch: string[]) => {
+            sendMessage({ type: 'saveFavorite', name, java, query, batch });
         }, []),
-        overwriteFavorite: useCallback((id: string, java: string[], query: string[]) => {
-            sendMessage({ type: 'overwriteFavorite', id, java, query });
+        overwriteFavorite: useCallback((id: string, java: string[], query: string[], batch: string[]) => {
+            sendMessage({ type: 'overwriteFavorite', id, java, query, batch });
         }, []),
         applyFavorite: useCallback((id: string) => {
             sendMessage({ type: 'applyFavorite', id });

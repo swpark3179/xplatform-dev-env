@@ -7,8 +7,8 @@ export type WebviewMessage =
   | { type: 'analyzeReferenceChain'; javaFiles: string[] }
   | { type: 'clearDeployFiles' }
   | { type: 'loadFavorites' }
-  | { type: 'saveFavorite'; name: string; java: string[]; query: string[] }
-  | { type: 'overwriteFavorite'; id: string; java: string[]; query: string[] }
+  | { type: 'saveFavorite'; name: string; java: string[]; query: string[]; batch: string[] }
+  | { type: 'overwriteFavorite'; id: string; java: string[]; query: string[]; batch: string[] }
   | { type: 'applyFavorite'; id: string }
   | { type: 'deleteFavorite'; id: string }
   | { type: 'uxStudioApplySettings'; config: import('../types').UxStudioEnvConfig }
@@ -29,7 +29,7 @@ export type WebviewMessage =
   | { type: 'killTomcatPorts' }
   | { type: 'applyProjectSettings'; options: import('../types').ProjectSettingsOptions }
   | { type: 'setupHomeSettings' }
-  | { type: 'updateDeployFiles'; deployFileList: { java: string[]; query: string[] }; targetFile: string; fileType: string; changeType: string }
+  | { type: 'updateDeployFiles'; deployFileList: { java: string[]; query: string[]; batch: string[] }; targetFile: string; fileType: string; changeType: string }
   | { type: 'uxStudioInit' }
   | { type: 'uxStudioSearchXfdl' }
   | { type: 'uxStudioResetSetup' };

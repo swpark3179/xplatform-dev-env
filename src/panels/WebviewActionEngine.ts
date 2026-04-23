@@ -22,7 +22,7 @@ export interface IWebviewActionEngine {
     killTomcatPorts(): Promise<void>;
     handleApplyProjectSettings(options: ProjectSettingsOptions): Promise<void>;
     handleSetupHomeSettings(): Promise<void>;
-    updateDeployFiles(deployFileList: { java: string[], query: string[] }, targetFile: string, fileType: string, changeType: string): void;
+    updateDeployFiles(deployFileList: { java: string[], query: string[], batch: string[] }, targetFile: string, fileType: string, changeType: string): void;
     searchDeployFiles(keyword: string): Promise<void>;
     ensureDeployFileIndex(): void;
     refreshDeployFileIndex(): void;
@@ -31,8 +31,8 @@ export interface IWebviewActionEngine {
     analyzeReferenceChain(javaFiles: string[]): Promise<void>;
     clearDeployFiles(): void;
     loadFavorites(): Promise<void> | void;
-    saveFavorite(name: string, java: string[], query: string[]): Promise<void> | void;
-    overwriteFavorite(id: string, java: string[], query: string[]): Promise<void> | void;
+    saveFavorite(name: string, java: string[], query: string[], batch: string[]): Promise<void> | void;
+    overwriteFavorite(id: string, java: string[], query: string[], batch: string[]): Promise<void> | void;
     applyFavorite(id: string): void;
     deleteFavorite(id: string): Promise<void> | void;
     log?(message: string): void;
@@ -132,10 +132,10 @@ export async function handleWebviewMessage(
             break;
         case 'saveFavorite':
             if (!data.name || !Array.isArray(data.java) || !Array.isArray(data.query)) return;
-            await engine.saveFavorite(data.name, data.java, data.query);
+            await engine.saveFavorite(data.name, data.java, data.query, Array.isArray(data.batch) ? data.batch : []);
             break;
         case 'overwriteFavorite':
-            await engine.overwriteFavorite(data.id, data.java, data.query);
+            await engine.overwriteFavorite(data.id, data.java, data.query, Array.isArray(data.batch) ? data.batch : []);
             break;
         case 'applyFavorite':
             if (!data.id) return;

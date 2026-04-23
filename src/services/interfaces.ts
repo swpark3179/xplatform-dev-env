@@ -12,8 +12,8 @@ export interface IDeployService {
   analyzeReferenceChain(javaFiles: string[]): Promise<void>;
   clearDeployFiles(): void;
   loadFavorites(): Promise<any[]>;
-  saveFavorite(name: string, java: any, query: any): any;
-  overwriteFavorite(id: string, java: any, query: any): any;
+  saveFavorite(name: string, java: string[], query: string[], batch: string[]): any;
+  overwriteFavorite(id: string, java: string[], query: string[], batch: string[]): any;
   applyFavorite(id: string): any;
   deleteFavorite(id: string): void;
   loadDeploySettings(): void;

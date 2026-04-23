@@ -19,7 +19,7 @@ export const DeployFavoriteModal: React.FC<{
     const [nameInput, setNameInput] = useState('');
 
     const { favorites, activeFavoriteId, activeFavoriteName, deployFileList } = state.deploy;
-    const totalCount = deployFileList.java.length + deployFileList.query.length;
+    const totalCount = deployFileList.java.length + deployFileList.query.length + deployFileList.batch.length;
     const hasFiles = totalCount > 0;
 
     /** 팝업 닫기 + 상태 초기화 */
@@ -43,7 +43,7 @@ export const DeployFavoriteModal: React.FC<{
     /** 덮어쓰기 버튼 클릭 */
     const handleOverwrite = () => {
         if (!activeFavoriteId) return;
-        actions.deploy.overwriteFavorite(activeFavoriteId, deployFileList.java, deployFileList.query);
+        actions.deploy.overwriteFavorite(activeFavoriteId, deployFileList.java, deployFileList.query, deployFileList.batch);
     };
 
     /** 즐겨찾기 이름 입력 후 확인 */
@@ -51,7 +51,7 @@ export const DeployFavoriteModal: React.FC<{
         const trimmed = nameInput.trim();
         if (!trimmed) return;
         if (dialog.kind === 'nameInput' && dialog.mode === 'save') {
-            actions.deploy.saveFavorite(trimmed, deployFileList.java, deployFileList.query);
+            actions.deploy.saveFavorite(trimmed, deployFileList.java, deployFileList.query, deployFileList.batch);
         }
         setDialog({ kind: 'none' });
         setNameInput('');
@@ -183,7 +183,7 @@ export const DeployFavoriteModal: React.FC<{
                                             {fav.id === activeFavoriteId && <span style={{ marginRight: '4px' }}>★</span>}
                                             {fav.name}
                                             <span style={{ marginLeft: '6px', fontSize: '10px', opacity: 0.7 }}>
-                                                (Java {fav.java.length} / Query {fav.query.length})
+                                                (Java {fav.java.length} / Query {fav.query.length} / Batch {(fav.batch ?? []).length})
                                             </span>
                                         </span>
                                         <button
@@ -209,7 +209,7 @@ export const DeployFavoriteModal: React.FC<{
                     <div style={dialogBoxStyle}>
                         <div style={{ fontWeight: 'bold', marginBottom: '10px', fontSize: '12px' }}>즐겨찾기 이름 입력</div>
                         <div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)', marginBottom: '8px' }}>
-                            현재 배포목록 (Java {deployFileList.java.length}건 / Query {deployFileList.query.length}건) 을 저장합니다.
+                            현재 배포목록 (Java {deployFileList.java.length}건 / Query {deployFileList.query.length}건 / Batch {deployFileList.batch.length}건) 을 저장합니다.
                         </div>
                         <input
                             autoFocus

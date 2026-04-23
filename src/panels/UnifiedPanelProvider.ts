@@ -35,11 +35,12 @@ export class UnifiedPanelProvider extends WebviewProvider {
     private _stoppingTimeout?: NodeJS.Timeout;
 
     // 배포 관련 상태값 관리
-    private _deployFileList: DeployFileList = { java: [], query: [] }; // 선택모드에서의 배포대상 목록
+    private _deployFileList: DeployFileList = { java: [], query: [], batch: [] }; // 선택모드에서의 배포대상 목록
     private _deployFileListJavaSet: Set<string> = new Set();
     private _deployFileListQuerySet: Set<string> = new Set();
+    private _deployFileListBatchSet: Set<string> = new Set();
     private _fileWatchers: vscode.FileSystemWatcher[] = [];
-    private _changedFiles: ChangedFiles = { java: [], query: [] }; // Tomcat 기동 중 변경된 파일 목록
+    private _changedFiles: ChangedFiles = { java: [], query: [], batch: [] }; // Tomcat 기동 중 변경된 파일 목록
 
     constructor(extensionUri: vscode.Uri, context?: vscode.ExtensionContext) {
         super(extensionUri);
@@ -107,6 +108,7 @@ export class UnifiedPanelProvider extends WebviewProvider {
 
         this._deployFileListJavaSet = new Set(this._deployFileList.java);
         this._deployFileListQuerySet = new Set(this._deployFileList.query);
+        this._deployFileListBatchSet = new Set(this._deployFileList.batch);
         this._tomcatStatusBar = new TomcatStatusBar();
         if (context) {
             context.subscriptions.push(this._tomcatStatusBar);
@@ -326,14 +328,14 @@ export class UnifiedPanelProvider extends WebviewProvider {
                 const favorites = await this._deployService.loadFavorites();
                 this._postMessage({ type: 'favoritesListResult', favorites });
             },
-            saveFavorite: async (name, java, query) => { // 새 즐겨찾기 저장
-                const saved = this._deployService.saveFavorite(name, java, query);
+            saveFavorite: async (name, java, query, batch) => { // 새 즐겨찾기 저장
+                const saved = this._deployService.saveFavorite(name, java, query, batch);
                 const favorites = await this._deployService.loadFavorites();
                 this._postMessage({ type: 'favoriteApplied', deployFileList: this._deployFileList, favoriteId: saved.id, favoriteName: saved.name });
                 this._postMessage({ type: 'favoritesListResult', favorites });
             },
-            overwriteFavorite: async (id, java, query) => { // 즐겨찾기 덮어쓰기
-                const updated = this._deployService.overwriteFavorite(id, java, query);
+            overwriteFavorite: async (id, java, query, batch) => { // 즐겨찾기 덮어쓰기
+                const updated = this._deployService.overwriteFavorite(id, java, query, batch);
                 if (updated) {
                     const favorites = await this._deployService.loadFavorites();
                     this._postMessage({ type: 'favoriteApplied', deployFileList: this._deployFileList, favoriteId: updated.id, favoriteName: updated.name });
@@ -528,7 +530,9 @@ export class UnifiedPanelProvider extends WebviewProvider {
     // 배포대상 여부를 판단하는 함수 (데코레이션 프로바이더에서 사용)
     public hasDeployTargetFile(filePath: string): boolean {
         const normalized = filePath.replace(/\\/g, '/');
-        return this._deployFileListJavaSet.has(normalized) || this._deployFileListQuerySet.has(normalized);
+        return this._deployFileListJavaSet.has(normalized)
+            || this._deployFileListQuerySet.has(normalized)
+            || this._deployFileListBatchSet.has(normalized);
     }
 
     // 데코레이션 프로바이더 업데이트를 위한 콜백함수 등록
@@ -536,6 +540,7 @@ export class UnifiedPanelProvider extends WebviewProvider {
         this._deployService.setOnDeployListChanged((uri) => {
             this._deployFileListJavaSet = new Set(this._deployFileList.java);
             this._deployFileListQuerySet = new Set(this._deployFileList.query);
+            this._deployFileListBatchSet = new Set(this._deployFileList.batch);
             refresh(uri);
         });
     }

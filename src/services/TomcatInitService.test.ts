@@ -94,7 +94,8 @@ describe('TomcatInitService', () => {
 
         mockDeployFileList = {
             java: [],
-            query: []
+            query: [],
+            batch: []
         };
 
         mockExtensionUri = vscode.Uri.file('/test/extensionPath');
@@ -223,7 +224,8 @@ describe('TomcatInitService', () => {
         it('should copy selected files in selected mode', async () => {
             mockDeployFileList = {
                 java: ['/src/java/com/test/MyClass.java'],
-                query: ['/src/query/myQuery.xml']
+                query: ['/src/query/myQuery.xml'],
+                batch: []
             };
             service = new TomcatInitService(mockLog, mockSettings, mockTomcatState, mockExtensionUri, mockDeployFileList);
             service.setDeployService(mockDeployService as any);
@@ -240,6 +242,32 @@ describe('TomcatInitService', () => {
                 expect.arrayContaining(['**/myQuery.xml']),
                 expect.any(String),
                 expect.objectContaining({ cwd: path.join('/test/projectRoot', 'src', 'query') })
+            );
+            // 선택 모드에서 src/config 전체 복사 시 batch/**/*Job.xml 은 제외 패턴이 포함되어야 함
+            expect(cpy).toHaveBeenCalledWith(
+                expect.arrayContaining(['**/*', '!**/batch/**/*Job.xml', '!**/batch/**/*job.xml']),
+                expect.any(String),
+                expect.objectContaining({ cwd: path.join('/test/projectRoot', 'src', 'config') })
+            );
+        });
+
+        it('should copy user-selected batch *Job.xml files in selected mode', async () => {
+            mockDeployFileList = {
+                java: [],
+                query: [],
+                batch: ['/test/projectRoot/src/config/batch/sample/SampleJob.xml']
+            };
+            service = new TomcatInitService(mockLog, mockSettings, mockTomcatState, mockExtensionUri, mockDeployFileList);
+            service.setDeployService(mockDeployService as any);
+
+            const result = await service.deployServiceFiles('myRoot', 'selected', false);
+
+            expect(result).toBe(true);
+            // batch 패턴은 srcConfigPath 기준 상대경로(batch/...)로 cpy에 전달되어야 함
+            expect(cpy).toHaveBeenCalledWith(
+                expect.arrayContaining(['**/batch/sample/SampleJob.xml']),
+                expect.any(String),
+                expect.objectContaining({ cwd: path.join('/test/projectRoot', 'src', 'config') })
             );
         });
 
@@ -333,7 +361,7 @@ describe('TomcatInitService', () => {
         });
 
         it('should remove jaxws endpoints from context-ws.xml in selected mode', async () => {
-            mockDeployFileList = { java: [], query: [] };
+            mockDeployFileList = { java: [], query: [], batch: [] };
             service = new TomcatInitService(mockLog, mockSettings, mockTomcatState, mockExtensionUri, mockDeployFileList);
             service.setDeployService(mockDeployService as any);
 

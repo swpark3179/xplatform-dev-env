@@ -26,10 +26,10 @@ export interface Settings {
 // ==================== Validation ====================
 export type ValidationStatus = 'pending' | 'validating' | 'valid' | 'warning' | 'invalid';
 export type TomcatDeployMode = 'default' | 'selected';
-export type DeployFileList = { java: string[], query: string[] };
-export type ChangedFiles = { java: string[], query: string[] };
+export type DeployFileList = { java: string[], query: string[], batch: string[] };
+export type ChangedFiles = { java: string[], query: string[], batch: string[] };
 export type DeployFileIndexStatus = 'idle' | 'indexing' | 'ready' | 'error';
-export type DeployFileIndexPhase = 'idle' | 'java' | 'query' | 'done';
+export type DeployFileIndexPhase = 'idle' | 'java' | 'query' | 'batch' | 'done';
 
 export interface DeployFileIndexState {
     status: DeployFileIndexStatus;
@@ -37,6 +37,7 @@ export interface DeployFileIndexState {
     indexedCount: number;
     javaCount: number;
     queryCount: number;
+    batchCount: number;
     lastCompletedAt?: number;
     errorMessage?: string;
 }
@@ -53,6 +54,7 @@ export interface DeployFavorite {
     name: string;
     java: string[];
     query: string[];
+    batch: string[];
 }
 
 export interface ValidationItem {
@@ -110,14 +112,14 @@ export type MessageFromWebview =
     | { type: 'buildClasses' }
     | { type: 'cleanProject' }
     | { type: 'stopGradle' }
-    | { type: 'initTomcat'; contextRoot: string; profile: string; isBatch: boolean; deployMode: 'default' | 'selected'; selectedFiles: { java: string[], query: string[] } }
+    | { type: 'initTomcat'; contextRoot: string; profile: string; isBatch: boolean; deployMode: 'default' | 'selected'; selectedFiles: { java: string[], query: string[], batch: string[] } }
     | { type: 'startTomcat'; enableHotswap: boolean }
     | { type: 'debugTomcat'; enableHotswap: boolean }
     | { type: 'stopTomcat' }
     | { type: 'killTomcatPorts' }
     | { type: 'applyProjectSettings'; options: ProjectSettingsOptions }
     | { type: 'setupHomeSettings' }
-    | { type: 'updateDeployFiles'; deployFileList: { java: string[], query: string[] }, targetFile: string, fileType: string, changeType: string }
+    | { type: 'updateDeployFiles'; deployFileList: { java: string[], query: string[], batch: string[] }, targetFile: string, fileType: string, changeType: string }
     | { type: 'searchDeployFiles'; keyword: string }
     | { type: 'ensureDeployFileIndex' }
     | { type: 'refreshDeployFileIndex' }
@@ -128,8 +130,8 @@ export type MessageFromWebview =
     | { type: 'analyzeReferenceChain'; javaFiles: string[] }
     | { type: 'clearDeployFiles' }
     | { type: 'loadFavorites' }
-    | { type: 'saveFavorite'; name: string; java: string[]; query: string[] }
-    | { type: 'overwriteFavorite'; id: string; java: string[]; query: string[] }
+    | { type: 'saveFavorite'; name: string; java: string[]; query: string[]; batch: string[] }
+    | { type: 'overwriteFavorite'; id: string; java: string[]; query: string[]; batch: string[] }
     | { type: 'applyFavorite'; id: string }
     | { type: 'deleteFavorite'; id: string }
     // UX Studio
@@ -142,16 +144,16 @@ export type MessageFromWebview =
 
 export type MessageFromExtension =
     | { type: 'stateUpdate'; settings: Settings }
-    | { type: 'mainStateUpdate'; settings?: Settings; isGradleRunning?: boolean; tomcat?: TomcatState; validation?: ValidationState; deployFileList?: { java: string[], query: string[] }; changedFiles?: { java: string[], query: string[] } }
+    | { type: 'mainStateUpdate'; settings?: Settings; isGradleRunning?: boolean; tomcat?: TomcatState; validation?: ValidationState; deployFileList?: { java: string[], query: string[], batch: string[] }; changedFiles?: { java: string[], query: string[], batch: string[] } }
     | { type: 'navigateTo'; page: string; validation?: ValidationState }
     | { type: 'tomcatStateUpdate'; tomcat: TomcatState }
     | { type: 'deployFilesSearchResult'; searchResult: string[] }
     | ({ type: 'deployFileIndexUpdate' } & DeployFileIndexUpdate)
     | { type: 'allDeployableFilesResult'; allFiles: string[] }
-    | { type: 'changedFilesUpdate'; changedFiles: { java: string[], query: string[] } }
-    | { type: 'referenceChainResult'; deployFileList: { java: string[], query: string[] } }
+    | { type: 'changedFilesUpdate'; changedFiles: { java: string[], query: string[], batch: string[] } }
+    | { type: 'referenceChainResult'; deployFileList: { java: string[], query: string[], batch: string[] } }
     | { type: 'favoritesListResult'; favorites: DeployFavorite[] }
-    | { type: 'favoriteApplied'; deployFileList: { java: string[], query: string[] }, favoriteId?: string, favoriteName?: string }
+    | { type: 'favoriteApplied'; deployFileList: { java: string[], query: string[], batch: string[] }, favoriteId?: string, favoriteName?: string }
     | { type: 'favoriteCleared' }
     // UX Studio
     | { type: 'uxStudioResult'; uxIsDevMode?: boolean; uxStudioStatus?: 'new' | 'configured' | null; uxServices?: UxServiceEntry[]; uxEnvConfig?: UxStudioEnvConfig; uxXfdlFiles?: string[]; uxXprjFiles?: string[] }
