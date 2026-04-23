@@ -454,7 +454,7 @@ export class UnifiedPanelProvider extends WebviewProvider {
         // 즐겨찾기 목록 최초 로드
         const favorites = await this._deployService.loadFavorites();
         this._postMessage({ type: 'favoritesListResult', favorites });
-        if (this._validation.allValid) this._postMessage({ type: 'navigateTo', page: 'main', validationState: this._validation });
+        if (this._validation.allValid) this._postMessage({ type: 'navigateTo', page: 'main', validation: this._validation });
     }
 
     // vscode 소스목록 또는 에디터 상단 헤더 우클릭 통한 파일 배포 대상 추가 핸들러
