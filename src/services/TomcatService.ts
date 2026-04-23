@@ -218,6 +218,9 @@ export class TomcatService implements ITomcatService {
         javaOpts.push('-Dfile.encoding=UTF-8');
         javaOpts.push('-Duser.language=ko');
         javaOpts.push('-Duser.country=KR');
+        // MySQL Connector/J: webapp 재배포/핫스왑 시 AbandonedConnectionCleanupThread가
+        // 클래스로더 참조를 잡아 발생하는 leak 경고 방지 (정리 스레드 시작 자체를 차단)
+        javaOpts.push('-Dcom.mysql.cj.disableAbandonedConnectionCleanup=true');
         if (_enableHotswap) {
             const agentJarPath = path.join(this._extensionPath.fsPath, 'resources', 'hotswap-agent-1.4.1.jar');
             if (!fs.existsSync(agentJarPath)) {
