@@ -234,7 +234,7 @@ export class VelocityProcessor {
         if (closeParen === -1) return beforeEnd;
 
         const condition = beforeEnd.slice(openParen + 1, closeParen).trim();
-        let inner = beforeEnd.slice(closeParen + 1).trim();
+        const inner = beforeEnd.slice(closeParen + 1).trim();
 
         // 분기들 파싱: #elseif( balanced ) / #else
         const branches: { condition: string | null; body: string }[] = [];
@@ -377,7 +377,7 @@ export class VelocityProcessor {
     private static _substituteVariables(text: string, variables: Map<string, string>): string {
         // $!{var} 형태
         let result = text.replace(/\$!\{([a-zA-Z_]\w*)\}/g, (_m, varName: string) => {
-            return variables.has(varName) ? variables.get(varName)! : `\$!{${varName}}`;
+            return variables.has(varName) ? variables.get(varName)! : `$!{${varName}}`;
         });
 
         // ${var} 형태 (항상 완전한 참조)

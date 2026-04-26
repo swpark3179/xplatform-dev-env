@@ -83,6 +83,7 @@ export class QueryExecutionService {
             // oracledb 동적 import (설치되어 있지 않을 수 있음)
             let oracledb: any;
             try {
+                // eslint-disable-next-line @typescript-eslint/no-require-imports
                 oracledb = require('oracledb');
             } catch {
                 return {

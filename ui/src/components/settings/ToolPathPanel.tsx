@@ -2,7 +2,7 @@ import React from 'react';
 import type { Settings, ValidationState } from '../../types';
 import { Panel, Button } from '../common';
 
-export const ToolPathPanel: React.FC<{settings: Settings, validation: ValidationState, onSelectFolder: Function}> = ({settings,validation,onSelectFolder}) => {
+export const ToolPathPanel: React.FC<{settings: Settings, validation: ValidationState, onSelectFolder: (target: 'gradle' | 'jdk' | 'tomcat', currentPath?: string) => void}> = ({settings,validation,onSelectFolder}) => {
     const renderPathInput = (
         label: string,
         target: 'gradle' | 'jdk' | 'tomcat',

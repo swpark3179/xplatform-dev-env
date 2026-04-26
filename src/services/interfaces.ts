@@ -1,13 +1,13 @@
 import type { DeployFileIndexUpdate, TomcatDeployMode } from '../types';
 
 export interface IDeployService {
-  startFileWatcher(cb: (msg: any) => void): void;
+  startFileWatcher(cb: (msg: unknown) => void): void;
   stopFileWatcher(): void;
   ensureDeployFileIndex(): void;
   refreshDeployFileIndex(): void;
   searchDeployFiles(keyword: string): Promise<string[]>;
   getAllDeployableFiles(): Promise<string[]>;
-  updateDeployList(deployFileList: any, targetFile: string, fileType: string, changeType: string): void;
+  updateDeployList(deployFileList: Record<string, string[]>, targetFile: string, fileType: string, changeType: string): void;
   applyChangedFiles(): Promise<void>;
   analyzeReferenceChain(javaFiles: string[]): Promise<void>;
   clearDeployFiles(): void;
@@ -18,13 +18,13 @@ export interface IDeployService {
   deleteFavorite(id: string): void;
   loadDeploySettings(): void;
   addDeployListFromEditor(filePath: string): void;
-  setOnDeployListChanged(cb: (uri: any) => void): void;
+  setOnDeployListChanged(cb: (uri: unknown) => void): void;
   setOnDeployFileIndexChanged(cb: (update: DeployFileIndexUpdate) => void): void;
 }
 
 export interface ITomcatService {
-  startTomcat(enableHotswap: boolean, onReady: () => void, beforeDeploy: () => Promise<any>): void;
-  debugTomcat(enableHotswap: boolean, onReady: () => void, beforeDeploy: () => Promise<any>): Promise<void>;
+  startTomcat(enableHotswap: boolean, onReady?: () => void, beforeDeploy?: () => Promise<boolean> | void): void | Promise<void>;
+  debugTomcat(enableHotswap: boolean, onReady?: () => void, beforeDeploy?: () => Promise<boolean> | void): Promise<void>;
   stopTomcat(): Promise<void>;
   isDeveloperMode: boolean;
   killTomcatProcess(): void;
