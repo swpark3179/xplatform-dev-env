@@ -118,7 +118,7 @@ export class SettingsService {
 
             // 터미널 환경변수 설정
             const cmd_env = config.inspect<Record<string, string>>("terminal.integrated.env.windows");
-            let envWindows = { ...(cmd_env?.globalValue || {}) }; // 기존 전역 값 가져오기 (없으면 빈 객체로 초기화)
+            const envWindows = { ...(cmd_env?.globalValue || {}) }; // 기존 전역 값 가져오기 (없으면 빈 객체로 초기화)
             envWindows['HTTP_PROXY'] = proxyValue;
             envWindows['HTTPS_PROXY'] = proxyValue;
             envWindows['NO_PROXY'] = 'localhost|127.0.0.1|::1,70.10.15.*|*.sdsdev.co.kr|qa.shi-api.com|60.101.107.90|60.101.107.57|code.sdsdev.co.kr|sdsdev.co.kr';

@@ -179,7 +179,7 @@ export function useAppState() {
                     setUxConfirmErrorFiles([]); // 성공 시 에러 목록 초기화
                     break;
                 case 'uxStudioConfirmError':
-                    if (msg.type === 'uxStudioConfirmError') setUxConfirmErrorFiles((msg as any).failedFiles);
+                    if (msg.type === 'uxStudioConfirmError') setUxConfirmErrorFiles((msg as unknown as { failedFiles: string[] }).failedFiles);
                     break;
             }
         });

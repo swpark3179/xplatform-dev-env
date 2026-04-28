@@ -384,6 +384,7 @@ export class TomcatService implements ITomcatService {
         try {
             return Buffer.from(raw, 'latin1').toString('cp949' as BufferEncoding);
         } catch {
+            // eslint-disable-next-line no-control-regex
             return raw.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
         }
     }
