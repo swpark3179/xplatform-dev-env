@@ -250,7 +250,7 @@ export class QueryExtractPanel {
             vscode.Uri.joinPath(distUri, 'assets', 'query-extract.js')
         );
         const styleUri = webview.asWebviewUri(
-            vscode.Uri.joinPath(distUri, 'assets', 'main.css')
+            vscode.Uri.joinPath(distUri, 'assets', 'index.css')
         );
 
         return `<!DOCTYPE html>

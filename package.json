@@ -36,6 +36,11 @@
         "command": "dev-helper.analyzeReference",
         "title": "SHI: 참조관계 분석",
         "category": "XPlatform"
+      },
+      {
+        "command": "dev-helper.openQueryExtract",
+        "title": "Query Extract 열기",
+        "category": "XPlatform"
       }
     ],
     "viewsContainers": {

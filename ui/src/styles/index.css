@@ -1576,4 +1576,264 @@ button.danger-btn:hover {
   border-radius: 4px;
   white-space: pre-wrap;
   border: 1px solid rgba(244, 135, 113, 0.3);
+}
+
+/* ========================================
+   Query Extract — 탭 내비게이션
+   ======================================== */
+.qe-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--vscode-widget-border, #333);
+  margin-bottom: 16px;
+  gap: 0;
+}
+
+.qe-tab {
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.qe-tab:hover {
+  color: var(--vscode-foreground);
+  background: transparent;
+}
+
+.qe-tab-active {
+  color: var(--vscode-foreground);
+  border-bottom-color: var(--vscode-focusBorder, #007fd4);
+  font-weight: 600;
+}
+
+/* ========================================
+   Query Extract — 배지
+   ======================================== */
+.qe-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+}
+
+.qe-badge-low   { background: rgba(115, 201, 145, 0.2); color: #73c991; }
+.qe-badge-mid   { background: rgba(204, 167, 0, 0.2);   color: #cca700; }
+.qe-badge-high  { background: rgba(241, 76, 76, 0.2);   color: #f14c4c; }
+
+.qe-badge-select { background: rgba(86, 156, 214, 0.2); color: #569cd6; }
+.qe-badge-insert { background: rgba(115, 201, 145, 0.2); color: #73c991; }
+.qe-badge-update { background: rgba(220, 220, 170, 0.2); color: #dcdcaa; }
+.qe-badge-delete { background: rgba(241, 76, 76, 0.2);   color: #f14c4c; }
+
+.qe-badge-from   { background: rgba(86, 156, 214, 0.15); color: #569cd6; }
+.qe-badge-join   { background: rgba(156, 220, 254, 0.15); color: #9cdcfe; }
+.qe-badge-feature { background: rgba(204, 167, 0, 0.15); color: #cca700; }
+
+/* ========================================
+   Query Extract — 분석 탭
+   ======================================== */
+.qe-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 파싱 경고 배너 */
+.qe-analysis-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(204, 167, 0, 0.1);
+  border: 1px solid rgba(204, 167, 0, 0.3);
+  border-radius: 4px;
+  font-size: 12px;
+  color: #cca700;
+}
+
+.qe-analysis-warn-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  line-height: 1.3;
+}
+
+/* 요약 헤더 */
+.qe-analysis-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--vscode-textCodeBlock-background, #1e1e1e);
+  border: 1px solid var(--vscode-widget-border, #333);
+  border-radius: 6px;
+  align-items: center;
+}
+
+.qe-analysis-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.qe-analysis-summary-label {
+  color: var(--vscode-descriptionForeground);
+  font-size: 11px;
+}
+
+.qe-analysis-summary-val {
+  font-weight: 700;
+  color: var(--vscode-foreground);
+  font-size: 13px;
+}
+
+.qe-analysis-summary-score {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+/* 분석 블록 */
+.qe-analysis-block {
+  background: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-widget-border, #333);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.qe-analysis-block-title {
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+  background: var(--vscode-sideBarSectionHeader-background, rgba(255,255,255,0.04));
+  border-bottom: 1px solid var(--vscode-widget-border, #333);
+}
+
+.qe-analysis-empty {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
+}
+
+/* 테이블 */
+.qe-analysis-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.qe-analysis-table th {
+  padding: 6px 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--vscode-descriptionForeground);
+  border-bottom: 1px solid var(--vscode-widget-border, #333);
+}
+
+.qe-analysis-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  vertical-align: middle;
+}
+
+.qe-analysis-table tr:last-child td {
+  border-bottom: none;
+}
+
+.qe-analysis-table tr:hover td {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.qe-analysis-td-name {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-weight: 600;
+  color: var(--vscode-foreground);
+}
+
+.qe-analysis-td-alias {
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
+}
+
+/* 칩 목록 */
+.qe-analysis-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 12px;
+}
+
+.qe-analysis-chip {
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-weight: 600;
+  background: rgba(86, 156, 214, 0.12);
+  color: var(--vscode-symbolIcon-variableForeground, #9cdcfe);
+  border: 1px solid rgba(86, 156, 214, 0.2);
+}
+
+.qe-analysis-chip-where {
+  background: rgba(220, 220, 170, 0.12);
+  color: #dcdcaa;
+  border-color: rgba(220, 220, 170, 0.2);
+}
+
+/* 복잡도 게이지 */
+.qe-analysis-gauge-track {
+  height: 8px;
+  background: var(--vscode-input-background);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 10px 12px 4px;
+}
+
+.qe-analysis-gauge-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+  min-width: 4px;
+}
+
+.qe-analysis-gauge-low  { background: #73c991; }
+.qe-analysis-gauge-medium { background: #cca700; }
+.qe-analysis-gauge-high { background: #f14c4c; }
+
+.qe-analysis-gauge-labels {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 12px 8px;
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.qe-analysis-complexity-list {
+  list-style: none;
+  padding: 4px 12px 10px 24px;
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.qe-analysis-complexity-list li::before {
+  content: "• ";
+  color: var(--vscode-descriptionForeground);
 }
