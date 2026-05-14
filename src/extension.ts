@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { UnifiedPanelProvider } from './panels';
 import { DeployDecorationProvider } from './panels/DeployDecorationProvider';
 import { QueryLinkProvider } from './panels/QueryLinkProvider';
+import { QueryCodeLensProvider } from './panels/QueryCodeLensProvider';
 import { QueryViewerPanel } from './panels/QueryViewerPanel';
 import { QueryExtractPanel } from './panels/QueryExtractPanel';
 import { ReferenceAnalysisProvider } from './panels/ReferenceAnalysisProvider';
@@ -53,9 +54,17 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
 
-    // Query XML 파일에서 Query ID Ctrl+클릭 링크 제공
+    // Query XML 파일에서 <query id="..."> 태그에 CodeLens 버튼 표시
+    // DocumentLink + command: URI 방식은 VS Code 버전에 따라 차단될 수 있어
+    // CodeLens 방식으로 직접 명령 실행 (일반 클릭으로 동작, ctrl 불필요)
+    const queryCodeLensProvider = vscode.languages.registerCodeLensProvider(
+        { scheme: 'file', pattern: '**/*.xml' },
+        new QueryCodeLensProvider()
+    );
+
+    // DocumentLink 는 보조 수단으로 유지 (hover 언더라인 시각적 피드백)
     const queryLinkProvider = vscode.languages.registerDocumentLinkProvider(
-        { scheme: 'file', language: 'xml' },
+        { scheme: 'file', pattern: '**/*.xml' },
         new QueryLinkProvider()
     );
 
@@ -111,6 +120,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         showSettingsCommand,
         includeInDeployTargetCommand,
+        queryCodeLensProvider,
         queryLinkProvider,
         openQueryViewerCommand,
         openQueryExtractCommand,
