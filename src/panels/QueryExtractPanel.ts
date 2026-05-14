@@ -260,15 +260,16 @@ export class QueryExtractPanel {
     <meta http-equiv="Content-Security-Policy"
         content="default-src 'none';
                  style-src ${webview.cspSource} 'unsafe-inline';
-                 script-src 'nonce-${nonce}';
+                 script-src 'nonce-${nonce}' ${webview.cspSource};
                  font-src ${webview.cspSource};">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Query Extract</title>
     <link rel="stylesheet" href="${styleUri}">
 </head>
 <body>
     <div id="root"></div>
-    <script nonce="${nonce}" src="${scriptUri}"></script>
+    <script type="module" nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;
     }
