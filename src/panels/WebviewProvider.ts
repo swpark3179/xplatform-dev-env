@@ -47,8 +47,9 @@ export abstract class WebviewProvider implements vscode.WebviewViewProvider {
             const cspSource = webview.cspSource;
 
             // meta 태그 추가 (head 태그 바로 뒤에)
-            const cspMeta = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'unsafe-inline'; script-src ${cspSource} 'unsafe-inline'; connect-src ${cspSource}; img-src ${cspSource}; font-src ${cspSource};">`;
-            html = html.replace(/<head>/, `<head>\n    ${cspMeta}`);
+            const cspMeta = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'unsafe-inline' https://fonts.googleapis.com; script-src ${cspSource} 'unsafe-inline'; connect-src ${cspSource}; img-src ${cspSource} data:; font-src ${cspSource} https://fonts.gstatic.com;">`;
+            const fontLink = `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">`;
+            html = html.replace(/<head>/, `<head>\n    ${cspMeta}\n    ${fontLink}`);
 
             // script 태그에 nonce 추가 (type="module" 포함)
             html = html.replace(/<script /g, `<script nonce="${nonce}" `);
