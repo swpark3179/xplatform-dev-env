@@ -1,17 +1,24 @@
 /* ============================================================
    OPUS-X Design System — XPlatform Dev Helper Sidebar Theme
+   Light + Dark (VS Code 테마 자동 추종)
    ============================================================ */
 
-/* ---------- OPUS-X Tokens ---------- */
+/* ---------- Seed Palette (raw values, theme-agnostic) ---------- */
 :root {
-  /* Seed: Purple (Primary) */
+  /* Purple */
   --oz-purple-50:  #F4F3FF;
   --oz-purple-100: #EBE9FE;
+  --oz-purple-200: #D9D6FE;
   --oz-purple-300: #BDB4FE;
+  --oz-purple-400: #9B8AFB;
+  --oz-purple-500: #7F56D9;
   --oz-purple-600: #6941C6;
   --oz-purple-700: #53389E;
+  --oz-purple-800: #42307D;
+  --oz-purple-900: #2E1A6F;
 
-  /* Seed: Gray Modern (Neutral) */
+  /* Gray Modern */
+  --oz-gray-25:  #FCFCFD;
   --oz-gray-50:  #F9FAFB;
   --oz-gray-100: #F2F4F7;
   --oz-gray-200: #EAECF0;
@@ -20,28 +27,47 @@
   --oz-gray-500: #667085;
   --oz-gray-600: #475467;
   --oz-gray-700: #344054;
+  --oz-gray-800: #1D2939;
   --oz-gray-900: #101828;
+  --oz-gray-950: #0C111D;
 
-  /* Seed: Status */
+  /* Status — Green */
   --oz-green-50:  #ECFDF3;
   --oz-green-100: #D1FADF;
+  --oz-green-300: #6CE9A6;
+  --oz-green-400: #32D583;
   --oz-green-600: #039855;
   --oz-green-700: #027A48;
-  --oz-red-50:    #FEF3F2;
-  --oz-red-100:   #FEE4E2;
-  --oz-red-600:   #D92D20;
+  --oz-green-900: #054F31;
+
+  /* Status — Red */
+  --oz-red-50:   #FEF3F2;
+  --oz-red-100:  #FEE4E2;
+  --oz-red-300:  #FDA29B;
+  --oz-red-400:  #F97066;
+  --oz-red-600:  #D92D20;
+  --oz-red-700:  #B42318;
+  --oz-red-900:  #7A271A;
+
+  /* Status — Yellow */
   --oz-yellow-50:  #FEFBE8;
+  --oz-yellow-100: #FEF0C7;
+  --oz-yellow-300: #FEDF89;
   --oz-yellow-600: #A15C07;
   --oz-yellow-700: #854A0E;
-  --oz-blue-50:   #EFF8FF;
-  --oz-blue-600:  #1570EF;
-  --oz-teal-600:  #0E9384;
+  --oz-yellow-900: #4E1D09;
 
-  /* Semantic */
-  --oz-canvas:   #F8F9FC;
+  /* Status — Blue */
+  --oz-blue-50:   #EFF8FF;
+  --oz-blue-100:  #D1E9FF;
+  --oz-blue-300:  #84CAFF;
+  --oz-blue-400:  #53B1FD;
+  --oz-blue-600:  #1570EF;
+  --oz-blue-700:  #175CD3;
+  --oz-blue-900:  #194185;
+
+  --oz-teal-600: #0E9384;
   --oz-white:    #FFFFFF;
-  --oz-shadow-xs: 0 1px 2px 0 rgba(16,24,40,.05);
-  --oz-shadow-sm: 0 1px 3px 0 rgba(16,24,40,.10), 0 1px 2px 0 rgba(16,24,40,.06);
 
   /* Radius */
   --oz-r-xs: 2px;
@@ -57,6 +83,229 @@
   --oz-font-mono: "Roboto Mono", "Consolas", "Courier New", monospace;
 }
 
+/* ---------- Semantic Tokens — Light (default) ---------- */
+:root {
+  /* Backgrounds */
+  --oz-bg-canvas:        var(--oz-gray-25); /* 페이지 캔버스 */
+  --oz-bg-surface:       var(--oz-white);   /* 카드/패널 */
+  --oz-bg-surface-raised:var(--oz-white);   /* 모달 등 떠 있는 표면 */
+  --oz-bg-muted:         var(--oz-gray-50); /* 옵션 행, 보조 영역 */
+  --oz-bg-input:         var(--oz-white);
+  --oz-bg-overlay:       rgba(16, 24, 40, 0.5);
+
+  /* Foreground */
+  --oz-fg-default:       var(--oz-gray-900); /* 헤딩 */
+  --oz-fg-strong:        var(--oz-gray-900);
+  --oz-fg-secondary:     var(--oz-gray-700); /* 본문 */
+  --oz-fg-muted:         var(--oz-gray-500); /* 라벨/캡션 */
+  --oz-fg-subtle:        var(--oz-gray-400); /* placeholder/비활성 */
+  --oz-fg-on-accent:     var(--oz-white);    /* primary 버튼 위 텍스트 */
+
+  /* Borders */
+  --oz-border-default:   var(--oz-gray-200);
+  --oz-border-strong:    var(--oz-gray-300);
+  --oz-border-subtle:    var(--oz-gray-100);
+
+  /* Primary accent */
+  --oz-accent:           var(--oz-purple-600);
+  --oz-accent-hover:     var(--oz-purple-700);
+  --oz-accent-pressed:   var(--oz-purple-700);
+  --oz-accent-tint:      var(--oz-purple-50);
+  --oz-accent-tint-border: var(--oz-purple-100);
+  --oz-accent-tint-strong: var(--oz-purple-300);
+  --oz-fg-accent:        var(--oz-purple-600);
+  --oz-focus-ring:       rgba(105, 65, 198, 0.14);
+
+  /* Status — Success */
+  --oz-success-tint:     var(--oz-green-50);
+  --oz-success-border:   var(--oz-green-100);
+  --oz-success-fg:       var(--oz-green-700);
+  --oz-success-solid:    var(--oz-green-600);
+
+  /* Status — Error */
+  --oz-error-tint:       var(--oz-red-50);
+  --oz-error-border:     var(--oz-red-100);
+  --oz-error-fg:         var(--oz-red-600);
+  --oz-error-solid:      var(--oz-red-600);
+  --oz-error-strong:     #B42318;
+
+  /* Status — Warning */
+  --oz-warning-tint:     var(--oz-yellow-50);
+  --oz-warning-border:   var(--oz-yellow-100);
+  --oz-warning-fg:       var(--oz-yellow-700);
+  --oz-warning-solid:    var(--oz-yellow-600);
+
+  /* Status — Info */
+  --oz-info-tint:        var(--oz-blue-50);
+  --oz-info-border:      #B2DDFF;
+  --oz-info-fg:          var(--oz-blue-600);
+  --oz-info-solid:       var(--oz-blue-600);
+
+  /* Shadows */
+  --oz-shadow-xs:        0 1px 2px 0 rgba(16, 24, 40, 0.05);
+  --oz-shadow-sm:        0 1px 3px 0 rgba(16, 24, 40, 0.10), 0 1px 2px 0 rgba(16, 24, 40, 0.06);
+  --oz-shadow-modal:     0 20px 24px -4px rgba(16, 24, 40, 0.08), 0 8px 8px -4px rgba(16, 24, 40, 0.03);
+}
+
+/* ---------- Semantic Tokens — Dark (VS Code Dark) ----------
+   VS Code webview는 body에 vscode-dark 클래스를 자동 부여합니다.
+   외부 환경(브라우저 미리보기 등)을 위해 prefers-color-scheme도 폴백.
+*/
+body.vscode-dark,
+body[data-vscode-theme-kind="vscode-dark"] {
+  /* Backgrounds */
+  --oz-bg-canvas:        var(--oz-gray-950);
+  --oz-bg-surface:       var(--oz-gray-900);
+  --oz-bg-surface-raised:var(--oz-gray-800);
+  --oz-bg-muted:         var(--oz-gray-800);
+  --oz-bg-input:         var(--oz-gray-900);
+  --oz-bg-overlay:       rgba(0, 0, 0, 0.65);
+
+  /* Foreground */
+  --oz-fg-default:       var(--oz-gray-50);
+  --oz-fg-strong:        var(--oz-white);
+  --oz-fg-secondary:     var(--oz-gray-300);
+  --oz-fg-muted:         var(--oz-gray-400);
+  --oz-fg-subtle:        var(--oz-gray-500);
+  --oz-fg-on-accent:     var(--oz-white);
+
+  /* Borders */
+  --oz-border-default:   var(--oz-gray-700);
+  --oz-border-strong:    var(--oz-gray-600);
+  --oz-border-subtle:    var(--oz-gray-800);
+
+  /* Primary accent — 한 단계 밝게(500), hover는 더 밝게(400) */
+  --oz-accent:           var(--oz-purple-500);
+  --oz-accent-hover:     var(--oz-purple-400);
+  --oz-accent-pressed:   var(--oz-purple-300);
+  --oz-accent-tint:      rgba(127, 86, 217, 0.16);
+  --oz-accent-tint-border: rgba(127, 86, 217, 0.35);
+  --oz-accent-tint-strong: var(--oz-purple-700);
+  --oz-fg-accent:        var(--oz-purple-300);
+  --oz-focus-ring:       rgba(127, 86, 217, 0.32);
+
+  /* Status — Success */
+  --oz-success-tint:     rgba(3, 152, 85, 0.18);
+  --oz-success-border:   rgba(3, 152, 85, 0.40);
+  --oz-success-fg:       var(--oz-green-300);
+  --oz-success-solid:    var(--oz-green-400);
+
+  /* Status — Error */
+  --oz-error-tint:       rgba(217, 45, 32, 0.18);
+  --oz-error-border:     rgba(217, 45, 32, 0.40);
+  --oz-error-fg:         var(--oz-red-300);
+  --oz-error-solid:      var(--oz-red-400);
+  --oz-error-strong:     var(--oz-red-400);
+
+  /* Status — Warning */
+  --oz-warning-tint:     rgba(161, 92, 7, 0.22);
+  --oz-warning-border:   rgba(254, 223, 137, 0.35);
+  --oz-warning-fg:       var(--oz-yellow-300);
+  --oz-warning-solid:    var(--oz-yellow-300);
+
+  /* Status — Info */
+  --oz-info-tint:        rgba(21, 112, 239, 0.18);
+  --oz-info-border:      rgba(132, 202, 255, 0.40);
+  --oz-info-fg:          var(--oz-blue-300);
+  --oz-info-solid:       var(--oz-blue-400);
+
+  /* Shadows — 다크에서는 더 짙고 깊게 */
+  --oz-shadow-xs:        0 1px 2px 0 rgba(0, 0, 0, 0.45);
+  --oz-shadow-sm:        0 1px 3px 0 rgba(0, 0, 0, 0.55), 0 1px 2px 0 rgba(0, 0, 0, 0.40);
+  --oz-shadow-modal:     0 20px 28px -6px rgba(0, 0, 0, 0.70), 0 10px 12px -6px rgba(0, 0, 0, 0.50);
+}
+
+/* High Contrast — 다크 베이스 + 강한 보더 */
+body.vscode-high-contrast {
+  --oz-bg-canvas:        #000000;
+  --oz-bg-surface:       #000000;
+  --oz-bg-surface-raised:#0C111D;
+  --oz-bg-muted:         #0C111D;
+  --oz-bg-input:         #000000;
+  --oz-bg-overlay:       rgba(0, 0, 0, 0.85);
+
+  --oz-fg-default:       #FFFFFF;
+  --oz-fg-strong:        #FFFFFF;
+  --oz-fg-secondary:     #FFFFFF;
+  --oz-fg-muted:         #D0D5DD;
+  --oz-fg-subtle:        #98A2B3;
+  --oz-fg-on-accent:     #FFFFFF;
+
+  --oz-border-default:   #FFFFFF;
+  --oz-border-strong:    #FFFFFF;
+  --oz-border-subtle:    #98A2B3;
+
+  --oz-accent:           var(--oz-purple-400);
+  --oz-accent-hover:     var(--oz-purple-300);
+  --oz-accent-pressed:   var(--oz-purple-200);
+  --oz-accent-tint:      rgba(155, 138, 251, 0.20);
+  --oz-accent-tint-border: var(--oz-purple-400);
+  --oz-accent-tint-strong: var(--oz-purple-400);
+  --oz-fg-accent:        var(--oz-purple-300);
+  --oz-focus-ring:       rgba(155, 138, 251, 0.50);
+
+  --oz-success-fg:       var(--oz-green-300);
+  --oz-error-fg:         var(--oz-red-300);
+  --oz-warning-fg:       var(--oz-yellow-300);
+  --oz-info-fg:          var(--oz-blue-300);
+}
+
+/* Browser/standalone fallback — VS Code 클래스가 없을 때 */
+@media (prefers-color-scheme: dark) {
+  body:not(.vscode-light):not(.vscode-high-contrast-light) {
+    --oz-bg-canvas:        var(--oz-gray-950);
+    --oz-bg-surface:       var(--oz-gray-900);
+    --oz-bg-surface-raised:var(--oz-gray-800);
+    --oz-bg-muted:         var(--oz-gray-800);
+    --oz-bg-input:         var(--oz-gray-900);
+    --oz-bg-overlay:       rgba(0, 0, 0, 0.65);
+
+    --oz-fg-default:       var(--oz-gray-50);
+    --oz-fg-strong:        var(--oz-white);
+    --oz-fg-secondary:     var(--oz-gray-300);
+    --oz-fg-muted:         var(--oz-gray-400);
+    --oz-fg-subtle:        var(--oz-gray-500);
+
+    --oz-border-default:   var(--oz-gray-700);
+    --oz-border-strong:    var(--oz-gray-600);
+    --oz-border-subtle:    var(--oz-gray-800);
+
+    --oz-accent:           var(--oz-purple-500);
+    --oz-accent-hover:     var(--oz-purple-400);
+    --oz-accent-pressed:   var(--oz-purple-300);
+    --oz-accent-tint:      rgba(127, 86, 217, 0.16);
+    --oz-accent-tint-border: rgba(127, 86, 217, 0.35);
+    --oz-accent-tint-strong: var(--oz-purple-700);
+    --oz-fg-accent:        var(--oz-purple-300);
+    --oz-focus-ring:       rgba(127, 86, 217, 0.32);
+
+    --oz-success-tint:     rgba(3, 152, 85, 0.18);
+    --oz-success-border:   rgba(3, 152, 85, 0.40);
+    --oz-success-fg:       var(--oz-green-300);
+    --oz-success-solid:    var(--oz-green-400);
+
+    --oz-error-tint:       rgba(217, 45, 32, 0.18);
+    --oz-error-border:     rgba(217, 45, 32, 0.40);
+    --oz-error-fg:         var(--oz-red-300);
+    --oz-error-solid:      var(--oz-red-400);
+    --oz-error-strong:     var(--oz-red-400);
+
+    --oz-warning-tint:     rgba(161, 92, 7, 0.22);
+    --oz-warning-border:   rgba(254, 223, 137, 0.35);
+    --oz-warning-fg:       var(--oz-yellow-300);
+    --oz-warning-solid:    var(--oz-yellow-300);
+
+    --oz-info-tint:        rgba(21, 112, 239, 0.18);
+    --oz-info-border:      rgba(132, 202, 255, 0.40);
+    --oz-info-fg:          var(--oz-blue-300);
+    --oz-info-solid:       var(--oz-blue-400);
+
+    --oz-shadow-xs:        0 1px 2px 0 rgba(0, 0, 0, 0.45);
+    --oz-shadow-sm:        0 1px 3px 0 rgba(0, 0, 0, 0.55), 0 1px 2px 0 rgba(0, 0, 0, 0.40);
+    --oz-shadow-modal:     0 20px 28px -6px rgba(0, 0, 0, 0.70), 0 10px 12px -6px rgba(0, 0, 0, 0.50);
+  }
+}
+
 /* ---------- Reset ---------- */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -69,8 +318,8 @@ body {
   font-family: var(--oz-font);
   font-size: 13px;
   line-height: 1.5;
-  color: var(--oz-gray-700);
-  background-color: var(--oz-canvas);
+  color: var(--oz-fg-secondary);
+  background-color: var(--oz-bg-canvas);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -93,15 +342,15 @@ body {
 .loading-spinner {
   width: 24px;
   height: 24px;
-  border: 2px solid var(--oz-gray-200);
-  border-top-color: var(--oz-purple-600);
+  border: 2px solid var(--oz-border-default);
+  border-top-color: var(--oz-accent);
   border-radius: var(--oz-r-full);
   animation: spin 0.8s linear infinite;
 }
 
 .loading-text {
   font-size: 12px;
-  color: var(--oz-gray-500);
+  color: var(--oz-fg-muted);
 }
 
 @keyframes spin {
@@ -110,7 +359,7 @@ body {
 
 /* ---------- Typography ---------- */
 h1, h2, h3, h4, h5, h6 {
-  color: var(--oz-gray-900);
+  color: var(--oz-fg-default);
   font-weight: 600;
 }
 
@@ -119,22 +368,22 @@ h2 {
   font-weight: 700;
   margin-bottom: 10px;
   padding-bottom: 6px;
-  border-bottom: 1px solid var(--oz-gray-200);
-  color: var(--oz-gray-900);
+  border-bottom: 1px solid var(--oz-border-default);
+  color: var(--oz-fg-default);
 }
 
 h3 {
   font-size: 12px;
   font-weight: 600;
   margin-bottom: 8px;
-  color: var(--oz-gray-700);
+  color: var(--oz-fg-secondary);
 }
 
 /* ---------- Forms ---------- */
 label {
   display: block;
   margin-bottom: 4px;
-  color: var(--oz-gray-700);
+  color: var(--oz-fg-secondary);
   font-size: 12px;
   font-weight: 500;
 }
@@ -144,9 +393,9 @@ input[type="password"],
 select {
   width: 100%;
   padding: 6px 10px;
-  background-color: var(--oz-white);
-  color: var(--oz-gray-900);
-  border: 1px solid var(--oz-gray-300);
+  background-color: var(--oz-bg-input);
+  color: var(--oz-fg-default);
+  border: 1px solid var(--oz-border-strong);
   border-radius: var(--oz-r-md);
   font-size: 13px;
   font-family: var(--oz-font);
@@ -157,19 +406,19 @@ select {
 input[type="text"]:focus,
 input[type="password"]:focus,
 select:focus {
-  border-color: var(--oz-purple-600);
-  box-shadow: 0 0 0 3px rgba(105, 65, 198, 0.14);
+  border-color: var(--oz-accent);
+  box-shadow: 0 0 0 3px var(--oz-focus-ring);
 }
 
 input[type="text"]::placeholder {
-  color: var(--oz-gray-400);
+  color: var(--oz-fg-subtle);
 }
 
 /* ---------- Buttons ---------- */
 button {
   padding: 6px 14px;
-  background-color: var(--oz-purple-600);
-  color: var(--oz-white);
+  background-color: var(--oz-accent);
+  color: var(--oz-fg-on-accent);
   border: none;
   border-radius: var(--oz-r-md);
   cursor: pointer;
@@ -181,7 +430,7 @@ button {
 }
 
 button:hover {
-  background-color: var(--oz-purple-700);
+  background-color: var(--oz-accent-hover);
 }
 
 button:disabled {
@@ -191,25 +440,26 @@ button:disabled {
 }
 
 button.secondary {
-  background-color: var(--oz-white);
-  color: var(--oz-gray-700);
-  border: 1px solid var(--oz-gray-300);
+  background-color: var(--oz-bg-surface);
+  color: var(--oz-fg-secondary);
+  border: 1px solid var(--oz-border-strong);
   box-shadow: var(--oz-shadow-xs);
 }
 
 button.secondary:hover {
-  background-color: var(--oz-gray-50);
-  border-color: var(--oz-gray-400);
+  background-color: var(--oz-bg-muted);
+  border-color: var(--oz-fg-subtle);
 }
 
 button.danger-btn {
-  background-color: var(--oz-red-50);
-  color: var(--oz-red-600);
-  border: 1px solid var(--oz-red-100);
+  background-color: var(--oz-error-tint);
+  color: var(--oz-error-fg);
+  border: 1px solid var(--oz-error-border);
 }
 
 button.danger-btn:hover {
-  background-color: var(--oz-red-100);
+  background-color: var(--oz-error-tint);
+  filter: brightness(1.05);
 }
 
 /* Build Panel 중지 버튼 */
@@ -230,20 +480,20 @@ button.danger-btn:hover {
   font-size: 11px;
   padding: 4px 10px;
   min-height: 24px;
-  background-color: var(--oz-red-600) !important;
+  background-color: var(--oz-error-solid) !important;
   color: var(--oz-white) !important;
   border: none;
   border-radius: var(--oz-r-sm);
 }
 
 .build-stop-btn:hover {
-  background-color: #b42318 !important;
+  background-color: var(--oz-error-strong) !important;
 }
 
 /* ---------- Panels / Cards ---------- */
 .panel {
-  background-color: var(--oz-white);
-  border: 1px solid var(--oz-gray-200);
+  background-color: var(--oz-bg-surface);
+  border: 1px solid var(--oz-border-default);
   border-radius: var(--oz-r-lg);
   padding: 12px;
   margin-bottom: 8px;
@@ -271,28 +521,28 @@ button.danger-btn:hover {
 }
 
 .status-icon.pending {
-  background-color: var(--oz-yellow-600);
+  background-color: var(--oz-warning-solid);
 }
 
 .status-icon.validating {
-  background-color: var(--oz-blue-600);
+  background-color: var(--oz-info-solid);
   animation: pulse 1s infinite;
 }
 
 .status-icon.valid {
-  background-color: var(--oz-green-600);
+  background-color: var(--oz-success-solid);
 }
 
 .status-icon.invalid {
-  background-color: var(--oz-red-600);
+  background-color: var(--oz-error-solid);
 }
 
 .status-icon.warning {
-  background-color: var(--oz-yellow-600);
+  background-color: var(--oz-warning-solid);
 }
 
 .validation-message.warning {
-  color: var(--oz-yellow-700);
+  color: var(--oz-warning-fg);
 }
 
 @keyframes pulse {
@@ -305,14 +555,14 @@ button.danger-btn:hover {
 
 .progress-track {
   height: 4px;
-  background-color: var(--oz-gray-100);
+  background-color: var(--oz-border-subtle);
   border-radius: var(--oz-r-full);
   overflow: hidden;
 }
 
 .progress-bar {
   height: 4px;
-  background-color: var(--oz-purple-600);
+  background-color: var(--oz-accent);
   border-radius: var(--oz-r-full);
   transition: width 0.3s ease;
 }
@@ -328,7 +578,7 @@ button.danger-btn:hover {
   align-items: center;
   gap: 8px;
   padding: 6px 0;
-  border-bottom: 1px solid var(--oz-gray-100);
+  border-bottom: 1px solid var(--oz-border-subtle);
 }
 
 .validation-item:last-child { border-bottom: none; }
@@ -336,21 +586,21 @@ button.danger-btn:hover {
 .validation-text {
   flex: 1;
   font-size: 12px;
-  color: var(--oz-gray-700);
+  color: var(--oz-fg-secondary);
 }
 
 .validation-message {
   font-size: 11px;
-  color: var(--oz-gray-500);
+  color: var(--oz-fg-muted);
   margin-top: 3px;
 }
 
 .validation-message.valid {
-  color: var(--oz-green-600);
+  color: var(--oz-success-fg);
 }
 
 .validation-message.invalid {
-  color: var(--oz-red-600);
+  color: var(--oz-error-fg);
 }
 
 /* ---------- Button Groups ---------- */
@@ -372,14 +622,14 @@ button.danger-btn:hover {
 
 .project-path .label {
   font-size: 11px;
-  color: var(--oz-gray-500);
+  color: var(--oz-fg-muted);
   flex-shrink: 0;
 }
 
 .project-path .value {
   font-size: 11px;
   word-break: break-all;
-  color: var(--oz-gray-700);
+  color: var(--oz-fg-secondary);
 }
 
 .project-status {
@@ -392,13 +642,13 @@ button.danger-btn:hover {
 }
 
 .project-status.valid {
-  background-color: var(--oz-green-50);
-  color: var(--oz-green-700);
+  background-color: var(--oz-success-tint);
+  color: var(--oz-success-fg);
 }
 
 .project-status.invalid {
-  background-color: var(--oz-red-50);
-  color: var(--oz-red-600);
+  background-color: var(--oz-error-tint);
+  color: var(--oz-error-fg);
 }
 
 .project-status .status-icon {
@@ -408,8 +658,8 @@ button.danger-btn:hover {
   background: none !important;
 }
 
-.project-status .status-icon.valid { color: var(--oz-green-600); }
-.project-status .status-icon.invalid { color: var(--oz-red-600); }
+.project-status .status-icon.valid { color: var(--oz-success-fg); }
+.project-status .status-icon.invalid { color: var(--oz-error-fg); }
 
 /* ---------- Messages ---------- */
 .message {
@@ -423,21 +673,21 @@ button.danger-btn:hover {
 }
 
 .message.error {
-  background-color: var(--oz-red-50);
-  border: 1px solid var(--oz-red-100);
-  color: var(--oz-red-600);
+  background-color: var(--oz-error-tint);
+  border: 1px solid var(--oz-error-border);
+  color: var(--oz-error-fg);
 }
 
 .message.success {
-  background-color: var(--oz-green-50);
-  border: 1px solid var(--oz-green-100);
-  color: var(--oz-green-700);
+  background-color: var(--oz-success-tint);
+  border: 1px solid var(--oz-success-border);
+  color: var(--oz-success-fg);
 }
 
 .message.info {
-  background-color: var(--oz-blue-50);
-  border: 1px solid #b2ddff;
-  color: var(--oz-blue-600);
+  background-color: var(--oz-info-tint);
+  border: 1px solid var(--oz-info-border);
+  color: var(--oz-info-fg);
 }
 
 .message .close-btn {
@@ -459,7 +709,7 @@ button.danger-btn:hover {
   align-items: center;
   margin-bottom: 10px;
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--oz-gray-200);
+  border-bottom: 1px solid var(--oz-border-default);
 }
 
 .main-header h2 {
@@ -502,7 +752,7 @@ button.danger-btn:hover {
 
 .radio-label span {
   font-size: 12px;
-  color: var(--oz-gray-700);
+  color: var(--oz-fg-secondary);
 }
 
 /* ---------- Deploy Buttons ---------- */
@@ -521,16 +771,16 @@ button.danger-btn:hover {
 /* ---------- Deploy Summary ---------- */
 .deploy-summary {
   padding: 8px 10px;
-  background-color: var(--oz-purple-50);
-  border: 1px solid var(--oz-purple-100);
+  background-color: var(--oz-accent-tint);
+  border: 1px solid var(--oz-accent-tint-border);
   border-radius: var(--oz-r-md);
   margin-bottom: 10px;
   font-size: 11px;
-  color: var(--oz-gray-700);
+  color: var(--oz-fg-secondary);
 }
 
-.deploy-details { margin-top: 3px; color: var(--oz-gray-600); }
-.deploy-groups  { margin-top: 3px; color: var(--oz-gray-500); }
+.deploy-details { margin-top: 3px; color: var(--oz-fg-secondary); }
+.deploy-groups  { margin-top: 3px; color: var(--oz-fg-muted); }
 
 /* ---------- Tomcat Context Root ---------- */
 .context-root-section {
@@ -552,8 +802,8 @@ button.danger-btn:hover {
 /* ---------- Icon Button ---------- */
 .icon-btn {
   padding: 4px;
-  background: var(--oz-white);
-  border: 1px solid var(--oz-gray-300);
+  background: var(--oz-bg-surface);
+  border: 1px solid var(--oz-border-strong);
   border-radius: var(--oz-r-md);
   cursor: pointer;
   display: flex;
@@ -561,16 +811,16 @@ button.danger-btn:hover {
   justify-content: center;
   width: 32px;
   height: 32px;
-  color: var(--oz-gray-600);
+  color: var(--oz-fg-muted);
   box-shadow: var(--oz-shadow-xs);
   transition: background-color 0.15s, border-color 0.15s;
   flex-shrink: 0;
 }
 
 .icon-btn:hover {
-  background-color: var(--oz-gray-50);
-  border-color: var(--oz-purple-600);
-  color: var(--oz-purple-600);
+  background-color: var(--oz-bg-muted);
+  border-color: var(--oz-accent);
+  color: var(--oz-accent);
 }
 
 .icon-btn .icon { font-size: 15px; }
@@ -588,14 +838,14 @@ button.danger-btn:hover {
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: var(--oz-gray-600);
+  color: var(--oz-fg-muted);
 }
 
 .status .status-icon { width: 8px; height: 8px; }
-.status .status-icon.running  { background-color: var(--oz-green-600); }
-.status .status-icon.stopped  { background-color: var(--oz-gray-400); }
-.status .status-icon.starting { background-color: var(--oz-green-600); animation: blink 1s ease-in-out infinite; }
-.status .status-icon.stopping { background-color: var(--oz-red-600); animation: blink 1s ease-in-out infinite; }
+.status .status-icon.running  { background-color: var(--oz-success-solid); }
+.status .status-icon.stopped  { background-color: var(--oz-fg-subtle); }
+.status .status-icon.starting { background-color: var(--oz-success-solid); animation: blink 1s ease-in-out infinite; }
+.status .status-icon.stopping { background-color: var(--oz-error-solid); animation: blink 1s ease-in-out infinite; }
 
 @keyframes blink {
   0%, 100% { opacity: 1; }
@@ -603,7 +853,7 @@ button.danger-btn:hover {
 }
 
 .status.status-running span {
-  color: var(--oz-green-700);
+  color: var(--oz-success-fg);
   font-weight: 600;
 }
 
@@ -621,7 +871,7 @@ button.danger-btn:hover {
   cursor: pointer;
   width: 14px;
   height: 14px;
-  accent-color: var(--oz-purple-600);
+  accent-color: var(--oz-accent);
 }
 
 .checkbox-label input:disabled {
@@ -631,14 +881,14 @@ button.danger-btn:hover {
 
 .checkbox-label span {
   font-size: 12px;
-  color: var(--oz-gray-600);
+  color: var(--oz-fg-secondary);
 }
 
 /* ---------- Modal ---------- */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(16, 24, 40, 0.5);
+  background-color: var(--oz-bg-overlay);
   display: none;
   align-items: center;
   justify-content: center;
@@ -646,32 +896,32 @@ button.danger-btn:hover {
 }
 
 .modal {
-  background-color: var(--oz-white);
-  border: 1px solid var(--oz-gray-200);
+  background-color: var(--oz-bg-surface-raised);
+  border: 1px solid var(--oz-border-default);
   border-radius: var(--oz-r-xl);
   min-width: 150px;
   max-width: calc(100% - 20px);
   margin: 0 10px;
-  box-shadow: 0 20px 24px -4px rgba(16,24,40,.08), 0 8px 8px -4px rgba(16,24,40,.03);
+  box-shadow: var(--oz-shadow-modal);
 }
 
 .modal-header {
   padding: 14px 16px;
-  border-bottom: 1px solid var(--oz-gray-200);
+  border-bottom: 1px solid var(--oz-border-default);
 }
 
 .modal-header h4 {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
-  color: var(--oz-gray-900);
+  color: var(--oz-fg-default);
 }
 
 .modal-body { padding: 16px; }
 
 .modal-footer {
   padding: 12px 16px;
-  border-top: 1px solid var(--oz-gray-200);
+  border-top: 1px solid var(--oz-border-default);
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -685,7 +935,7 @@ button.danger-btn:hover {
   display: block;
   margin-top: 4px;
   font-size: 11px;
-  color: var(--oz-gray-500);
+  color: var(--oz-fg-muted);
 }
 
 /* ---------- Project Settings Page ---------- */
@@ -693,7 +943,7 @@ button.danger-btn:hover {
 
 .panel-description {
   font-size: 12px;
-  color: var(--oz-gray-500);
+  color: var(--oz-fg-muted);
   margin-bottom: 10px;
 }
 
@@ -708,17 +958,17 @@ button.danger-btn:hover {
   align-items: flex-start;
   gap: 8px;
   padding: 8px 10px;
-  background-color: var(--oz-gray-50);
+  background-color: var(--oz-bg-muted);
   border-radius: var(--oz-r-md);
 }
 
 .option-item.always-applied {
-  background-color: var(--oz-green-50);
-  border: 1px solid var(--oz-green-100);
+  background-color: var(--oz-success-tint);
+  border: 1px solid var(--oz-success-border);
 }
 
 .option-icon {
-  color: var(--oz-green-600);
+  color: var(--oz-success-fg);
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -731,13 +981,13 @@ button.danger-btn:hover {
 
 .option-label {
   font-size: 12px;
-  color: var(--oz-gray-700);
+  color: var(--oz-fg-secondary);
   font-weight: 500;
 }
 
 .option-desc {
   font-size: 11px;
-  color: var(--oz-gray-500);
+  color: var(--oz-fg-muted);
 }
 
 .checkbox-option {
@@ -750,20 +1000,20 @@ button.danger-btn:hover {
   transition: background-color 0.1s;
 }
 
-.checkbox-option:hover { background-color: var(--oz-purple-50); }
+.checkbox-option:hover { background-color: var(--oz-accent-tint); }
 
 .checkbox-option input[type="checkbox"] {
   margin-top: 2px;
   flex-shrink: 0;
-  accent-color: var(--oz-purple-600);
+  accent-color: var(--oz-accent);
 }
 
 .checkbox-option.sub-option { padding-left: 28px; opacity: 0.9; }
 .checkbox-option.sub-option .option-label { font-size: 11px; }
 
 /* ---------- Tree View ---------- */
-.tree-header:hover { background-color: var(--oz-purple-50); border-radius: var(--oz-r-sm); }
-.tree-item:hover   { background-color: var(--oz-purple-50); border-radius: var(--oz-r-sm); }
+.tree-header:hover { background-color: var(--oz-accent-tint); border-radius: var(--oz-r-sm); }
+.tree-item:hover   { background-color: var(--oz-accent-tint); border-radius: var(--oz-r-sm); }
 
 .tree-item-action { opacity: 0; transition: opacity 0.1s; }
 .tree-item:hover .tree-item-action { opacity: 1; }
@@ -774,14 +1024,14 @@ button.danger-btn:hover {
 .ux-studio-footer {
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px solid var(--oz-gray-200);
+  border-top: 1px solid var(--oz-border-default);
 }
 
 .ux-studio-footer__btn {
   width: 100%;
   padding: 8px 14px;
-  background-color: var(--oz-purple-600);
-  color: var(--oz-white);
+  background-color: var(--oz-accent);
+  color: var(--oz-fg-on-accent);
   border: none;
   border-radius: var(--oz-r-md);
   cursor: pointer;
@@ -791,14 +1041,14 @@ button.danger-btn:hover {
   transition: background-color 0.15s;
 }
 
-.ux-studio-footer__btn:hover { background-color: var(--oz-purple-700); }
+.ux-studio-footer__btn:hover { background-color: var(--oz-accent-hover); }
 
 .ux-studio-footer__no-devmode {
   width: 100%;
   padding: 8px 12px;
-  background-color: var(--oz-red-50);
-  color: var(--oz-red-600);
-  border: 1px solid var(--oz-red-100);
+  background-color: var(--oz-error-tint);
+  color: var(--oz-error-fg);
+  border: 1px solid var(--oz-error-border);
   border-radius: var(--oz-r-md);
   font-size: 12px;
   text-align: center;
@@ -806,7 +1056,7 @@ button.danger-btn:hover {
 
 .ux-studio-footer__checking {
   font-size: 12px;
-  color: var(--oz-gray-500);
+  color: var(--oz-fg-muted);
   text-align: center;
   padding: 6px 0;
 }
@@ -826,8 +1076,8 @@ button.danger-btn:hover {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background-color: var(--oz-white);
-  border-bottom: 1px solid var(--oz-gray-200);
+  background-color: var(--oz-bg-surface);
+  border-bottom: 1px solid var(--oz-border-default);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -838,9 +1088,9 @@ button.danger-btn:hover {
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 500;
-  background-color: var(--oz-white);
-  color: var(--oz-gray-700);
-  border: 1px solid var(--oz-gray-300);
+  background-color: var(--oz-bg-surface);
+  color: var(--oz-fg-secondary);
+  border: 1px solid var(--oz-border-strong);
   border-radius: var(--oz-r-md);
   cursor: pointer;
   flex-shrink: 0;
@@ -848,37 +1098,40 @@ button.danger-btn:hover {
 }
 
 .ux-studio-page__back-btn:hover {
-  background-color: var(--oz-gray-50);
-  border-color: var(--oz-gray-400);
+  background-color: var(--oz-bg-muted);
+  border-color: var(--oz-fg-subtle);
 }
 
 .ux-studio-page__title {
   flex: 1;
   font-size: 13px;
   font-weight: 600;
-  color: var(--oz-gray-900);
+  color: var(--oz-fg-default);
 }
 
 .ux-studio-page__reset-btn {
   padding: 4px 10px;
   font-size: 11px;
   font-weight: 500;
-  background-color: var(--oz-red-50);
-  color: var(--oz-red-600);
-  border: 1px solid var(--oz-red-100);
+  background-color: var(--oz-error-tint);
+  color: var(--oz-error-fg);
+  border: 1px solid var(--oz-error-border);
   border-radius: var(--oz-r-md);
   cursor: pointer;
   flex-shrink: 0;
   transition: background-color 0.15s;
 }
 
-.ux-studio-page__reset-btn:hover { background-color: var(--oz-red-100); }
+.ux-studio-page__reset-btn:hover {
+  background-color: var(--oz-error-tint);
+  filter: brightness(1.05);
+}
 
 .ux-studio-page__body {
   flex: 1;
   padding: 12px;
   overflow-y: auto;
-  background-color: var(--oz-canvas);
+  background-color: var(--oz-bg-canvas);
 }
 
 .ux-studio-page__loading {
@@ -888,7 +1141,7 @@ button.danger-btn:hover {
   justify-content: center;
   gap: 10px;
   padding: 40px 0;
-  color: var(--oz-gray-500);
+  color: var(--oz-fg-muted);
   font-size: 12px;
 }
 
@@ -896,8 +1149,8 @@ button.danger-btn:hover {
    UX Studio — Setup Panel (2단계)
    ============================================================ */
 .ux-setup-panel {
-  background-color: var(--oz-white);
-  border: 1px solid var(--oz-gray-200);
+  background-color: var(--oz-bg-surface);
+  border: 1px solid var(--oz-border-default);
   border-radius: var(--oz-r-lg);
   padding: 14px;
   box-shadow: var(--oz-shadow-xs);
@@ -907,12 +1160,12 @@ button.danger-btn:hover {
   font-size: 13px;
   font-weight: 600;
   margin-bottom: 6px;
-  color: var(--oz-gray-900);
+  color: var(--oz-fg-default);
 }
 
 .ux-setup-panel__desc {
   font-size: 11px;
-  color: var(--oz-gray-500);
+  color: var(--oz-fg-muted);
   margin-bottom: 14px;
 }
 
@@ -923,7 +1176,7 @@ button.danger-btn:hover {
   padding: 5px 0;
   cursor: pointer;
   font-size: 12px;
-  color: var(--oz-gray-700);
+  color: var(--oz-fg-secondary);
 }
 
 .ux-setup-panel__check-row input[type="checkbox"] {
@@ -931,12 +1184,12 @@ button.danger-btn:hover {
   height: 14px;
   flex-shrink: 0;
   cursor: pointer;
-  accent-color: var(--oz-purple-600);
+  accent-color: var(--oz-accent);
 }
 
 .ux-setup-panel__check-hint {
   font-size: 11px;
-  color: var(--oz-gray-500);
+  color: var(--oz-fg-muted);
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -945,7 +1198,7 @@ button.danger-btn:hover {
 
 .ux-setup-panel__custom-list-wrapper {
   margin: 8px 0;
-  border: 1px solid var(--oz-gray-200);
+  border: 1px solid var(--oz-border-default);
   border-radius: var(--oz-r-md);
   overflow: hidden;
 }
@@ -954,9 +1207,9 @@ button.danger-btn:hover {
   padding: 5px 10px;
   font-size: 11px;
   font-weight: 600;
-  background-color: var(--oz-gray-50);
-  border-bottom: 1px solid var(--oz-gray-200);
-  color: var(--oz-gray-700);
+  background-color: var(--oz-bg-muted);
+  border-bottom: 1px solid var(--oz-border-default);
+  color: var(--oz-fg-secondary);
 }
 
 .ux-setup-panel__custom-list {
@@ -967,7 +1220,7 @@ button.danger-btn:hover {
 
 .ux-setup-panel__check-row--custom {
   padding: 3px 0;
-  border-bottom: 1px solid var(--oz-gray-100);
+  border-bottom: 1px solid var(--oz-border-subtle);
 }
 
 .ux-setup-panel__check-row--custom:last-child { border-bottom: none; }
@@ -976,12 +1229,12 @@ button.danger-btn:hover {
   font-weight: 600;
   min-width: 100px;
   flex-shrink: 0;
-  color: var(--oz-purple-600);
+  color: var(--oz-fg-accent);
 }
 
 .ux-setup-panel__url {
   font-size: 11px;
-  color: var(--oz-gray-500);
+  color: var(--oz-fg-muted);
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -990,7 +1243,7 @@ button.danger-btn:hover {
 
 .ux-setup-panel__check-row--autocorrect {
   margin-top: 10px;
-  border-top: 1px solid var(--oz-gray-200);
+  border-top: 1px solid var(--oz-border-default);
   padding-top: 10px;
 }
 
@@ -998,8 +1251,8 @@ button.danger-btn:hover {
   width: 100%;
   margin-top: 14px;
   padding: 8px;
-  background-color: var(--oz-purple-600);
-  color: var(--oz-white);
+  background-color: var(--oz-accent);
+  color: var(--oz-fg-on-accent);
   border: none;
   border-radius: var(--oz-r-md);
   font-size: 13px;
@@ -1009,14 +1262,14 @@ button.danger-btn:hover {
   transition: background-color 0.15s;
 }
 
-.ux-setup-panel__apply-btn:hover { background-color: var(--oz-purple-700); }
+.ux-setup-panel__apply-btn:hover { background-color: var(--oz-accent-hover); }
 
 /* ============================================================
    UX Studio — File Panel (4·5단계)
    ============================================================ */
 .ux-file-panel {
-  background-color: var(--oz-white);
-  border: 1px solid var(--oz-gray-200);
+  background-color: var(--oz-bg-surface);
+  border: 1px solid var(--oz-border-default);
   border-radius: var(--oz-r-lg);
   padding: 14px;
   margin-bottom: 10px;
@@ -1027,12 +1280,12 @@ button.danger-btn:hover {
   font-size: 13px;
   font-weight: 600;
   margin-bottom: 4px;
-  color: var(--oz-gray-900);
+  color: var(--oz-fg-default);
 }
 
 .ux-file-panel__desc {
   font-size: 11px;
-  color: var(--oz-gray-500);
+  color: var(--oz-fg-muted);
   margin-bottom: 10px;
   display: flex;
   align-items: center;
@@ -1042,19 +1295,19 @@ button.danger-btn:hover {
 .ux-file-panel__refresh-btn {
   padding: 2px 7px;
   font-size: 13px;
-  background: var(--oz-white);
-  border: 1px solid var(--oz-gray-300);
+  background: var(--oz-bg-surface);
+  border: 1px solid var(--oz-border-strong);
   border-radius: var(--oz-r-sm);
   cursor: pointer;
-  color: var(--oz-gray-600);
+  color: var(--oz-fg-muted);
   line-height: 1;
   transition: background-color 0.15s;
 }
 
 .ux-file-panel__refresh-btn:hover {
-  background-color: var(--oz-purple-50);
-  border-color: var(--oz-purple-300);
-  color: var(--oz-purple-600);
+  background-color: var(--oz-accent-tint);
+  border-color: var(--oz-accent-tint-strong);
+  color: var(--oz-fg-accent);
 }
 
 .ux-file-panel__columns {
@@ -1072,7 +1325,7 @@ button.danger-btn:hover {
 .ux-file-panel__col-label {
   font-size: 11px;
   font-weight: 600;
-  color: var(--oz-gray-600);
+  color: var(--oz-fg-muted);
   margin-bottom: 4px;
 }
 
@@ -1088,9 +1341,9 @@ button.danger-btn:hover {
   padding: 5px 28px 5px 10px;
   font-size: 12px;
   font-family: var(--oz-font);
-  background-color: var(--oz-white);
-  color: var(--oz-gray-900);
-  border: 1px solid var(--oz-gray-300);
+  background-color: var(--oz-bg-input);
+  color: var(--oz-fg-default);
+  border: 1px solid var(--oz-border-strong);
   border-radius: var(--oz-r-md);
   width: 100%;
   outline: none;
@@ -1098,8 +1351,8 @@ button.danger-btn:hover {
 }
 
 .ux-file-panel__search:focus {
-  border-color: var(--oz-purple-600);
-  box-shadow: 0 0 0 3px rgba(105,65,198,.14);
+  border-color: var(--oz-accent);
+  box-shadow: 0 0 0 3px var(--oz-focus-ring);
 }
 
 .ux-file-panel__search-clear {
@@ -1107,7 +1360,7 @@ button.danger-btn:hover {
   right: 6px;
   background: transparent;
   border: none;
-  color: var(--oz-gray-400);
+  color: var(--oz-fg-subtle);
   cursor: pointer;
   padding: 2px;
   display: flex;
@@ -1117,25 +1370,25 @@ button.danger-btn:hover {
   line-height: 1;
 }
 
-.ux-file-panel__search-clear:hover { color: var(--oz-gray-700); }
+.ux-file-panel__search-clear:hover { color: var(--oz-fg-secondary); }
 
 .ux-file-panel__list {
-  border: 1px solid var(--oz-gray-200);
+  border: 1px solid var(--oz-border-default);
   border-radius: var(--oz-r-md);
   height: 200px;
   overflow-y: auto;
-  background-color: var(--oz-white);
+  background-color: var(--oz-bg-surface);
 }
 
 .ux-file-panel__list--selected {
-  border-color: var(--oz-purple-300);
+  border-color: var(--oz-accent-tint-strong);
   margin-bottom: 6px;
 }
 
 .ux-file-panel__item {
   padding: 5px 10px;
   cursor: pointer;
-  border-bottom: 1px solid var(--oz-gray-100);
+  border-bottom: 1px solid var(--oz-border-subtle);
   transition: background-color 0.1s;
   display: flex;
   flex-direction: column;
@@ -1143,16 +1396,16 @@ button.danger-btn:hover {
 }
 
 .ux-file-panel__item:last-child { border-bottom: none; }
-.ux-file-panel__item:hover { background-color: var(--oz-purple-50); }
+.ux-file-panel__item:hover { background-color: var(--oz-accent-tint); }
 
 .ux-file-panel__item--selected:hover {
-  background-color: var(--oz-red-50);
+  background-color: var(--oz-error-tint);
 }
 
 .ux-file-panel__item-name {
   font-size: 12px;
   font-weight: 600;
-  color: var(--oz-gray-900);
+  color: var(--oz-fg-default);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1160,7 +1413,7 @@ button.danger-btn:hover {
 
 .ux-file-panel__item-dir {
   font-size: 10px;
-  color: var(--oz-gray-400);
+  color: var(--oz-fg-subtle);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1170,14 +1423,14 @@ button.danger-btn:hover {
   padding: 20px;
   text-align: center;
   font-size: 11px;
-  color: var(--oz-gray-400);
+  color: var(--oz-fg-subtle);
 }
 
 .ux-file-panel__confirm-btn {
   width: 100%;
   padding: 7px;
-  background-color: var(--oz-purple-600);
-  color: var(--oz-white);
+  background-color: var(--oz-accent);
+  color: var(--oz-fg-on-accent);
   border: none;
   border-radius: var(--oz-r-md);
   font-size: 12px;
@@ -1188,11 +1441,12 @@ button.danger-btn:hover {
 }
 
 .ux-file-panel__confirm-btn:hover:not(:disabled) {
-  background-color: var(--oz-purple-700);
+  background-color: var(--oz-accent-hover);
 }
 
 .ux-file-panel__confirm-btn--done {
-  background-color: var(--oz-green-600) !important;
+  background-color: var(--oz-success-solid) !important;
+  color: var(--oz-white) !important;
 }
 
 .ux-file-panel__confirm-btn--done:hover:not(:disabled) {
@@ -1208,8 +1462,8 @@ button.danger-btn:hover {
    UX Studio — Launch Panel (6단계)
    ============================================================ */
 .ux-launch-panel {
-  background-color: var(--oz-white);
-  border: 1px solid var(--oz-gray-200);
+  background-color: var(--oz-bg-surface);
+  border: 1px solid var(--oz-border-default);
   border-radius: var(--oz-r-lg);
   padding: 14px;
   box-shadow: var(--oz-shadow-xs);
@@ -1219,7 +1473,7 @@ button.danger-btn:hover {
   font-size: 13px;
   font-weight: 600;
   margin-bottom: 10px;
-  color: var(--oz-gray-900);
+  color: var(--oz-fg-default);
 }
 
 .ux-launch-panel__list {
@@ -1237,8 +1491,8 @@ button.danger-btn:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  background-color: var(--oz-purple-600);
-  color: var(--oz-white);
+  background-color: var(--oz-accent);
+  color: var(--oz-fg-on-accent);
   border: none;
   border-radius: var(--oz-r-md);
   font-size: 12px;
@@ -1248,10 +1502,10 @@ button.danger-btn:hover {
   transition: background-color 0.15s;
 }
 
-.ux-launch-panel__btn:hover { background-color: var(--oz-purple-700); }
+.ux-launch-panel__btn:hover { background-color: var(--oz-accent-hover); }
 
 .ux-launch-panel__empty {
   font-size: 12px;
-  color: var(--oz-gray-500);
+  color: var(--oz-fg-muted);
   padding: 8px 0;
 }
