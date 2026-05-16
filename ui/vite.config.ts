@@ -10,7 +10,6 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 main: resolve(__dirname, 'index.html'),
-                'query-extract': resolve(__dirname, 'query-extract.html'),
             },
             output: {
                 entryFileNames: 'assets/[name].js',

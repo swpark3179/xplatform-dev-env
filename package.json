@@ -28,11 +28,6 @@
         "category": "XPlatform"
       },
       {
-        "command": "dev-helper.openQueryViewer",
-        "title": "Query Viewer 열기",
-        "category": "XPlatform"
-      },
-      {
         "command": "dev-helper.analyzeReference",
         "title": "SHI: 참조관계 분석",
         "category": "XPlatform"
@@ -98,26 +93,6 @@
         "shiDevHelper.tomcatPath": {
           "type": "string",
           "description": "Tomcat 경로"
-        },
-        "shiDevHelper.oracleUser": {
-          "type": "string",
-          "default": "scott",
-          "description": "Oracle DB 사용자명"
-        },
-        "shiDevHelper.oraclePassword": {
-          "type": "string",
-          "default": "tiger",
-          "description": "Oracle DB 비밀번호"
-        },
-        "shiDevHelper.oracleConnectString": {
-          "type": "string",
-          "default": "60.100.89.191:7971/SEVMQ",
-          "description": "Oracle DB 접속 문자열 (host:port/service)"
-        },
-        "shiDevHelper.oracleInstantClientPath": {
-          "type": "string",
-          "default": "",
-          "description": "Oracle Instant Client 경로 (Thick 모드 사용 시)"
         }
       }
     }
@@ -136,9 +111,7 @@
     "@vscode/vsce": "^3.7.1",
     "cpy": "^13.2.1",
     "fs-extra": "^11.3.3",
-    "json5": "^2.2.3",
-    "oracledb": "^6.7.1",
-    "sql.js": "^1.14.0"
+    "json5": "^2.2.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
