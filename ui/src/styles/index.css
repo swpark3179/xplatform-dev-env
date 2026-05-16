@@ -174,15 +174,15 @@ body[data-vscode-theme-kind="vscode-dark"] {
   --oz-border-strong:    var(--oz-gray-600);
   --oz-border-subtle:    var(--oz-gray-800);
 
-  /* Primary accent — 한 단계 밝게(500), hover는 더 밝게(400) */
-  --oz-accent:           var(--oz-purple-500);
-  --oz-accent-hover:     var(--oz-purple-400);
-  --oz-accent-pressed:   var(--oz-purple-300);
-  --oz-accent-tint:      rgba(127, 86, 217, 0.16);
-  --oz-accent-tint-border: rgba(127, 86, 217, 0.35);
-  --oz-accent-tint-strong: var(--oz-purple-700);
-  --oz-fg-accent:        var(--oz-purple-300);
-  --oz-focus-ring:       rgba(127, 86, 217, 0.32);
+  /* Primary accent — VS Code 다크 톤의 파란색 계열 */
+  --oz-accent:           var(--oz-blue-600);
+  --oz-accent-hover:     var(--oz-blue-400);
+  --oz-accent-pressed:   var(--oz-blue-300);
+  --oz-accent-tint:      rgba(21, 112, 239, 0.16);
+  --oz-accent-tint-border: rgba(21, 112, 239, 0.35);
+  --oz-accent-tint-strong: var(--oz-blue-700);
+  --oz-fg-accent:        var(--oz-blue-300);
+  --oz-focus-ring:       rgba(21, 112, 239, 0.32);
 
   /* Status — Success */
   --oz-success-tint:     rgba(3, 152, 85, 0.18);
@@ -235,14 +235,14 @@ body.vscode-high-contrast {
   --oz-border-strong:    #FFFFFF;
   --oz-border-subtle:    #98A2B3;
 
-  --oz-accent:           var(--oz-purple-400);
-  --oz-accent-hover:     var(--oz-purple-300);
-  --oz-accent-pressed:   var(--oz-purple-200);
-  --oz-accent-tint:      rgba(155, 138, 251, 0.20);
-  --oz-accent-tint-border: var(--oz-purple-400);
-  --oz-accent-tint-strong: var(--oz-purple-400);
-  --oz-fg-accent:        var(--oz-purple-300);
-  --oz-focus-ring:       rgba(155, 138, 251, 0.50);
+  --oz-accent:           var(--oz-blue-400);
+  --oz-accent-hover:     var(--oz-blue-300);
+  --oz-accent-pressed:   var(--oz-blue-100);
+  --oz-accent-tint:      rgba(83, 177, 253, 0.20);
+  --oz-accent-tint-border: var(--oz-blue-400);
+  --oz-accent-tint-strong: var(--oz-blue-400);
+  --oz-fg-accent:        var(--oz-blue-300);
+  --oz-focus-ring:       rgba(83, 177, 253, 0.50);
 
   --oz-success-fg:       var(--oz-green-300);
   --oz-error-fg:         var(--oz-red-300);
@@ -270,14 +270,14 @@ body.vscode-high-contrast {
     --oz-border-strong:    var(--oz-gray-600);
     --oz-border-subtle:    var(--oz-gray-800);
 
-    --oz-accent:           var(--oz-purple-500);
-    --oz-accent-hover:     var(--oz-purple-400);
-    --oz-accent-pressed:   var(--oz-purple-300);
-    --oz-accent-tint:      rgba(127, 86, 217, 0.16);
-    --oz-accent-tint-border: rgba(127, 86, 217, 0.35);
-    --oz-accent-tint-strong: var(--oz-purple-700);
-    --oz-fg-accent:        var(--oz-purple-300);
-    --oz-focus-ring:       rgba(127, 86, 217, 0.32);
+    --oz-accent:           var(--oz-blue-600);
+    --oz-accent-hover:     var(--oz-blue-400);
+    --oz-accent-pressed:   var(--oz-blue-300);
+    --oz-accent-tint:      rgba(21, 112, 239, 0.16);
+    --oz-accent-tint-border: rgba(21, 112, 239, 0.35);
+    --oz-accent-tint-strong: var(--oz-blue-700);
+    --oz-fg-accent:        var(--oz-blue-300);
+    --oz-focus-ring:       rgba(21, 112, 239, 0.32);
 
     --oz-success-tint:     rgba(3, 152, 85, 0.18);
     --oz-success-border:   rgba(3, 152, 85, 0.40);
