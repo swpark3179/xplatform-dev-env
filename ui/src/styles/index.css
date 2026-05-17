@@ -416,7 +416,7 @@ input[type="text"]::placeholder {
 
 /* ---------- Buttons ---------- */
 button {
-  padding: 6px 14px;
+  padding: 4px 14px;
   background-color: var(--oz-accent);
   color: var(--oz-fg-on-accent);
   border: none;
@@ -440,6 +440,7 @@ button:disabled {
 }
 
 button.secondary {
+  padding: 6px 14px;
   background-color: var(--oz-bg-surface);
   color: var(--oz-fg-secondary);
   border: 1px solid var(--oz-border-strong);
@@ -452,6 +453,7 @@ button.secondary:hover {
 }
 
 button.danger-btn {
+  padding: 6px 14px;
   background-color: var(--oz-error-tint);
   color: var(--oz-error-fg);
   border: 1px solid var(--oz-error-border);
