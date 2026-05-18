@@ -5,6 +5,7 @@ import cpy from 'cpy';
 import { TomcatDeployMode, Settings, TomcatState, DeployFileList } from '../types';
 import { execFileSync } from 'child_process';
 import type { DeployService } from './DeployService';
+import type { ITomcatService } from './interfaces';
 
 // Tomcat 초기화 서비스
 export class TomcatInitService {
@@ -15,6 +16,7 @@ export class TomcatInitService {
     private _extensionPath: vscode.Uri;
     private _deployFileList: DeployFileList;
     private _deployService?: DeployService;
+    private _tomcatService?: ITomcatService;
 
     constructor(log: vscode.OutputChannel, settings: Settings, tomcatState: TomcatState, extensionPath: vscode.Uri, deployFileList: DeployFileList) {
         this._log = log;
@@ -28,6 +30,11 @@ export class TomcatInitService {
     /** DeployService 참조 설정 (순환 의존성 방지용 setter) */
     public setDeployService(deployService: DeployService): void {
         this._deployService = deployService;
+    }
+
+    /** TomcatService 참조 설정 (EBUSY 발생 시 Tomcat Kill 동작 트리거에 사용) */
+    public setTomcatService(tomcatService: ITomcatService): void {
+        this._tomcatService = tomcatService;
     }
 
     // Tomcat 초기화
@@ -79,14 +86,36 @@ export class TomcatInitService {
     // 폴더 비우기 (재시도 로직 포함)
     private async cleanFolderSafe(targetPath: string, maxRetries = 2) {
         const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms)); // 지정된 시간(ms)만큼 대기하는 유틸리티
+        let killAttempted = false;
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
                 this._log.appendLine(`폴더 비우기 시도... (${targetPath})`);
                 await fs.emptyDir(targetPath); // 폴더는 놔두고 내용물만 삭제
                 return;
             } catch (error: any) {
-                if (attempt > maxRetries) throw error; // 마지막 시도였다면 에러를 던짐.
                 if (error.code === 'EBUSY' || error.code === 'EPERM') {
+                    if (attempt >= maxRetries) {
+                        // 마지막 시도에서도 EBUSY → Tomcat Kill 동작을 한 번 더 수행하고 한 번 더 재시도
+                        if (!killAttempted && this._tomcatService) {
+                            killAttempted = true;
+                            this._log.appendLine(`[EBUSY 감지] 파일이 사용 중입니다. Tomcat Kill 동작 후 재시도합니다...`);
+                            try {
+                                this._tomcatService.killTomcatProcess();
+                                this._tomcatService.killProcessesOnTomcatPorts();
+                            } catch (killErr) {
+                                this._log.appendLine(`[Tomcat Kill] 실패: ${killErr instanceof Error ? killErr.message : String(killErr)}`);
+                            }
+                            await wait(2000); // 2초 대기 후 한 번 더 시도
+                            try {
+                                this._log.appendLine(`폴더 비우기 재시도... (${targetPath})`);
+                                await fs.emptyDir(targetPath);
+                                return;
+                            } catch (retryError) {
+                                throw retryError;
+                            }
+                        }
+                        throw error; // Tomcat Kill 후에도 실패했거나 서비스 미설정이면 에러를 던짐
+                    }
                     this._log.appendLine(`[EBUSY 감지] 파일이 사용 중입니다. 2초 뒤 재시도합니다... (${attempt}/${maxRetries})`);
                     await wait(2000); // 2초 대기
                 }

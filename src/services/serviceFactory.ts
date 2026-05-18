@@ -37,6 +37,7 @@ export function createServices(
   const uxStudioService = new UxStudioService(log, settings.projectRoot);
 
   tomcatInitService.setDeployService(deployService as any);
+  tomcatInitService.setTomcatService(tomcatService);
 
   return {
     settingsService,
