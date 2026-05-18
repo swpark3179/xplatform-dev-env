@@ -1,37 +1,46 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Pill } from '../common';
+import type { GitIgnoreItem } from '../../types';
 
-export interface GitIgnoreItem {
-    path: string;
-    sub: string;
-    recommended?: boolean;
-    applied: boolean;
+interface GitIgnoreActions {
+    refresh: () => void;
+    apply: (path: string) => void;
+    release: (path: string) => void;
+    addFile: () => void;
+    sync: () => void;
 }
 
-const DEFAULT_ITEMS: GitIgnoreItem[] = [
-    { path: 'src/webapp/ui/default_typedef.xml', sub: 'UX Studio 가 자동 수정', recommended: true, applied: false },
-    { path: '.vscode/settings.json', sub: '로컬 경로 설정', applied: true },
-    { path: 'src/main/resources/database.yml', sub: 'DB 접속 정보', applied: true },
-    { path: 'build.gradle', sub: '임시 의존성', applied: true },
-];
-
 interface Props {
+    items: GitIgnoreItem[];
+    lastAction: { action?: string; path?: string; message?: string } | null;
+    actions: GitIgnoreActions;
     onToast?: (msg: string) => void;
 }
 
-const GitIgnorePanel: React.FC<Props> = ({ onToast }) => {
-    const [items, setItems] = useState<GitIgnoreItem[]>(DEFAULT_ITEMS);
+const fileName = (p: string) => p.split('/').pop() ?? p;
 
-    const fileName = (p: string) => p.split('/').pop() ?? p;
+const GitIgnorePanel: React.FC<Props> = ({ items, lastAction, actions, onToast }) => {
+    // 패널 표시 시 한 번 데이터 로드
+    useEffect(() => {
+        actions.refresh();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
-    const apply = (path: string) => {
-        setItems(prev => prev.map(it => it.path === path ? { ...it, applied: true } : it));
-        onToast?.(`${fileName(path)} — 로컬 무시 적용`);
-    };
-    const release = (path: string) => {
-        setItems(prev => prev.map(it => it.path === path ? { ...it, applied: false } : it));
-        onToast?.(`${fileName(path)} — 로컬 무시 해제`);
-    };
+    // lastAction 변경 시 토스트
+    const lastSeen = useRef<typeof lastAction>(null);
+    useEffect(() => {
+        if (!lastAction || lastAction === lastSeen.current) return;
+        lastSeen.current = lastAction;
+        if (lastAction.action === 'apply' && lastAction.path) {
+            onToast?.(`${fileName(lastAction.path)} — 로컬 무시 적용`);
+        } else if (lastAction.action === 'release' && lastAction.path) {
+            onToast?.(`${fileName(lastAction.path)} — 로컬 무시 해제`);
+        } else if (lastAction.action === 'sync') {
+            onToast?.('현재 상태로 동기화 완료');
+        } else if (lastAction.action === 'error' && lastAction.message) {
+            onToast?.(`오류: ${lastAction.message}`);
+        }
+    }, [lastAction, onToast]);
 
     const appliedItems = items.filter(it => it.applied);
     const recommended = items.find(it => it.recommended && !it.applied);
@@ -53,7 +62,7 @@ const GitIgnorePanel: React.FC<Props> = ({ onToast }) => {
             <div className="os-hint">
                 <span className="os-hint__icon">ⓘ</span>
                 <span>
-                    Explorer 에서 파일을 우클릭 → <kbd>XPlatform: 로컬 Git 무시 추가</kbd> 로도 등록할 수 있어요.
+                    Explorer 에서 파일을 우클릭 → <kbd>XPlatform: 로컬 Git 무시 토글</kbd> 로도 적용/해제 할 수 있어요.
                 </span>
             </div>
 
@@ -68,12 +77,12 @@ const GitIgnorePanel: React.FC<Props> = ({ onToast }) => {
                             <span className="os-git-row__icon">⚠</span>
                             <div className="os-git-row__main">
                                 <span className="os-git-row__path">{recommended.path}</span>
-                                <span className="os-git-row__sub">{recommended.sub} — 권장</span>
+                                <span className="os-git-row__sub">{recommended.sub ?? ''} — 권장</span>
                             </div>
                             <button
                                 className="os-git-row__action os-git-row__action--apply"
                                 type="button"
-                                onClick={() => apply(recommended.path)}
+                                onClick={() => actions.apply(recommended.path)}
                             >
                                 적용
                             </button>
@@ -84,12 +93,12 @@ const GitIgnorePanel: React.FC<Props> = ({ onToast }) => {
                             <span className="os-git-row__icon">🚫</span>
                             <div className="os-git-row__main">
                                 <span className="os-git-row__path">{f.path}</span>
-                                <span className="os-git-row__sub">{f.sub} · skip-worktree</span>
+                                <span className="os-git-row__sub">{f.sub ? `${f.sub} · ` : ''}skip-worktree</span>
                             </div>
                             <button
                                 className="os-git-row__action os-git-row__action--release"
                                 type="button"
-                                onClick={() => release(f.path)}
+                                onClick={() => actions.release(f.path)}
                             >
                                 해제
                             </button>
@@ -99,9 +108,9 @@ const GitIgnorePanel: React.FC<Props> = ({ onToast }) => {
             )}
 
             <div className="os-step-nav">
-                <button className="os-btn os-btn--ghost os-btn--sm" type="button">↻ 원래 상태로 동기화</button>
+                <button className="os-btn os-btn--ghost os-btn--sm" type="button" onClick={actions.sync}>↻ 현재 상태로 동기화</button>
                 <span style={{ flex: 1 }} />
-                <button className="os-btn os-btn--secondary os-btn--sm" type="button">+ 파일 추가</button>
+                <button className="os-btn os-btn--secondary os-btn--sm" type="button" onClick={actions.addFile}>+ 파일 추가</button>
             </div>
         </div>
     );

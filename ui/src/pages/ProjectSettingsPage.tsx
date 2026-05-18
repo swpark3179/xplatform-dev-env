@@ -5,9 +5,9 @@ import {
     HomeSettingsPanel,
     GitIgnorePanel,
 } from '../components/project-settings';
-import { AppActions } from '@/hooks/useAppState';
+import { AppActions, AppState } from '@/hooks/useAppState';
 
-const ProjectSettingsPage: React.FC<{ actions: AppActions }> = ({ actions }) => {
+const ProjectSettingsPage: React.FC<{ actions: AppActions; state: AppState }> = ({ actions, state }) => {
     const { showToast, toastNode } = useToast();
     const [expandedWorkspace, setExpandedWorkspace] = useState(false);
     const [expandedHome, setExpandedHome] = useState(false);
@@ -52,7 +52,12 @@ const ProjectSettingsPage: React.FC<{ actions: AppActions }> = ({ actions }) => 
                 </div>
             )}
 
-            <GitIgnorePanel onToast={showToast} />
+            <GitIgnorePanel
+                items={state.gitIgnore.items}
+                lastAction={state.gitIgnore.lastAction}
+                actions={actions.gitIgnore}
+                onToast={showToast}
+            />
 
             <div className="os-panel os-panel--tight" style={{ background: 'var(--oz-bg-muted)' }}>
                 <div className="os-panel__head">

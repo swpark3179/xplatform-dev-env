@@ -43,6 +43,12 @@ export interface IWebviewActionEngine {
     uxStudioConfirmFiles(selectedFiles: string[]): Promise<{ success: boolean; failedFiles: string[] }>;
     uxStudioLaunchXprj(filePath: string): void;
     uxStudioResetSetup(): Promise<void>;
+    // Git local ignore
+    gitIgnoreList(): Promise<void>;
+    gitIgnoreApply(path: string): Promise<void>;
+    gitIgnoreRelease(path: string): Promise<void>;
+    gitIgnoreAddFile(): Promise<void>;
+    gitIgnoreSync(): Promise<void>;
 }
 
 /**
@@ -162,6 +168,23 @@ export async function handleWebviewMessage(
             break;
         case 'uxStudioResetSetup':
             await engine.uxStudioResetSetup();
+            break;
+        case 'gitIgnoreList':
+            await engine.gitIgnoreList();
+            break;
+        case 'gitIgnoreApply':
+            if (!data.path) return;
+            await engine.gitIgnoreApply(data.path);
+            break;
+        case 'gitIgnoreRelease':
+            if (!data.path) return;
+            await engine.gitIgnoreRelease(data.path);
+            break;
+        case 'gitIgnoreAddFile':
+            await engine.gitIgnoreAddFile();
+            break;
+        case 'gitIgnoreSync':
+            await engine.gitIgnoreSync();
             break;
     }
 }
