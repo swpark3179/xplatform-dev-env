@@ -1,66 +1,77 @@
 import React, { useState } from 'react';
-import { Panel, Button } from '../common';
+import { Pill } from '../common';
 import { TomcatInitModal } from './TomcatInitModal';
 import { AppActions, AppState } from '@/hooks/useAppState';
 import { DeployListModal } from './DeployListModal';
 import { DeployFavoriteModal } from './DeployFavoriteModal';
 
-export const TomcatSetupPanel: React.FC<{ state: AppState,  actions: AppActions }> = ({ state, actions }) => {
+export const TomcatSetupPanel: React.FC<{ state: AppState, actions: AppActions }> = ({ state, actions }) => {
     const [isInitModalOpen, setIsInitModalOpen] = useState(false);
     const [initModalRect, setInitModalRect] = useState<DOMRect | null>(null);
     const [isDeployListOpen, setIsDeployListOpen] = useState(false);
     const [isDeployFavoriteOpen, setIsDeployFavoriteOpen] = useState(false);
+
+    const initDisabled = state.tomcat.running || state.tomcat.initializing || state.build.isGradleRunning;
+    const deployCount = state.deploy.deployFileList.java.length + state.deploy.deployFileList.query.length;
+
     return (
         <>
-            <Panel title="Tomcat 환경 설정">
-                <div className="context-root-section">
-                    <label htmlFor="contextRootInput">context root</label>
-                    <input
-                        type="text"
-                        id="contextRootInput"
-                        value={state.tomcat.contextRoot}
-                        readOnly
-                        disabled
-                    />
-                    <Button variant="icon" disabled={state.tomcat.running || state.tomcat.initializing || state.build.isGradleRunning} onClick={(e) => {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        setInitModalRect(rect);
-                        setIsInitModalOpen(true);
-                    }} title="초기화" aria-label="초기화">
-                        <span className="icon">⚙</span>
-                    </Button>
+            <div className="os-panel">
+                <div className="os-panel__head">
+                    <div className="os-panel__title">Tomcat 환경 설정</div>
                 </div>
 
-                <br/><hr/>
+                <div className="os-kv-row">
+                    <span className="os-kv-row__label">Context</span>
+                    <span className="os-kv-row__value">{state.tomcat.contextRoot || '—'}</span>
+                    <button
+                        className="os-kv-row__icon"
+                        type="button"
+                        disabled={initDisabled}
+                        onClick={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setInitModalRect(rect);
+                            setIsInitModalOpen(true);
+                        }}
+                        title="초기화"
+                        aria-label="초기화"
+                    >
+                        ⚙
+                    </button>
+                </div>
 
-                <div style={{ marginTop: '10px', display: 'flex' }}>
-                    <label>현재 모드 : {(state.tomcat.deployMode === 'selected')? '선택 모드' : '기본 모드'}</label>
+                <div className="os-kv-row">
+                    <span className="os-kv-row__label">배포 모드</span>
+                    <Pill tone={state.tomcat.deployMode === 'selected' ? 'accent' : 'neutral'}>
+                        {state.tomcat.deployMode === 'selected' ? '선택' : '기본'}
+                    </Pill>
+                    {state.tomcat.deployMode === 'selected' && (
+                        <span style={{ fontSize: 10.5, color: 'var(--oz-fg-muted)' }}>· {deployCount}건</span>
+                    )}
                 </div>
 
                 {state.tomcat.deployMode === 'selected' && (
-                    <>
-                        <label>Tomcat 기동 시 아래 배포목록만 포함됩니다.</label>
-                        <Button
-                            variant="secondary"
-                            className="header-btn"
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 2 }}>
+                        <button
+                            className="os-btn os-btn--secondary os-btn--sm"
+                            type="button"
                             onClick={() => setIsDeployListOpen(true)}
                             style={{ width: '100%' }}
                         >
-                            배포목록관리 ({state.deploy.deployFileList.java.length + state.deploy.deployFileList.query.length}건)
-                        </Button>
-                        <Button
-                            variant="secondary"
-                            className="header-btn"
+                            배포목록 관리 ({deployCount})
+                        </button>
+                        <button
+                            className="os-btn os-btn--secondary os-btn--sm"
+                            type="button"
                             onClick={() => setIsDeployFavoriteOpen(true)}
-                            style={{ width: '100%', marginTop: '4px' }}
+                            style={{ width: '100%' }}
                         >
-                            ★ 배포목록 즐겨찾기{state.deploy.activeFavoriteName ? ` [${state.deploy.activeFavoriteName}]` : ''}
-                        </Button>
-                    </>
+                            ★ 즐겨찾기{state.deploy.activeFavoriteName ? ` [${state.deploy.activeFavoriteName}]` : ''}
+                        </button>
+                    </div>
                 )}
-            </Panel>
+            </div>
 
-            {/* Tomcat 초기화 팝업 */}
             <TomcatInitModal
                 isOpen={isInitModalOpen}
                 initRect={initModalRect}
@@ -69,7 +80,6 @@ export const TomcatSetupPanel: React.FC<{ state: AppState,  actions: AppActions 
                 onClose={() => setIsInitModalOpen(false)}
             />
 
-            {/* 배포목록관리 팝업 */}
             <DeployListModal
                 isOpen={isDeployListOpen}
                 onClose={() => setIsDeployListOpen(false)}
@@ -77,7 +87,6 @@ export const TomcatSetupPanel: React.FC<{ state: AppState,  actions: AppActions 
                 actions={actions}
             />
 
-            {/* 배포목록 즐겨찾기 팝업 */}
             <DeployFavoriteModal
                 isOpen={isDeployFavoriteOpen}
                 onClose={() => setIsDeployFavoriteOpen(false)}

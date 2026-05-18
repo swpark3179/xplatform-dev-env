@@ -32,4 +32,9 @@ export type WebviewMessage =
   | { type: 'updateDeployFiles'; deployFileList: { java: string[]; query: string[]; batch: string[] }; targetFile: string; fileType: string; changeType: string }
   | { type: 'uxStudioInit' }
   | { type: 'uxStudioSearchXfdl' }
-  | { type: 'uxStudioResetSetup' };
+  | { type: 'uxStudioResetSetup' }
+  | { type: 'gitIgnoreList' }
+  | { type: 'gitIgnoreApply'; path: string }
+  | { type: 'gitIgnoreRelease'; path: string }
+  | { type: 'gitIgnoreAddFile' }
+  | { type: 'gitIgnoreSync' };
