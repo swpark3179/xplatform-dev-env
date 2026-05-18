@@ -1,5 +1,4 @@
 import React from 'react';
-import { Panel, Button, ButtonGroup } from '../common';
 import { AppState } from '@/hooks/useAppState';
 
 export const BuildPanel: React.FC<{
@@ -9,39 +8,30 @@ export const BuildPanel: React.FC<{
     state: AppState;
 }> = ({ onBuildClasses, onCleanProject, onStopGradle, state }) => {
     const { isGradleRunning } = state.build;
+    const disabled = isGradleRunning || state.tomcat.initializing;
 
     return (
-        <Panel title="빌드" className="build-panel">
-            <div className="build-panel-content">
-                <ButtonGroup>
-                    <Button
-                        onClick={onBuildClasses}
-                        disabled={isGradleRunning || state.tomcat.initializing}
-                        style={{ width: 'calc(50% - 5px)' }}
-                    >
-                        빌드(classes)
-                    </Button>
-                    <Button
-                        variant="secondary"
-                        onClick={onCleanProject}
-                        disabled={isGradleRunning || state.tomcat.initializing}
-                        style={{ width: 'calc(50% - 5px)' }}
-                    >
-                        초기화(clean)
-                    </Button>
-                </ButtonGroup>
-                {isGradleRunning && (
-                    <div className="build-stop-wrapper">
-                        <Button
-                            className="build-stop-btn"
-                            onClick={onStopGradle}
-                            title="빌드 중지"
-                        >
-                            중지
-                        </Button>
-                    </div>
-                )}
+        <div className="os-panel">
+            <div className="os-panel__head">
+                <div className="os-panel__title">빌드</div>
             </div>
-        </Panel>
+
+            {isGradleRunning && (
+                <div className="os-build-status">
+                    <span className="os-build-status__dot" />
+                    <span className="os-build-status__text">실행 중 · <code>gradle</code></span>
+                    <button className="os-build-status__cancel" type="button" onClick={onStopGradle}>중지</button>
+                </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 6 }}>
+                <button className="os-btn" type="button" onClick={onBuildClasses} disabled={disabled} style={{ flex: 1 }}>
+                    빌드 (classes)
+                </button>
+                <button className="os-btn os-btn--secondary" type="button" onClick={onCleanProject} disabled={disabled} style={{ flex: 1 }}>
+                    초기화 (clean)
+                </button>
+            </div>
+        </div>
     );
 };
