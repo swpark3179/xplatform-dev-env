@@ -1619,7 +1619,7 @@ button.danger-btn:hover {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 7px 12px;
+  padding: 5px 12px;
   background: var(--oz-accent);
   color: var(--oz-fg-on-accent);
   border: 1px solid transparent;
@@ -1647,7 +1647,7 @@ button.danger-btn:hover {
   border-color: transparent;
 }
 .os-btn--ghost:hover { background: var(--oz-bg-muted); }
-.os-btn--sm { padding: 4px 10px; font-size: 11px; }
+.os-btn--sm { padding: 3px 10px; font-size: 11px; }
 
 /* ----- Switch ----- */
 .os-switch {
@@ -2083,21 +2083,26 @@ button.danger-btn:hover {
   white-space: nowrap;
 }
 .os-kv-row__icon {
-  width: 22px;
   height: 22px;
+  padding: 0 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--oz-fg-muted);
-  border-radius: 4px;
+  gap: 4px;
+  color: var(--oz-fg-on-accent);
+  border-radius: var(--oz-r-md);
   cursor: pointer;
-  border: none;
-  background: transparent;
-  font-size: 12px;
+  border: 1px solid var(--oz-accent);
+  background: var(--oz-accent);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--oz-font);
+  white-space: nowrap;
 }
 .os-kv-row__icon:hover {
-  background: var(--oz-bg-muted);
-  color: var(--oz-fg-secondary);
+  background: var(--oz-accent-hover);
+  border-color: var(--oz-accent-hover);
+  color: var(--oz-fg-on-accent);
 }
 .os-kv-row__icon:disabled { opacity: 0.4; cursor: not-allowed; }
 
@@ -2109,7 +2114,7 @@ button.danger-btn:hover {
 }
 .os-tom-row__btn {
   flex: 1;
-  padding: 8px 12px;
+  padding: 6px 12px;
   background: var(--oz-accent);
   color: var(--oz-fg-on-accent);
   border: none;
