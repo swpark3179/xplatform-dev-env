@@ -36,7 +36,7 @@ export const TomcatSetupPanel: React.FC<{ state: AppState, actions: AppActions }
                         title="초기화"
                         aria-label="초기화"
                     >
-                        ⚙
+                        ⚙ 초기화
                     </button>
                 </div>
 
