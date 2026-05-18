@@ -26,7 +26,7 @@ function App() {
             case 'main':
                 return <MainPage state={state} actions={actions} />;
             case 'project-settings':
-                return <ProjectSettingsPage actions={actions} />;
+                return <ProjectSettingsPage actions={actions} state={state} />;
             case 'ux-studio':
                 return <UxStudioPage state={state} actions={actions} />;
             case 'settings':

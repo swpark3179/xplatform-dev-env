@@ -166,6 +166,24 @@ export function useAppActions(deps: UseAppActionsDeps) {
         }, []),
     };
 
+    const gitIgnore = {
+        refresh: useCallback(() => {
+            sendMessage({ type: 'gitIgnoreList' });
+        }, []),
+        apply: useCallback((p: string) => {
+            sendMessage({ type: 'gitIgnoreApply', path: p });
+        }, []),
+        release: useCallback((p: string) => {
+            sendMessage({ type: 'gitIgnoreRelease', path: p });
+        }, []),
+        addFile: useCallback(() => {
+            sendMessage({ type: 'gitIgnoreAddFile' });
+        }, []),
+        sync: useCallback(() => {
+            sendMessage({ type: 'gitIgnoreSync' });
+        }, []),
+    };
+
     const uxStudio = {
         init: useCallback(() => {
             postMessage({ type: 'uxStudioInit' });
@@ -199,5 +217,6 @@ export function useAppActions(deps: UseAppActionsDeps) {
         deploy,
         project,
         uxStudio,
-    }), [navigation, settings, build, tomcat, deploy, project, uxStudio]);
+        gitIgnore,
+    }), [navigation, settings, build, tomcat, deploy, project, uxStudio, gitIgnore]);
 }

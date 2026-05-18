@@ -159,4 +159,13 @@ export type MessageFromExtension =
     | { type: 'uxStudioResult'; uxIsDevMode?: boolean; uxStudioStatus?: 'new' | 'configured' | null; uxServices?: UxServiceEntry[]; uxEnvConfig?: UxStudioEnvConfig; uxXfdlFiles?: string[]; uxXprjFiles?: string[] }
     | { type: 'uxStudioXfdlResult'; uxXfdlFiles: string[] }
     | { type: 'uxStudioXprjResult'; uxXprjFiles: string[] }
-    | { type: 'uxStudioConfirmError'; failedFiles: string[] };
+    | { type: 'uxStudioConfirmError'; failedFiles: string[] }
+    | { type: 'gitIgnoreListResult'; items: GitIgnoreItem[]; lastAction?: 'apply' | 'release' | 'sync' | 'error'; lastPath?: string; message?: string };
+
+// ==================== Git Local Ignore ====================
+export interface GitIgnoreItem {
+    path: string;
+    sub?: string;
+    recommended?: boolean;
+    applied: boolean;
+}

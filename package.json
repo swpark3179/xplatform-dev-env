@@ -31,6 +31,11 @@
         "command": "dev-helper.analyzeReference",
         "title": "SHI: 참조관계 분석",
         "category": "XPlatform"
+      },
+      {
+        "command": "dev-helper.toggleLocalGitIgnore",
+        "title": "XPlatform: 로컬 Git 무시 토글 (skip-worktree)",
+        "category": "XPlatform"
       }
     ],
     "viewsContainers": {
@@ -58,6 +63,11 @@
           "command": "dev-helper.includeInSHIDeployTarget",
           "when": "resourcePath =~ /.*[\\\\\\/]src[\\\\\\/](java|query)[\\\\\\/].*/",
           "group": "z_commands@1"
+        },
+        {
+          "command": "dev-helper.toggleLocalGitIgnore",
+          "when": "!explorerResourceIsFolder",
+          "group": "z_commands@2"
         }
       ],
       "editor/title/context": [
@@ -65,6 +75,10 @@
           "command": "dev-helper.includeInSHIDeployTarget",
           "when": "resourcePath =~ /.*[\\\\\\/]src[\\\\\\/](java|query)[\\\\\\/].*/",
           "group": "z_commands@1"
+        },
+        {
+          "command": "dev-helper.toggleLocalGitIgnore",
+          "group": "z_commands@2"
         }
       ],
       "editor/context": [

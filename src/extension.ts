@@ -76,10 +76,27 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
 
+    // 로컬 Git 무시 토글 (Explorer 우클릭) — git update-index --skip-worktree on/off
+    const toggleLocalGitIgnoreCommand = vscode.commands.registerCommand(
+        'dev-helper.toggleLocalGitIgnore',
+        async (uri?: vscode.Uri) => {
+            let targetUri = uri;
+            if (!targetUri && vscode.window.activeTextEditor) {
+                targetUri = vscode.window.activeTextEditor.document.uri;
+            }
+            if (!targetUri) {
+                vscode.window.showWarningMessage('로컬 Git 무시: 대상 파일을 찾을 수 없습니다.');
+                return;
+            }
+            await panelProvider.toggleLocalGitIgnore(targetUri.fsPath);
+        }
+    );
+
     context.subscriptions.push(
         showSettingsCommand,
         includeInDeployTargetCommand,
-        analyzeReferenceCommand
+        analyzeReferenceCommand,
+        toggleLocalGitIgnoreCommand
     );
 }
 

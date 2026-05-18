@@ -118,6 +118,18 @@ export interface MessageFromExtension {
     uxEnvConfig?: UxStudioEnvConfig | null;
     uxXfdlFiles?: string[];
     uxXprjFiles?: string[];
+    // Git Local Ignore
+    items?: GitIgnoreItem[];
+    lastAction?: 'apply' | 'release' | 'sync' | 'error';
+    lastPath?: string;
+    message?: string;
+}
+
+export interface GitIgnoreItem {
+    path: string;
+    sub?: string;
+    recommended?: boolean;
+    applied: boolean;
 }
 
 export interface ProjectSettingsOptions {

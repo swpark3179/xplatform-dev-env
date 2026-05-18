@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { onMessage } from '../vscode';
-import type { DeployFavorite, DeployFileIndexState, Settings, ValidationState, TomcatCoreState, TomcatState, MessageFromExtension, TomcatRunningState, UxServiceEntry, UxStudioEnvConfig } from '../types';
+import type { DeployFavorite, DeployFileIndexState, Settings, ValidationState, TomcatCoreState, TomcatState, MessageFromExtension, TomcatRunningState, UxServiceEntry, UxStudioEnvConfig, GitIgnoreItem } from '../types';
 import { useAppActions } from './useAppActions';
 
 const initialSettings: Settings = {
@@ -85,6 +85,10 @@ export function useAppState() {
     const [uxXfdlFiles, setUxXfdlFiles] = useState<string[]>([]);
     const [uxXprjFiles, setUxXprjFiles] = useState<string[]>([]);
     const [uxConfirmErrorFiles, setUxConfirmErrorFiles] = useState<string[]>([]);
+
+    // Git Local Ignore
+    const [gitIgnoreItems, setGitIgnoreItems] = useState<GitIgnoreItem[]>([]);
+    const [gitIgnoreLastAction, setGitIgnoreLastAction] = useState<{ action?: string; path?: string; message?: string } | null>(null);
 
     // Tomcat 상태 업데이트는 별도로 만들어둠.
     const tomcatStateUpdate = (tomcatStateMsg: TomcatState) => {
@@ -181,6 +185,10 @@ export function useAppState() {
                 case 'uxStudioConfirmError':
                     if (msg.type === 'uxStudioConfirmError') setUxConfirmErrorFiles((msg as unknown as { failedFiles: string[] }).failedFiles);
                     break;
+                case 'gitIgnoreListResult':
+                    if (msg.items !== undefined) setGitIgnoreItems(msg.items);
+                    setGitIgnoreLastAction({ action: msg.lastAction, path: msg.lastPath, message: msg.message });
+                    break;
             }
         });
         return unsubscribe;
@@ -230,6 +238,10 @@ export function useAppState() {
             xprjFiles: uxXprjFiles,
             confirmErrorFiles: uxConfirmErrorFiles,
         },
+        gitIgnore: {
+            items: gitIgnoreItems,
+            lastAction: gitIgnoreLastAction,
+        },
     }), [
         currentPage,
         settings,
@@ -255,6 +267,8 @@ export function useAppState() {
         uxXfdlFiles,
         uxXprjFiles,
         uxConfirmErrorFiles,
+        gitIgnoreItems,
+        gitIgnoreLastAction,
     ]);
 
     return { state, actions };
