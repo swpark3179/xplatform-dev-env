@@ -174,15 +174,15 @@ body[data-vscode-theme-kind="vscode-dark"] {
   --oz-border-strong:    var(--oz-gray-600);
   --oz-border-subtle:    var(--oz-gray-800);
 
-  /* Primary accent — VS Code 다크 톤의 파란색 계열 */
-  --oz-accent:           var(--oz-blue-600);
-  --oz-accent-hover:     var(--oz-blue-400);
-  --oz-accent-pressed:   var(--oz-blue-300);
-  --oz-accent-tint:      rgba(21, 112, 239, 0.16);
-  --oz-accent-tint-border: rgba(21, 112, 239, 0.35);
-  --oz-accent-tint-strong: var(--oz-blue-700);
-  --oz-fg-accent:        var(--oz-blue-300);
-  --oz-focus-ring:       rgba(21, 112, 239, 0.32);
+  /* Primary accent — VS Code 다크 톤의 파란색 계열 (slate-blue, 톤다운) */
+  --oz-accent:           #3D6BD3;
+  --oz-accent-hover:     #5A85E0;
+  --oz-accent-pressed:   #2C55B8;
+  --oz-accent-tint:      rgba(61, 107, 211, 0.18);
+  --oz-accent-tint-border: rgba(61, 107, 211, 0.35);
+  --oz-accent-tint-strong: rgba(61, 107, 211, 0.50);
+  --oz-fg-accent:        #9CB3E8;
+  --oz-focus-ring:       rgba(61, 107, 211, 0.30);
 
   /* Status — Success */
   --oz-success-tint:     rgba(3, 152, 85, 0.18);
@@ -270,14 +270,14 @@ body.vscode-high-contrast {
     --oz-border-strong:    var(--oz-gray-600);
     --oz-border-subtle:    var(--oz-gray-800);
 
-    --oz-accent:           var(--oz-blue-600);
-    --oz-accent-hover:     var(--oz-blue-400);
-    --oz-accent-pressed:   var(--oz-blue-300);
-    --oz-accent-tint:      rgba(21, 112, 239, 0.16);
-    --oz-accent-tint-border: rgba(21, 112, 239, 0.35);
-    --oz-accent-tint-strong: var(--oz-blue-700);
-    --oz-fg-accent:        var(--oz-blue-300);
-    --oz-focus-ring:       rgba(21, 112, 239, 0.32);
+    --oz-accent:           #3D6BD3;
+    --oz-accent-hover:     #5A85E0;
+    --oz-accent-pressed:   #2C55B8;
+    --oz-accent-tint:      rgba(61, 107, 211, 0.18);
+    --oz-accent-tint-border: rgba(61, 107, 211, 0.35);
+    --oz-accent-tint-strong: rgba(61, 107, 211, 0.50);
+    --oz-fg-accent:        #9CB3E8;
+    --oz-focus-ring:       rgba(61, 107, 211, 0.30);
 
     --oz-success-tint:     rgba(3, 152, 85, 0.18);
     --oz-success-border:   rgba(3, 152, 85, 0.40);
@@ -1620,6 +1620,7 @@ button.danger-btn:hover {
   justify-content: center;
   gap: 6px;
   padding: 5px 12px;
+  min-height: 26px;
   background: var(--oz-accent);
   color: var(--oz-fg-on-accent);
   border: 1px solid transparent;
@@ -1647,7 +1648,7 @@ button.danger-btn:hover {
   border-color: transparent;
 }
 .os-btn--ghost:hover { background: var(--oz-bg-muted); }
-.os-btn--sm { padding: 3px 10px; font-size: 11px; }
+.os-btn--sm { padding: 3px 10px; min-height: 22px; font-size: 11px; }
 
 /* ----- Switch ----- */
 .os-switch {
@@ -1999,7 +2000,8 @@ button.danger-btn:hover {
   gap: 6px;
 }
 .os-launch-btn {
-  padding: 8px 10px;
+  padding: 5px 10px;
+  min-height: 28px;
   background: var(--oz-accent);
   color: var(--oz-fg-on-accent);
   border: none;
@@ -2114,13 +2116,14 @@ button.danger-btn:hover {
 }
 .os-tom-row__btn {
   flex: 1;
-  padding: 6px 12px;
+  padding: 4px 12px;
+  min-height: 26px;
   background: var(--oz-accent);
   color: var(--oz-fg-on-accent);
   border: none;
   border-radius: var(--oz-r-md);
   cursor: pointer;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   font-family: var(--oz-font);
   display: inline-flex;
@@ -2183,13 +2186,14 @@ button.danger-btn:hover {
 }
 .os-ux-footer__btn {
   width: 100%;
-  padding: 8px 12px;
+  padding: 5px 12px;
+  min-height: 28px;
   background: var(--oz-accent);
   color: var(--oz-fg-on-accent);
   border: none;
   border-radius: var(--oz-r-md);
   cursor: pointer;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   font-family: var(--oz-font);
   display: inline-flex;
