@@ -37,8 +37,11 @@ const UxStudioPage: React.FC<{ state: AppState; actions: AppActions }> = ({ stat
             setUrlAutoCorrect(envConfig.urlAutoCorrect);
             if (envConfig.selectedFiles) setSelectedFiles(envConfig.selectedFiles);
             setApplied(true);
-            setFilesConfirmed(envConfig.mode === 'default' || (envConfig.selectedFiles?.length ?? 0) > 0);
-            setStep(3);
+            const filesOk = envConfig.mode === 'default' || (envConfig.selectedFiles?.length ?? 0) > 0;
+            setFilesConfirmed(filesOk);
+            // 선택 모드에서 작업파일이 아직 확정되지 않았다면 2단계로 이동.
+            // 그 외(기본 모드, 또는 파일 확정 완료)에는 3단계 실행 화면으로.
+            setStep(filesOk ? 3 : 2);
         } else if (status === 'new') {
             setStep(1);
         }
@@ -211,7 +214,7 @@ const Step1Mode: React.FC<{
             <strong style={{ color: 'var(--oz-fg-secondary)' }}>기본</strong>은 src/webapp/ui 전체를 그대로 띄우고, <strong style={{ color: 'var(--oz-fg-secondary)' }}>선택</strong>은 작업할 파일만 골라 ui-env로 복사해서 띄웁니다.
         </div>
 
-        <div className="os-mode-grid" style={{ gridTemplateColumns: '1fr', gap: 8 }}>
+        <div className="os-mode-grid" style={{ gridTemplateColumns: 'minmax(0, 1fr)', gap: 8 }}>
             <button
                 type="button"
                 className={`os-mode-card${mode === 'default' ? ' os-mode-card--active' : ''}`}
