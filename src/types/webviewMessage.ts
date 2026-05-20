@@ -17,6 +17,7 @@ export type WebviewMessage =
   // legacy messages (gradual typing)
   | { type: 'initProject' }
   | { type: 'initGlobalSettings' }
+  | { type: 'openFolder' }
   | { type: 'selectFolder'; target: string; currentPath?: string }
   | { type: 'validateAll' }
   | { type: 'buildClasses' }

@@ -62,6 +62,9 @@ export function useAppActions(deps: UseAppActionsDeps) {
         initGlobalSettings: useCallback(() => {
             postMessage({ type: 'initGlobalSettings' });
         }, []),
+        openFolder: useCallback(() => {
+            postMessage({ type: 'openFolder' });
+        }, []),
         selectFolder: useCallback((target: string, currentPath?: string) => {
             postMessage({ type: 'selectFolder', target, currentPath });
         }, []),
