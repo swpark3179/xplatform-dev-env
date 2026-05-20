@@ -663,6 +663,54 @@ button.danger-btn:hover {
 .project-status .status-icon.valid { color: var(--oz-success-fg); }
 .project-status .status-icon.invalid { color: var(--oz-error-fg); }
 
+/* ---------- Blocked Notice (XPlatform 프로젝트 아님) ---------- */
+.blocked-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px 16px;
+  gap: 10px;
+  border: 1px solid var(--oz-error-border);
+  position: relative;
+}
+.blocked-notice::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--oz-error-solid), transparent);
+  opacity: 0.55;
+  border-radius: var(--oz-r-lg) var(--oz-r-lg) 0 0;
+}
+.blocked-notice__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--oz-error-tint);
+  border: 1px solid var(--oz-error-border);
+  color: var(--oz-error-fg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+}
+.blocked-notice__title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--oz-fg-default);
+  margin-top: 2px;
+}
+.blocked-notice__desc {
+  font-size: 11.5px;
+  color: var(--oz-fg-secondary);
+  line-height: 1.55;
+  max-width: 300px;
+}
+.blocked-notice__action {
+  margin-top: 2px;
+}
+
 /* ---------- Messages ---------- */
 .message {
   padding: 8px 12px;

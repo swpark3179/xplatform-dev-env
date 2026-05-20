@@ -7,6 +7,7 @@ import type { WebviewMessage } from '../types/webviewMessage';
  */
 export interface IWebviewActionEngine {
     initGlobalSettings(): unknown;
+    openFolder(): void;
     sendState(): void;
     sendTomcatState(): void;
     handleInitProject(): Promise<void>;
@@ -72,6 +73,9 @@ export async function handleWebviewMessage(
             break;
         case 'initGlobalSettings':
             engine.initGlobalSettings();
+            break;
+        case 'openFolder':
+            engine.openFolder();
             break;
         case 'buildClasses':
             engine.buildClasses();

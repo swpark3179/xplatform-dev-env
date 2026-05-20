@@ -182,6 +182,9 @@ export class UnifiedPanelProvider extends WebviewProvider {
                 ),
             initGlobalSettings: () => // 설정 창에서 전역 설정 초기화 핸들러
                 this._settingsService.initGlobalSettings(),
+            openFolder: () => { // 차단 화면에서 다른 폴더 열기 — VS Code 폴더 선택 다이얼로그
+                vscode.commands.executeCommand('workbench.action.files.openFolder');
+            },
             buildClasses: () => // 메인 창에서 빌드(classes) 핸들러
                 this._gradleService.buildClasses(),
             cleanProject: () => // 메인 창에서 초기화(clean) 핸들러
