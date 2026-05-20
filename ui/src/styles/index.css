@@ -1798,6 +1798,10 @@ button.danger-btn:hover {
   text-align: left;
   font-family: var(--oz-font);
   transition: background 0.15s, border-color 0.15s;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
 }
 .os-mode-card:hover { border-color: var(--oz-border-strong); }
 .os-mode-card__title {
