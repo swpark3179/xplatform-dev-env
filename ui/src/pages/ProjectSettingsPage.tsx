@@ -59,28 +59,6 @@ const ProjectSettingsPage: React.FC<{ actions: AppActions; state: AppState }> = 
                 onToast={showToast}
             />
 
-            <div className="os-panel os-panel--tight" style={{ background: 'var(--oz-bg-muted)' }}>
-                <div className="os-panel__head">
-                    <div
-                        className="os-panel__title"
-                        style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--oz-fg-muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}
-                    >
-                        EXPLORER 우클릭 메뉴 미리보기
-                    </div>
-                </div>
-                <div className="os-ctx-menu">
-                    <div className="os-ctx-menu__row os-ctx-menu__row--muted">Open</div>
-                    <div className="os-ctx-menu__row os-ctx-menu__row--muted">Open to the Side</div>
-                    <div className="os-ctx-menu__divider" />
-                    <div className="os-ctx-menu__row os-ctx-menu__row--muted">Copy Path</div>
-                    <div className="os-ctx-menu__divider" />
-                    <div className="os-ctx-menu__row">⎇ SHI 배포대상 추가/제거</div>
-                    <div className="os-ctx-menu__row os-ctx-menu__row--hi">⎇ XPlatform: 로컬 Git 무시 추가</div>
-                    <div className="os-ctx-menu__divider" />
-                    <div className="os-ctx-menu__row os-ctx-menu__row--muted">Delete</div>
-                </div>
-            </div>
-
             {toastNode}
         </>
     );

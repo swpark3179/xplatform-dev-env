@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Pill } from '../common';
 import { TomcatInitModal } from './TomcatInitModal';
 import { AppActions, AppState } from '@/hooks/useAppState';
 import { DeployListModal } from './DeployListModal';
@@ -42,9 +41,25 @@ export const TomcatSetupPanel: React.FC<{ state: AppState, actions: AppActions }
 
                 <div className="os-kv-row">
                     <span className="os-kv-row__label">배포 모드</span>
-                    <Pill tone={state.tomcat.deployMode === 'selected' ? 'accent' : 'neutral'}>
-                        {state.tomcat.deployMode === 'selected' ? '선택' : '기본'}
-                    </Pill>
+                    <label
+                        className="os-switch-row"
+                        onClick={() => {
+                            if (initDisabled) return;
+                            const next = state.tomcat.deployMode === 'selected' ? 'default' : 'selected';
+                            actions.tomcat.initTomcat(
+                                state.tomcat.contextRoot,
+                                state.tomcat.profile,
+                                state.tomcat.isBatch,
+                                next,
+                            );
+                        }}
+                        style={{ opacity: initDisabled ? 0.5 : 1, cursor: initDisabled ? 'not-allowed' : 'pointer', padding: 0, gap: 6 }}
+                    >
+                        <span className={`os-switch ${state.tomcat.deployMode === 'selected' ? 'os-switch--on' : ''}`} />
+                        <span style={{ fontSize: 11 }}>
+                            {state.tomcat.deployMode === 'selected' ? '선택' : '기본'}
+                        </span>
+                    </label>
                     {state.tomcat.deployMode === 'selected' && (
                         <span style={{ fontSize: 10.5, color: 'var(--oz-fg-muted)' }}>· {deployCount}건</span>
                     )}

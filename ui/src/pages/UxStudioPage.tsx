@@ -185,7 +185,6 @@ const UxStudioPage: React.FC<{ state: AppState; actions: AppActions }> = ({ stat
                     xprjFiles={xprjFiles}
                     onLaunch={(p) => actions.uxStudio.launchXprj(p)}
                     onPrev={goPrev}
-                    onJumpToMode={() => setStep(1)}
                 />
             )}
 
@@ -369,8 +368,7 @@ const Step3Launch: React.FC<{
     xprjFiles: string[];
     onLaunch: (p: string) => void;
     onPrev: () => void;
-    onJumpToMode: () => void;
-}> = ({ mode, urlAutoCorrect, selectedFilesCount, xprjFiles, onLaunch, onPrev, onJumpToMode }) => (
+}> = ({ mode, urlAutoCorrect, selectedFilesCount, xprjFiles, onLaunch, onPrev }) => (
     <div className="os-panel">
         <div className="os-panel__head">
             <div className="os-panel__title">{mode === 'selected' ? '3.' : '2.'} UX Studio 실행</div>
@@ -417,7 +415,6 @@ const Step3Launch: React.FC<{
         <div className="os-step-nav">
             <button className="os-btn os-btn--secondary os-btn--sm" type="button" onClick={onPrev}>← 이전</button>
             <span style={{ flex: 1 }} />
-            <button className="os-btn os-btn--ghost os-btn--sm" type="button" onClick={onJumpToMode}>⚙ 설정 변경</button>
         </div>
     </div>
 );
