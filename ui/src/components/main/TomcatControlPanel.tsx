@@ -74,7 +74,6 @@ export const TomcatControlPanel: React.FC<{ state: AppState, actions: AppActions
                 <span className={`os-switch ${hotReloadEnabled ? 'os-switch--on' : ''}`} />
                 <div className="os-switch-row__text">
                     <span style={{ fontWeight: 500 }}>Hot Reloading</span>
-                    <span className="os-switch-row__hint">DCEVM altjvm 활성</span>
                 </div>
             </label>
 
