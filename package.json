@@ -3,7 +3,7 @@
   "name": "dev-helper",
   "displayName": "XPlatform 통합 개발팩",
   "description": "XPlatform 개발을 위한 VS Code 확장 통합팩",
-  "version": "2.1.6",
+  "version": "2.1.7",
   "engines": {
     "vscode": "^1.85.0"
   },
