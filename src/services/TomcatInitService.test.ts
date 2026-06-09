@@ -36,7 +36,15 @@ jest.mock('fs-extra', () => ({
     existsSync: jest.fn(),
     removeSync: jest.fn(),
     symlinkSync: jest.fn(),
-    readdirSync: jest.fn()
+    readdirSync: jest.fn(),
+    // safeEmptyDir(fsCleanup)에서 사용하는 비동기 함수들
+    pathExists: jest.fn().mockResolvedValue(true),
+    ensureDir: jest.fn().mockResolvedValue(undefined),
+    readdir: jest.fn().mockResolvedValue([]),
+    lstat: jest.fn().mockResolvedValue({ isSymbolicLink: () => false }),
+    remove: jest.fn().mockResolvedValue(undefined),
+    unlink: jest.fn().mockResolvedValue(undefined),
+    rmdir: jest.fn().mockResolvedValue(undefined)
 }));
 
 jest.mock('cpy', () => jest.fn().mockResolvedValue([]));
@@ -144,29 +152,31 @@ describe('TomcatInitService', () => {
 
         it('should successfully initialize tomcat and clean existing .tomcat folder', async () => {
             (fs.pathExistsSync as jest.Mock).mockReturnValue(true);
-            (fs.emptyDir as jest.Mock).mockResolvedValue(undefined);
+            // 기존 .tomcat 폴더에 항목 2개가 있는 상태 → safeEmptyDir가 각 항목을 제거
+            (fs.pathExists as jest.Mock).mockResolvedValue(true);
+            (fs.readdir as unknown as jest.Mock).mockResolvedValueOnce(['conf', 'webapps']);
 
             const result = await service.initTomcat('myRoot', 'local', false, 'default');
 
             expect(result).toBe(true);
-            expect(fs.emptyDir).toHaveBeenCalledWith('/test/projectRoot/.tomcat');
+            // cleanFolderSafe는 공용 safeEmptyDir를 통해 .tomcat 내용물을 비운다
+            expect(fs.readdir).toHaveBeenCalledWith('/test/projectRoot/.tomcat');
+            expect(fs.remove).toHaveBeenCalledTimes(2);
         });
 
-        it('should handle errors during cleanFolderSafe and retry', async () => {
+        it('should not follow symlinks/junctions when cleaning (link만 제거)', async () => {
             (fs.pathExistsSync as jest.Mock).mockReturnValue(true);
-
-            // First call fails with EBUSY, second call succeeds
-            const mockError: any = new Error('EBUSY error');
-            mockError.code = 'EBUSY';
-            (fs.emptyDir as jest.Mock)
-                .mockRejectedValueOnce(mockError)
-                .mockResolvedValueOnce(undefined);
+            (fs.pathExists as jest.Mock).mockResolvedValue(true);
+            (fs.readdir as unknown as jest.Mock).mockResolvedValueOnce(['rd']);
+            // rd 항목이 심볼릭 링크(junction)인 경우
+            (fs.lstat as unknown as jest.Mock).mockResolvedValueOnce({ isSymbolicLink: () => true });
 
             const result = await service.initTomcat('myRoot', 'local', false, 'default');
 
             expect(result).toBe(true);
-            expect(fs.emptyDir).toHaveBeenCalledTimes(2);
-            expect(mockLog.appendLine).toHaveBeenCalledWith(expect.stringContaining('[EBUSY 감지]'));
+            // 링크는 unlink로만 제거하고, 타깃을 따라가는 remove는 호출하지 않아야 한다
+            expect(fs.unlink).toHaveBeenCalledWith(path.join('/test/projectRoot/.tomcat', 'rd'));
+            expect(fs.remove).not.toHaveBeenCalled();
         });
 
         it('should return false if error thrown during initialization', async () => {

@@ -3,6 +3,7 @@ import type { Settings, TomcatState } from '../types';
 import path from 'path';
 import * as fs from 'fs-extra';
 import { spawn, execFileSync, type ChildProcess } from 'child_process';
+import { safeEmptyDir } from '../utils/fsCleanup';
 
 // Tomcat 제어 서비스
 import type { ITomcatService } from './interfaces';
@@ -153,7 +154,17 @@ export class TomcatService implements ITomcatService {
         this._log.appendLine('[Tomcat] Tomcat 기동 시작...');
         await new Promise(resolve => setTimeout(resolve, 0)); // UI 반영 대기 (이벤트 루프 양보)
         // tomcat context root 폴더 하위 초기화
-        fs.emptyDirSync(tomcatContextRootPath);
+        // 직전 Tomcat 종료 직후에는 Windows가 파일/디렉터리(특히 정적 심볼릭 링크/junction) 핸들을
+        // 아직 잡고 있어 EBUSY/EPERM("파일 접근권한 오류")이 발생할 수 있다.
+        // 초기화 경로와 동일하게 재시도 + (실패 시) Tomcat kill 후 재시도하고,
+        // 심볼릭 링크/junction은 타고 들어가지 않고 링크만 제거한다.
+        await safeEmptyDir(tomcatContextRootPath, {
+            log: (msg) => this._log.appendLine(msg),
+            onBusyBeforeFinalRetry: () => {
+                this.killTomcatProcess();
+                this.killProcessesOnTomcatPorts();
+            },
+        });
         // tomcat 기동에 필요한 프로젝트 구성 파일 배포 (완료 후 tomcat 기동)
         if (deployServiceFiles) await deployServiceFiles();
         // tomcat 기동 옵션 설정
@@ -239,25 +250,27 @@ export class TomcatService implements ITomcatService {
     // Tomcat 시작
     async startTomcat(_enableHotswap: boolean, onStartupComplete?: () => void, deployServiceFiles?: () => void | Promise<boolean>): Promise<void> {
         try {
-            this.runTomcat(false, _enableHotswap, onStartupComplete, deployServiceFiles);
+            // await 하지 않으면 runTomcat 내부 비동기(폴더 정리 등)에서 발생한 예외가
+            // 이 try/catch에 잡히지 않고 unhandled rejection으로 새어나간다.
+            await this.runTomcat(false, _enableHotswap, onStartupComplete, deployServiceFiles);
         } catch (error) {
             this._tomcatState.running = false;
             this._tomcatState.debugMode = false;
             const errorMessage = error instanceof Error ? error.message : String(error);
             this._log.appendLine(`Tomcat 시작 실패: ${errorMessage}`);
-            vscode.window.showErrorMessage(`Tomcat 시작 실패: ${errorMessage}`);
+            vscode.window.showErrorMessage(`Tomcat 시작 실패: ${errorMessage} (문제가 지속되면 'Tomcat 초기화' 후 다시 시작해 주세요.)`);
         }
     }
 
     // Tomcat 디버그 모드 시작
     async debugTomcat(_enableHotswap: boolean, onStartupComplete?: () => void, deployServiceFiles?: () => void | Promise<boolean>): Promise<void> {
         try {
-            this.runTomcat(true, _enableHotswap, onStartupComplete, deployServiceFiles);
+            await this.runTomcat(true, _enableHotswap, onStartupComplete, deployServiceFiles);
         } catch (error) {
             this._tomcatState.running = false;
             this._tomcatState.debugMode = false;
             const errorMessage = error instanceof Error ? error.message : String(error);
-            vscode.window.showErrorMessage(`Tomcat 디버그 시작 실패: ${errorMessage}`);
+            vscode.window.showErrorMessage(`Tomcat 디버그 시작 실패: ${errorMessage} (문제가 지속되면 'Tomcat 초기화' 후 다시 시작해 주세요.)`);
         }
     }
 
