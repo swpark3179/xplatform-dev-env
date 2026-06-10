@@ -36,6 +36,11 @@
         "command": "dev-helper.toggleLocalGitIgnore",
         "title": "XPlatform: 로컬 Git 무시 토글 (skip-worktree)",
         "category": "XPlatform"
+      },
+      {
+        "command": "dev-helper.generateWsdlJava",
+        "title": "XPlatform: WSDL → Java 생성",
+        "category": "XPlatform"
       }
     ],
     "viewsContainers": {
@@ -68,6 +73,11 @@
           "command": "dev-helper.toggleLocalGitIgnore",
           "when": "!explorerResourceIsFolder",
           "group": "z_commands@2"
+        },
+        {
+          "command": "dev-helper.generateWsdlJava",
+          "when": "resourceExtname =~ /^\\.wsdl$/i",
+          "group": "z_commands@3"
         }
       ],
       "editor/title/context": [

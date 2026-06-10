@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { SettingsService, ValidationService, TomcatService, GradleService, ProjectService, GitIgnoreService } from '../services';
+import { SettingsService, ValidationService, TomcatService, GradleService, ProjectService, GitIgnoreService, WsdlService } from '../services';
 import { TomcatInitService } from './TomcatInitService';
 import { DeployService } from './DeployService';
 import { UxStudioService } from './UxStudioService';
@@ -16,6 +16,7 @@ export interface ServicesBundle {
   projectService: ProjectService;
   uxStudioService: UxStudioService;
   gitIgnoreService: GitIgnoreService;
+  wsdlService: WsdlService;
 }
 
 export function createServices(
@@ -37,6 +38,7 @@ export function createServices(
   const deployService: IDeployService = new DeployService(log, settings, deployFileList, changedFiles, fileWatchers, tomcatState, gradleService, tomcatService);
   const uxStudioService = new UxStudioService(log, settings.projectRoot);
   const gitIgnoreService = new GitIgnoreService(log, settings);
+  const wsdlService = new WsdlService(log, settings);
 
   tomcatInitService.setDeployService(deployService as any);
   tomcatInitService.setTomcatService(tomcatService);
@@ -51,5 +53,6 @@ export function createServices(
     projectService,
     uxStudioService,
     gitIgnoreService,
+    wsdlService,
   };
 }
