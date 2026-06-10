@@ -153,7 +153,7 @@ describe('WsdlService', () => {
             expect(args[args.length - 1]).toBe(wsdlPath);
         });
 
-        it('should preserve package folder structure when package cannot be derived', async () => {
+        it('should generate package folder structure under projectRoot/src/java when package cannot be derived', async () => {
             const outsideDir = path.join(workDir, 'project', 'resources');
             fs.mkdirSync(outsideDir, { recursive: true });
             const outsideWsdl = path.join(outsideDir, 'outbound.wsdl');
@@ -166,6 +166,24 @@ describe('WsdlService', () => {
             expect(result.ok).toBe(true);
             const args = (spawn as jest.Mock).mock.calls[0][1] as string[];
             expect(args).not.toContain('-p');
+            expect(result.generatedFiles).toEqual([path.join('com', 'example', 'ws', 'OutboundService.java')]);
+            expect(fs.existsSync(path.join(
+                mockSettings.projectRoot, 'src', 'java', 'com', 'example', 'ws', 'OutboundService.java'
+            ))).toBe(true);
+            expect(fs.existsSync(path.join(outsideDir, 'com'))).toBe(false);
+        });
+
+        it('should fall back to the wsdl folder when projectRoot is not set and package cannot be derived', async () => {
+            const outsideDir = path.join(workDir, 'project', 'resources');
+            fs.mkdirSync(outsideDir, { recursive: true });
+            const outsideWsdl = path.join(outsideDir, 'outbound.wsdl');
+            fs.writeFileSync(outsideWsdl, '<definitions/>', 'utf8');
+
+            mockWsimport(['com/example/ws/OutboundService.java']);
+            const service = new WsdlService(mockLog, { ...mockSettings, projectRoot: '' });
+            const result = await service.generateJava(outsideWsdl);
+
+            expect(result.ok).toBe(true);
             expect(fs.existsSync(path.join(outsideDir, 'com', 'example', 'ws', 'OutboundService.java'))).toBe(true);
         });
 
