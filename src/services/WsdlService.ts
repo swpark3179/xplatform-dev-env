@@ -17,6 +17,8 @@ export interface WsdlGenerateResult {
  * 설정 화면에서 등록한 JDK(1.8)의 wsimport 도구로 JAX-WS 클라이언트 소스를 생성한다.
  * 생성 소스는 UTF-8이며, WSDL이 src/java 하위에 있으면 해당 경로로 패키지를 정해
  * WSDL과 동일한 폴더에 .java 파일을 생성한다.
+ * 패키지를 경로에서 유도하지 못한 경우에는 targetNamespace 기반 패키지 폴더 구조를
+ * 프로젝트 루트의 src/java 하위에 생성한다.
  */
 export class WsdlService {
     private static readonly SOURCE_ROOT_MARKER = '/src/java/';
@@ -90,12 +92,16 @@ export class WsdlService {
             }
 
             // 패키지를 경로에서 유도한 경우: WSDL과 동일한 폴더에 평면 복사
-            // 유도하지 못한 경우: targetNamespace 기반 패키지 폴더 구조를 WSDL 폴더 하위에 복사
+            // 유도하지 못한 경우: targetNamespace 기반 패키지 폴더 구조를 프로젝트 루트의 src/java 하위에 복사
+            const sourceRoot = this.settings.projectRoot
+                ? path.join(this.settings.projectRoot, 'src', 'java')
+                : wsdlDir;
+            const outputBase = packageName ? wsdlDir : sourceRoot;
             const copyPlan = generated.map(absSrc => {
                 const rel = path.relative(tmpDir, absSrc);
                 const target = packageName
-                    ? path.join(wsdlDir, path.basename(absSrc))
-                    : path.join(wsdlDir, rel);
+                    ? path.join(outputBase, path.basename(absSrc))
+                    : path.join(outputBase, rel);
                 return { src: absSrc, target };
             });
 
@@ -120,7 +126,7 @@ export class WsdlService {
                 this.log.appendLine(`[WSDL] 생성: ${plan.target}`);
             }
 
-            const fileNames = copyPlan.map(p => path.relative(wsdlDir, p.target));
+            const fileNames = copyPlan.map(p => path.relative(outputBase, p.target));
             return {
                 ok: true,
                 message: `WSDL → Java 생성 완료: ${fileNames.length}개 파일 (${path.basename(wsdlPath)})`,
