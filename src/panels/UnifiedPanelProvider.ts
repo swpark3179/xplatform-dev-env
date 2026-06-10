@@ -12,6 +12,7 @@ import { DeployService } from '../services/DeployService';
 import { ReferenceAnalysisProvider } from './ReferenceAnalysisProvider';
 import { UxStudioService } from '../services/UxStudioService';
 import { GitIgnoreService } from '../services/GitIgnoreService';
+import { WsdlService } from '../services/WsdlService';
 import { createServices } from '../services/serviceFactory';
 
 // 콘솔 출력 채널
@@ -29,6 +30,7 @@ export class UnifiedPanelProvider extends WebviewProvider {
     private _tomcatStatusBar: TomcatStatusBar; // Tomcat 실행 시 하단 상태바 서비스 (메인 화면)
     private _uxStudioService: UxStudioService; // UX Studio 관리 서비스
     private _gitIgnoreService: GitIgnoreService; // Git 로컬 무시(skip-worktree) 서비스
+    private _wsdlService: WsdlService; // WSDL → Java 소스 생성 서비스
     private _settings: Settings; // Tool Path 등 설정 상태값 관리
     private _validation: ValidationState; // Tool 검증 상태값 관리
     private _tomcatState: TomcatState;  // tomcat 관련 상태값 관리
@@ -101,6 +103,7 @@ export class UnifiedPanelProvider extends WebviewProvider {
         this._deployService = services.deployService;
         this._uxStudioService = services.uxStudioService;
         this._gitIgnoreService = services.gitIgnoreService;
+        this._wsdlService = services.wsdlService;
 
         // Gradle 작업 종료 시 UI에 isGradleRunning=false 알림 (빌드 완료 후 중지 버튼 비활성화 처리)
         this._gradleService.setOnProcessComplete(() => this._notifyGradleComplete());
@@ -522,6 +525,26 @@ export class UnifiedPanelProvider extends WebviewProvider {
             lastPath: result.path,
             message: result.message,
         });
+    }
+
+    // Explorer 우클릭에서 WSDL → Java 클라이언트 소스 생성
+    public async generateJavaFromWsdl(filePath: string): Promise<void> {
+        // 설정 패널을 열기 전에 명령을 실행할 수 있으므로 저장된 JDK 경로를 먼저 로드
+        if (!this._settings.jdkPath) this._settingsService.loadSavedSettings();
+        this._log.show(true);
+        const result = await vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Notification,
+                title: `WSDL → Java 생성 중... (${path.basename(filePath)})`,
+                cancellable: false
+            },
+            () => this._wsdlService.generateJava(filePath)
+        );
+        if (result.ok) {
+            vscode.window.showInformationMessage(result.message);
+        } else if (!result.cancelled) {
+            vscode.window.showErrorMessage(result.message);
+        }
     }
 
     // vscode 소스목록 또는 에디터 상단 헤더 우클릭 통한 파일 배포 대상 추가 핸들러

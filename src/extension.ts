@@ -92,11 +92,28 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
 
+    // WSDL → Java 생성 (Explorer 우클릭) — wsimport로 JAX-WS 클라이언트 소스를 WSDL과 동일한 폴더에 생성
+    const generateWsdlJavaCommand = vscode.commands.registerCommand(
+        'dev-helper.generateWsdlJava',
+        async (uri?: vscode.Uri) => {
+            let targetUri = uri;
+            if (!targetUri && vscode.window.activeTextEditor) {
+                targetUri = vscode.window.activeTextEditor.document.uri;
+            }
+            if (!targetUri || !targetUri.fsPath.toLowerCase().endsWith('.wsdl')) {
+                vscode.window.showWarningMessage('WSDL → Java 생성: WSDL 파일을 선택해주세요.');
+                return;
+            }
+            await panelProvider.generateJavaFromWsdl(targetUri.fsPath);
+        }
+    );
+
     context.subscriptions.push(
         showSettingsCommand,
         includeInDeployTargetCommand,
         analyzeReferenceCommand,
-        toggleLocalGitIgnoreCommand
+        toggleLocalGitIgnoreCommand,
+        generateWsdlJavaCommand
     );
 }
 
