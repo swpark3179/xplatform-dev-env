@@ -172,14 +172,17 @@ export class UnifiedPanelProvider extends WebviewProvider {
                 this._validationService.validateAll(
                     this._settings,
                     () => this._sendState(),
-                    () => {
+                    async () => {
 
                         this._settingsService.saveSettings();
                         // .vscode 폴더가 없으면 프로젝트 설정 자동 초기화
                         const vscodePath = path.join(this._settings.projectRoot, '.vscode');
                         if (!fs.existsSync(vscodePath)) {
-                            this._projectService.initProjectSettings({ hideSimpleFolder: true, hideExtFolder: false, initProjectFile: true });
+                            await this._projectService.initProjectSettings({ hideSimpleFolder: true, hideExtFolder: false, initProjectFile: true });
                         }
+                        // .classpath/.project 생성 결과를 Tomcat 시작 가능 여부에 반영
+                        this._refreshTomcatInitialized();
+                        this._sendTomcatState();
                         this._postMessage({ type: 'navigateTo', page: 'main' });
                     }
                 ),
@@ -203,6 +206,7 @@ export class UnifiedPanelProvider extends WebviewProvider {
                 // Tocmat 초기화
                 await this._tomcatInitService.initTomcat(contextRoot, profile, isBatch, deployMode);
                 // 초기화 완료 후 상태 업데이트 (초기화 성공/실패 무관하게 업데이트 필요)
+                this._refreshTomcatInitialized(); // .classpath/.project가 없으면 시작 버튼 비활성화 유지
                 this._tomcatState.initializing = false;
                 this._postMessage({ type: 'tomcatStateUpdate', tomcat: this._tomcatState });
                 return Promise.resolve();
@@ -298,8 +302,12 @@ export class UnifiedPanelProvider extends WebviewProvider {
                 this._postMessage({ type: 'tomcatStateUpdate', tomcat: this._tomcatState });
                 return Promise.resolve();
             },
-            handleApplyProjectSettings: (options) => // 프로젝트 창에서 프로젝트 설정 초기화 핸들러
-                this._projectService.initProjectSettings(options),
+            handleApplyProjectSettings: async (options) => { // 프로젝트 창에서 프로젝트 설정 초기화 핸들러
+                await this._projectService.initProjectSettings(options);
+                // .classpath/.project 생성 후 Tomcat 시작 가능 여부 재평가
+                this._refreshTomcatInitialized();
+                this._sendTomcatState();
+            },
             handleSetupHomeSettings: () => // 프로젝트 창에서 사용자 홈 설정 적용 핸들러
                 this._projectService.handleApplyHomeSettings(),
             searchDeployFiles: async (keyword) => { // 배포목록관리 팝업에서 파일검색 기능
@@ -497,6 +505,7 @@ export class UnifiedPanelProvider extends WebviewProvider {
         if (!this._tomcatState.initialized || !this._tomcatState.contextRoot) {
             this._syncContextRootFromWebXml();
         }
+        this._refreshTomcatInitialized(); // .tomcat/.classpath/.project 누락 시 시작 비활성화
         this._deployService.loadDeploySettings(); // 배포 설정 파일에서 복원
         this._deployService.ensureDeployFileIndex();
         if (!this._tomcatState.running && this._tomcatService.areTomcatPortsInUse()) this._tomcatState.portsBlocked = true; // 타 프로세스가 7001, 12001 포트를 사용 중이면 포트 블록 상태로 설정
@@ -551,6 +560,25 @@ export class UnifiedPanelProvider extends WebviewProvider {
     public addDeployTargetFile(filePath: string): void {
         this._deployService.addDeployListFromEditor(filePath);
         this._postMessage({ type: 'mainStateUpdate', deployFileList: this._deployFileList, changedFiles: this._changedFiles }); // 상태 전송
+    }
+
+    // 프로젝트 초기화 여부 확인 (.tomcat 폴더, .classpath, .project 파일이 모두 존재해야 초기화된 것으로 판단)
+    private _isProjectInitialized(): boolean {
+        const root = this._settings.projectRoot;
+        if (!root) return false;
+        return fs.existsSync(path.join(root, '.tomcat'))
+            && fs.existsSync(path.join(root, '.classpath'))
+            && fs.existsSync(path.join(root, '.project'));
+    }
+
+    // 초기화 산출물(.tomcat, .classpath, .project) 존재 여부를 _tomcatState.initialized에 반영
+    private _refreshTomcatInitialized(): void {
+        if (!this._isProjectInitialized()) {
+            this._tomcatState.initialized = false;
+            return;
+        }
+        // 초기화 산출물이 모두 생긴 경우 server.xml 기준으로 initialized 복원
+        if (!this._tomcatState.initialized) this._syncContextRootFromServerXml();
     }
 
     // server.xml에서 Context path를 읽어 _tomcatState.contextRoot에 반영

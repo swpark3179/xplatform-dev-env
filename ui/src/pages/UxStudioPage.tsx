@@ -76,7 +76,7 @@ const UxStudioPage: React.FC<{ state: AppState; actions: AppActions }> = ({ stat
         const config: UxStudioEnvConfig = {
             mode,
             customPrefixIds: [],
-            urlAutoCorrect: mode === 'selected' ? urlAutoCorrect : false,
+            urlAutoCorrect,
         };
         actions.uxStudio.applySettings(config);
         setApplied(true);
@@ -245,15 +245,16 @@ const Step1Mode: React.FC<{
             </button>
         </div>
 
-        {mode === 'selected' && (
-            <label className="os-switch-row" onClick={() => setUrlAutoCorrect(!urlAutoCorrect)}>
-                <span className={`os-switch ${urlAutoCorrect ? 'os-switch--on' : ''}`} />
-                <div className="os-switch-row__text">
-                    <span style={{ fontWeight: 500 }}>URL 자동보정</span>
-                    <span className="os-switch-row__hint">localhost:7001/ep/ → 60.101.107.57:8002/ep/</span>
-                </div>
-            </label>
-        )}
+        <label className="os-switch-row" onClick={() => setUrlAutoCorrect(!urlAutoCorrect)}>
+            <span className={`os-switch ${urlAutoCorrect ? 'os-switch--on' : ''}`} />
+            <div className="os-switch-row__text">
+                <span style={{ fontWeight: 500 }}>URL 자동보정</span>
+                <span className="os-switch-row__hint">
+                    localhost:7001/ep/ → 60.101.107.57:8002/ep/
+                    {mode === 'default' && ' · 원본 default_typedef.xml이 직접 수정됩니다'}
+                </span>
+            </div>
+        </label>
 
         <div className="os-step-nav">
             <span style={{ flex: 1 }} />
@@ -399,9 +400,7 @@ const Step3Launch: React.FC<{
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ color: 'var(--oz-fg-muted)', minWidth: 56 }}>모드</span>
                 <span style={{ color: 'var(--oz-fg-default)' }}>
-                    {mode === 'selected'
-                        ? `선택 모드 · URL 자동보정 ${urlAutoCorrect ? 'ON' : 'OFF'}`
-                        : '기본 모드'}
+                    {`${mode === 'selected' ? '선택 모드' : '기본 모드'} · URL 자동보정 ${urlAutoCorrect ? 'ON' : 'OFF'}`}
                 </span>
             </div>
             {mode === 'selected' && (

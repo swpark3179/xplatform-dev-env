@@ -22,7 +22,8 @@ export const TomcatControlPanel: React.FC<{ state: AppState, actions: AppActions
             : '';
 
     const isTransitioning = state.tomcat.starting || state.tomcat.stopping;
-    const startDisabled = state.tomcat.running || state.tomcat.initializing || state.build.isGradleRunning || isTransitioning;
+    const notInitialized = !state.tomcat.initialized; // .tomcat/.classpath/.project 미생성 (초기화 필요)
+    const startDisabled = notInitialized || state.tomcat.running || state.tomcat.initializing || state.build.isGradleRunning || isTransitioning;
     const stopDisabled = (!state.tomcat.running && !state.tomcat.stopping) || state.tomcat.initializing || state.build.isGradleRunning || state.tomcat.stopping;
 
     if (state.tomcat.portsBlocked) {
@@ -85,6 +86,7 @@ export const TomcatControlPanel: React.FC<{ state: AppState, actions: AppActions
                             type="button"
                             onClick={handleStart}
                             disabled={startDisabled}
+                            title={notInitialized ? '프로젝트 초기화가 필요합니다 (Tomcat 초기화 및 프로젝트 설정 적용)' : undefined}
                         >
                             ▶ {state.tomcat.starting ? '기동중…' : '시작'}
                         </button>

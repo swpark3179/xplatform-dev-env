@@ -136,6 +136,10 @@ export class UxStudioService {
             if (!fs.existsSync(uiEnvDir)) {
                 fs.mkdirSync(uiEnvDir, { recursive: true });
             }
+            // url 자동보정: 기본모드는 원본 default_typedef.xml에 직접 적용
+            if (config.urlAutoCorrect) {
+                this._correctUrlsInTypedef(path.join(uiSrcDir, 'default_typedef.xml'));
+            }
         } else {
             // 1. ui-env/ 내 XPLATFORM_Client_License.xml 제외 모든 파일·폴더 삭제
             this._cleanUiEnvDir(uiEnvDir);
@@ -225,6 +229,22 @@ export class UxStudioService {
         });
 
         await Promise.all(operations);
+    }
+
+    /** default_typedef.xml의 url 일괄 치환 (localhost:7001/ep/ → 60.101.107.57:8002/ep/) */
+    private _correctUrlsInTypedef(xmlPath: string): void {
+        if (!fs.existsSync(xmlPath)) {
+            this._log.appendLine(`[UxStudio] url 자동보정 대상 없음: ${xmlPath}`);
+            return;
+        }
+        try {
+            const content = fs.readFileSync(xmlPath, 'utf8');
+            if (!content.includes(URL_CORRECT_FROM)) return;
+            fs.writeFileSync(xmlPath, content.split(URL_CORRECT_FROM).join(URL_CORRECT_TO), 'utf8');
+            this._log.appendLine(`[UxStudio] url 자동보정 적용: ${xmlPath}`);
+        } catch (e) {
+            this._log.appendLine(`[UxStudio] url 자동보정 실패: ${e}`);
+        }
     }
 
     private _modifyTypedefXml(xmlPath: string, config: UxStudioEnvConfig, allServices: UxServiceEntry[]): void {

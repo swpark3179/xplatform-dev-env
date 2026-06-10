@@ -209,6 +209,37 @@ describe('UxStudioService', () => {
             expect(mockLog.appendLine).toHaveBeenCalledWith('[UxStudio] 설정 적용 완료');
         });
 
+        it('should correct urls in the original default_typedef.xml in default mode when urlAutoCorrect is on', async () => {
+            const mockConfig = { mode: 'default', customPrefixIds: [], urlAutoCorrect: true } as any;
+            (fs.existsSync as jest.Mock).mockReturnValue(true);
+            (fs.readFileSync as jest.Mock).mockReturnValue('<Service prefixid="svc" url="http://localhost:7001/ep/XPLATFORM"/>');
+
+            await service.applySettings(mockConfig, []);
+
+            // 원본 src/webapp/ui/default_typedef.xml 에 직접 치환되어야 함 (복사본 X)
+            expect(fs.copyFileSync).not.toHaveBeenCalled();
+            expect(fs.writeFileSync).toHaveBeenCalledWith(
+                path.join(projectRoot, 'src', 'webapp', 'ui', 'default_typedef.xml'),
+                expect.stringContaining('60.101.107.57:8002/ep/'),
+                'utf8'
+            );
+        });
+
+        it('should not touch default_typedef.xml in default mode when urlAutoCorrect is off', async () => {
+            const mockConfig = { mode: 'default', customPrefixIds: [], urlAutoCorrect: false } as any;
+            (fs.existsSync as jest.Mock).mockReturnValue(true);
+
+            await service.applySettings(mockConfig, []);
+
+            // env.json 저장만 일어나야 함
+            expect(fs.writeFileSync).toHaveBeenCalledTimes(1);
+            expect(fs.writeFileSync).toHaveBeenCalledWith(
+                expect.stringContaining('env.json'),
+                expect.anything(),
+                'utf8'
+            );
+        });
+
         it('should apply settings in selected mode with custom prefix IDs', async () => {
             const mockConfig = { mode: 'selected', customPrefixIds: ['Custom1'], urlAutoCorrect: true } as any;
             const mockAllServices = [{ prefixid: 'Custom1', url: './Custom1/' }] as any[];
