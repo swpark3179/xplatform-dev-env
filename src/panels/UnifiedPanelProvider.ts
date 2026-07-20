@@ -506,6 +506,7 @@ export class UnifiedPanelProvider extends WebviewProvider {
             this._syncContextRootFromWebXml();
         }
         this._refreshTomcatInitialized(); // .tomcat/.classpath/.project 누락 시 시작 비활성화
+        await this._autoInitProjectFilesIfMissing(); // .project/.classpath 누락 시 자동 초기화
         this._deployService.loadDeploySettings(); // 배포 설정 파일에서 복원
         this._deployService.ensureDeployFileIndex();
         if (!this._tomcatState.running && this._tomcatService.areTomcatPortsInUse()) this._tomcatState.portsBlocked = true; // 타 프로세스가 7001, 12001 포트를 사용 중이면 포트 블록 상태로 설정
@@ -560,6 +561,32 @@ export class UnifiedPanelProvider extends WebviewProvider {
     public addDeployTargetFile(filePath: string): void {
         this._deployService.addDeployListFromEditor(filePath);
         this._postMessage({ type: 'mainStateUpdate', deployFileList: this._deployFileList, changedFiles: this._changedFiles }); // 상태 전송
+    }
+
+    // XPlatform 프로젝트에서 .project/.classpath 누락 시 패널 최초 오픈 시점에 자동 초기화
+    private async _autoInitProjectFilesIfMissing(): Promise<void> {
+        if (!this._validation.projectValid) return; // XPlatform 프로젝트일 때만 (default_typedef.xml 존재)
+        const root = this._settings.projectRoot;
+        if (!root) return;
+        const projectMissing = !fs.existsSync(path.join(root, '.project'));
+        const classpathMissing = !fs.existsSync(path.join(root, '.classpath'));
+        if (!projectMissing && !classpathMissing) return; // 둘 다 있으면 스킵
+
+        const settingsJsonExists = fs.existsSync(path.join(root, '.vscode', 'settings.json'));
+        const hasToolPaths = !!(this._settings.gradlePath && this._settings.jdkPath);
+
+        if (!settingsJsonExists && hasToolPaths) {
+            // settings.json도 없고 Gradle/JDK 경로가 확보된 경우 전체 초기화 (덮어쓰기 확인 팝업 없이)
+            await this._projectService.initProjectSettings(
+                { hideSimpleFolder: true, hideExtFolder: false, initProjectFile: true },
+                true // silent
+            );
+        } else {
+            // settings.json이 이미 있거나 도구 경로 미설정 → 경로에 의존하지 않는 누락 파일만 안전 생성
+            await this._projectService.generateMissingProjectFiles();
+        }
+        this._refreshTomcatInitialized(); // 생성 결과를 Tomcat 시작 가능 여부에 반영
+        this._sendTomcatState();
     }
 
     // 프로젝트 초기화 여부 확인 (.tomcat 폴더, .classpath, .project 파일이 모두 존재해야 초기화된 것으로 판단)
