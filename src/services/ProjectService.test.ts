@@ -12,6 +12,7 @@ jest.mock('vscode', () => ({
     },
     workspace: {
         workspaceFolders: [{ uri: { fsPath: '/test/project' } }],
+        getConfiguration: jest.fn(),
     },
     OutputChannel: jest.fn(),
 }), { virtual: true });
@@ -43,6 +44,22 @@ describe('ProjectService', () => {
             (call) => typeof call[0] === 'string' && call[0].endsWith(suffix)
         );
 
+    // 특정 파일에 마지막으로 기록된 내용을 JSON으로 파싱해 반환 (없으면 undefined)
+    const writtenJson = (suffix: string): any => {
+        const calls = (fs.writeFileSync as jest.Mock).mock.calls.filter(
+            (call) => typeof call[0] === 'string' && call[0].endsWith(suffix)
+        );
+        if (calls.length === 0) return undefined;
+        return JSON.parse(calls[calls.length - 1][1]);
+    };
+
+    // debug.openDebug 전역 설정값(globalValue)을 제어하는 헬퍼
+    const setDebugOpenGlobalValue = (globalValue: unknown) => {
+        (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
+            inspect: jest.fn().mockReturnValue({ globalValue }),
+        });
+    };
+
     beforeEach(() => {
         jest.clearAllMocks();
 
@@ -66,6 +83,9 @@ describe('ProjectService', () => {
 
         // updateClassPathFile()가 다시 읽는 .classpath 내용
         (fs.readFileSync as jest.Mock).mockReturnValue('<classpath>\n</classpath>\n');
+
+        // 기본값: debug.openDebug 전역 설정 없음
+        setDebugOpenGlobalValue(undefined);
 
         service = new ProjectService(mockLog, mockSettings, mockExtensionPath);
     });
@@ -158,6 +178,38 @@ describe('ProjectService', () => {
             expect(wroteFile('settings.json')).toBe(true); // settings.json은 항상 적용
             expect(wroteFile('.project')).toBe(false); // 거부 → 덮어쓰지 않음
             expect(wroteFile('.classpath')).toBe(false);
+        });
+    });
+
+    describe('initProjectSettings (debug.openDebug)', () => {
+        const OPTIONS = { hideSimpleFolder: true, hideExtFolder: false, initProjectFile: false };
+
+        it('전역·워크스페이스 모두 미설정이면 openOnDebugBreak 로 추가한다', async () => {
+            setDebugOpenGlobalValue(undefined); // 전역 미설정
+            setExisting((p) => p.endsWith('.vscode')); // .vscode 디렉터리만 존재, settings.json 없음
+
+            await service.initProjectSettings(OPTIONS, true);
+
+            expect(writtenJson('settings.json')['debug.openDebug']).toBe('openOnDebugBreak');
+        });
+
+        it('전역에 값이 있으면 워크스페이스에 추가하지 않는다', async () => {
+            setDebugOpenGlobalValue('openOnSessionStart'); // 전역 설정 존재
+            setExisting((p) => p.endsWith('.vscode'));
+
+            await service.initProjectSettings(OPTIONS, true);
+
+            expect(writtenJson('settings.json')['debug.openDebug']).toBeUndefined();
+        });
+
+        it('워크스페이스에 이미 값이 있으면 덮어쓰지 않는다', async () => {
+            setDebugOpenGlobalValue(undefined); // 전역 미설정
+            setExisting((p) => p.endsWith('.vscode') || p.endsWith('settings.json')); // 기존 settings.json 존재
+            (fs.readFileSync as jest.Mock).mockReturnValue('{ "debug.openDebug": "neverOpen" }');
+
+            await service.initProjectSettings(OPTIONS, true);
+
+            expect(writtenJson('settings.json')['debug.openDebug']).toBe('neverOpen'); // 기존 값 유지
         });
     });
 });

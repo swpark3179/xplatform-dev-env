@@ -79,6 +79,14 @@ export class ProjectService {
             if (Object.keys(excludePatterns).length > 0) settings_json['files.exclude'] = excludePatterns;
             else delete settings_json['files.exclude'];
 
+            // 중단점 디버깅 시 디버그 뷰가 자동으로 열리도록 debug.openDebug 를 openOnDebugBreak 로 설정.
+            // 단, 사용자 전역(설치 영역) settings.json 에 값이 이미 있으면 그 설정을 존중하여 건드리지 않고,
+            // 워크스페이스 settings.json 에도 값이 없을 때만 적용한다.
+            const openDebugInspect = vscode.workspace.getConfiguration('debug').inspect('openDebug');
+            if (openDebugInspect?.globalValue === undefined && settings_json['debug.openDebug'] === undefined) {
+                settings_json['debug.openDebug'] = 'openOnDebugBreak';
+            }
+
             fs.writeFileSync(settingsPath, JSON.stringify(settings_json, null, 4), 'utf-8'); // settings.json 저장
             if(options.initProjectFile && (silent || await this.decideOverwriteProjectFile())) {
                 this.createProjectFile(); // .project 파일 생성
