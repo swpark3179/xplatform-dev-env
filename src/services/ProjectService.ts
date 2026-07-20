@@ -19,7 +19,8 @@ export class ProjectService {
     }
 
     // 프로젝트 설정 초기화
-    public async initProjectSettings(options: ProjectSettingsOptions): Promise<void> {
+    // silent=true 인 경우 .project/.classpath 덮어쓰기 확인 팝업을 생략한다 (자동 초기화 경로에서 사용)
+    public async initProjectSettings(options: ProjectSettingsOptions, silent = false): Promise<void> {
         this._log.appendLine('프로젝트 설정 초기화');
         try {
             this._log.appendLine('프로젝트 설정 적용 중...');
@@ -79,7 +80,7 @@ export class ProjectService {
             else delete settings_json['files.exclude'];
 
             fs.writeFileSync(settingsPath, JSON.stringify(settings_json, null, 4), 'utf-8'); // settings.json 저장
-            if(options.initProjectFile && await this.decideOverwriteProjectFile()) {
+            if(options.initProjectFile && (silent || await this.decideOverwriteProjectFile())) {
                 this.createProjectFile(); // .project 파일 생성
                 this.createClassPathFile(); // .classpath 파일 생성
             }
@@ -90,6 +91,20 @@ export class ProjectService {
             vscode.window.showErrorMessage(`프로젝트 설정 적용 실패: ${errorMessage}`);
             this._log.appendLine(`프로젝트 설정 적용 실패: ${errorMessage}`);
         }
+    }
+
+    // 누락된 .project/.classpath 파일만 생성 (settings.json은 건드리지 않음, 기존 파일 보존)
+    public async generateMissingProjectFiles(): Promise<void> {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders || workspaceFolders.length === 0) return;
+        const workspacePath = workspaceFolders[0].uri.fsPath;
+        const projectMissing = !fs.existsSync(path.join(workspacePath, '.project'));
+        const classpathMissing = !fs.existsSync(path.join(workspacePath, '.classpath'));
+        if (!projectMissing && !classpathMissing) return; // 둘 다 있으면 아무것도 하지 않음
+        if (projectMissing) await this.createProjectFile();
+        if (classpathMissing) await this.createClassPathFile();
+        this._log.appendLine('누락된 프로젝트 파일(.project/.classpath) 자동 생성 완료');
+        vscode.window.showInformationMessage('프로젝트 설정 파일(.project/.classpath) 자동 생성 완료');
     }
 
     // 사용자 홈 설정 적용
